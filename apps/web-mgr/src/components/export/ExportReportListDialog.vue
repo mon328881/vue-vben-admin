@@ -1,0 +1,66 @@
+<script setup lang="ts">
+import type { TableColumnsType } from 'ant-design-vue';
+
+import { Modal, Popconfirm, Space, Table } from 'ant-design-vue';
+
+import type { MchExportTask } from '#/api/modules/export-task';
+
+defineProps<{
+  visible: boolean;
+  loading?: boolean;
+  title?: string;
+  data: MchExportTask[];
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:visible', value: boolean): void;
+  (e: 'download', row: MchExportTask): void;
+  (e: 'remove', row: MchExportTask): void;
+}>();
+
+const columns: TableColumnsType<MchExportTask> = [
+  { dataIndex: 'startedAt', title: '开始时间', width: 170 },
+  { dataIndex: 'operator', title: '操作人', width: 100 },
+  { dataIndex: 'finishedAt', title: '完成时间', width: 170 },
+  { dataIndex: 'fileName', ellipsis: true, title: '文件名' },
+  { dataIndex: 'totalRows', title: '行数', width: 80 },
+  { dataIndex: 'action', title: '操作', width: 120 },
+];
+</script>
+
+<template>
+  <Modal
+    :open="visible"
+    :title="title"
+    :footer="null"
+    width="860px"
+    destroy-on-close
+    @update:open="emit('update:visible', $event)"
+  >
+    <Table
+      :columns="columns"
+      :data-source="data"
+      :loading="loading"
+      :pagination="false"
+      row-key="rowKey"
+      size="small"
+      bordered
+    >
+      <template #bodyCell="{ column, record }">
+        <template v-if="column.dataIndex === 'action'">
+          <Space :size="8">
+            <a @click="emit('download', record as MchExportTask)">下载</a>
+            <Popconfirm
+              title="确认删除该报表？删除后不可恢复"
+              ok-text="确认"
+              cancel-text="取消"
+              @confirm="emit('remove', record as MchExportTask)"
+            >
+              <a class="text-red-500">删除</a>
+            </Popconfirm>
+          </Space>
+        </template>
+      </template>
+    </Table>
+  </Modal>
+</template>

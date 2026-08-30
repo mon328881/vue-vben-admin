@@ -1,5 +1,5 @@
 {
-  "name": "vben-admin-monorepo",
+  "name": "asiapay-admin-monorepo",
   "version": "5.7.0",
   "private": true,
   "keywords": [
@@ -29,6 +29,10 @@
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
     "build:analyze": "turbo build:analyze",
     "build:antd": "pnpm run build --filter=@vben/web-antd",
+    "build:mgr": "pnpm run build --filter=@asiapay/web-mgr",
+    "build:mch": "pnpm run build --filter=@asiapay/web-mch",
+    "build:agent": "pnpm run build --filter=@asiapay/web-agent",
+    "build:portals": "pnpm run build --filter=@asiapay/web-mgr --filter=@asiapay/web-mch --filter=@asiapay/web-agent",
     "build:docker": "./scripts/deploy/build-local-docker-image.sh",
     "build:docs": "pnpm run build --filter=@vben/docs",
     "build:ele": "pnpm run build --filter=@vben/web-ele",
@@ -46,6 +50,10 @@
     "dev": "turbo-run dev",
     "dev:antd": "pnpm -F @vben/web-antd run dev",
     "dev:antdv-next": "pnpm -F @vben/web-antdv-next run dev",
+    "dev:mgr": "pnpm -F @asiapay/web-mgr run dev",
+    "dev:mch": "pnpm -F @asiapay/web-mch run dev",
+    "dev:agent": "pnpm -F @asiapay/web-agent run dev",
+    "dev:portals": "pnpm -F @asiapay/web-mgr -F @asiapay/web-mch -F @asiapay/web-agent run dev",
     "dev:docs": "pnpm -F @vben/docs run dev",
     "dev:ele": "pnpm -F @vben/web-ele run dev",
     "dev:naive": "pnpm -F @vben/web-naive run dev",

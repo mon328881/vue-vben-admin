@@ -1,0 +1,20 @@
+{
+  "folders": [
+    {
+      "name": "asiapay-admin · 多门户前端",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.turbo": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.turbo": true,
+      "**/.vite": true
+    }
+  }
+}
