@@ -95,7 +95,7 @@ async function saveProfile() {
 function confirmProfile() {
   Modal.confirm({
     title: '确认更新信息',
-    content: '确认更新谷歌验证设置吗？',
+    content: '确认更新信息吗？',
     okText: '确认',
     cancelText: '取消',
     onOk: () => saveProfile(),
@@ -186,18 +186,19 @@ onMounted(() => {
               </Radio.Group>
             </Form.Item>
             <template v-if="googleAuth === 1 && initialGoogleAuth === 0">
-              <Form.Item label="谷歌密钥">
-                <div class="secret-box">{{ googleKey.key || '—' }}</div>
-                <p class="tip">请使用 Google 验证器扫描或手动输入密钥</p>
-              </Form.Item>
-              <Form.Item label="otpauth 链接">
-                <div class="secret-box small">{{ googleKey.qrCode || '—' }}</div>
+              <Form.Item label="谷歌二维码">
+                <div class="qr-box">
+                  <p class="tip">请使用 Google 验证器扫描</p>
+                  <div class="secret-box">{{ googleKey.key || '—' }}</div>
+                  <p class="tip small">otpauth 链接：</p>
+                  <div class="secret-box small">{{ googleKey.qrCode || '—' }}</div>
+                </div>
               </Form.Item>
               <Form.Item label="Google验证码">
                 <Input
                   v-model:value="googleCode"
                   :maxlength="6"
-                  placeholder="扫码后请输入 6 位动态验证码"
+                  placeholder="扫码后请在下方输入 6 位动态验证码"
                 />
               </Form.Item>
             </template>
@@ -224,7 +225,7 @@ onMounted(() => {
             <Form.Item label="用户登录名">
               <Input :value="userStore.userInfo?.username" disabled />
             </Form.Item>
-            <Form.Item label="原密码" required>
+            <Form.Item label="原密码">
               <Input.Password
                 v-model:value="pwdForm.originalPwd"
                 allow-clear
@@ -232,7 +233,7 @@ onMounted(() => {
                 placeholder="请输入原密码"
               />
             </Form.Item>
-            <Form.Item label="新密码" required>
+            <Form.Item label="新密码">
               <Input.Password
                 v-model:value="pwdForm.newPwd"
                 allow-clear
@@ -240,7 +241,7 @@ onMounted(() => {
                 placeholder="请输入新密码（6-12 位）"
               />
             </Form.Item>
-            <Form.Item label="确认新密码" required>
+            <Form.Item label="确认新密码">
               <Input.Password
                 v-model:value="pwdForm.confirmPwd"
                 allow-clear
@@ -250,7 +251,7 @@ onMounted(() => {
             </Form.Item>
             <Form.Item :wrapper-col="{ offset: 6, span: 16 }">
               <Button html-type="submit" type="primary" :loading="saving">
-                保存
+                更新密码
               </Button>
             </Form.Item>
           </Form>
@@ -274,9 +275,18 @@ onMounted(() => {
   font-size: 11px;
 }
 
+.qr-box {
+  width: 100%;
+}
+
 .tip {
   color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+
+.tip.small {
   font-size: 12px;
-  margin: 6px 0 0;
+  margin-top: 10px;
 }
 </style>

@@ -8,6 +8,16 @@ const PLACEHOLDER_COMPONENT = '/_core/fallback/coming-soon';
 /** 已知 menuUri → 视图路径 */
 const VIEW_MAP: Record<string, string> = {
   '/main': '/dashboard/main/index',
+  '/mchs': '/merchant/index',
+  '/apps': '/apps/index',
+  '/history': '/history/index',
+  '/mchPrepaidHistory': '/prepaid/index',
+  '/payOrder': '/order/pay/index',
+  '/passagePayOrder': '/passage-order/index',
+  '/division': '/division/index',
+  '/divisionAgent': '/division/index',
+  '/dayStat': '/stats/day-stat/index',
+  '/current/userinfo': '/system/userinfo/index',
 };
 
 /** ant-design menuIcon → Iconify */
