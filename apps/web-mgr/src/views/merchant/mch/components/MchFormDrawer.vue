@@ -24,6 +24,8 @@ import {
   updateMchInfoApi,
   updateMchLoginWhiteListApi,
 } from '#/api';
+import AgentSelector from '#/components/selectors/AgentSelector.vue';
+import MchGroupSelector from '#/components/selectors/MchGroupSelector.vue';
 import { LOCKED_MCH_NO, isValidWhiteList, randomSecret } from '#/constants/merchant';
 
 const emit = defineEmits<{ success: [] }>();
@@ -290,13 +292,17 @@ defineExpose({ show });
         />
       </Form.Item>
       <Form.Item label="代理商号" name="agentNo">
-        <Input v-model:value="form.agentNo" placeholder="请选择代理商" allow-clear />
+        <AgentSelector
+          v-model="form.agentNo"
+          placeholder="请选择代理商"
+          style="width: 100%"
+        />
       </Form.Item>
       <Form.Item label="所属分组" name="mchGroup">
-        <Input
-          v-model:value="form.mchGroup"
+        <MchGroupSelector
+          v-model="form.mchGroup"
           placeholder="请选择商户分组（可不选）"
-          allow-clear
+          style="width: 100%"
         />
         <div class="text-muted-foreground mt-1 text-xs">
           不选择表示该商户不属于任何分组；已停用的当前分组仍会保留显示。

@@ -43,13 +43,19 @@ const options = computed(() => {
   const source = props.includeDisabled
     ? list.value
     : list.value.filter((item) => Number(item.state) === 1);
-  return source.map((item) => ({
+  const mapped = source.map((item) => ({
     value: item.mchGroupName,
     label:
       Number(item.state) === 0
         ? `${item.mchGroupName}（已停用）`
         : item.mchGroupName,
   }));
+  const current = inner.value;
+  // 对齐旧端：当前已绑定但不在可选列表中的分组（通常已停用）仍保留展示
+  if (current && !source.some((item) => item.mchGroupName === current)) {
+    mapped.unshift({ value: current, label: `${current}（已停用）` });
+  }
+  return mapped;
 });
 
 async function load() {
