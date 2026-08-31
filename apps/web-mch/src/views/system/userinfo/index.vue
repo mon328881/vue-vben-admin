@@ -9,8 +9,9 @@ import {
   Form,
   Input,
   Modal,
-  Radio,
+  Space,
   Tabs,
+  Tag,
   message,
 } from 'ant-design-vue';
 
@@ -20,86 +21,50 @@ import {
   updateProfileApi,
 } from '#/api';
 import { fetchCurrentUserApi } from '#/api/core/user';
+import type { CurrentUser } from '#/api/types';
 import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'UserInfoPage' });
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
-const saving = ref(false);
-const profileSaving = ref(false);
 const activeTab = ref('basic');
+const currentUser = ref<CurrentUser | null>(null);
 
-const googleAuth = ref(0);
-const initialGoogleAuth = ref(0);
-const googleKey = ref<{ key?: string; qrCode?: string }>({});
-const googleCode = ref('');
-
+const pwdSaving = ref(false);
 const pwdForm = reactive({
   originalPwd: '',
   newPwd: '',
   confirmPwd: '',
 });
 
-const googleAuthChanged = computed(
-  () => googleAuth.value !== initialGoogleAuth.value,
-);
+const googleModalOpen = ref(false);
+const googleKeyData = ref<{ key?: string; qrCode?: string }>({});
+const googleCode = ref('');
+const googleBinding = ref(false);
+const googleKeyLoading = ref(false);
 
-async function loadProfile() {
-  const user = await fetchCurrentUserApi(true);
-  initialGoogleAuth.value = user.googleAuth ?? 0;
-  googleAuth.value = user.googleAuth ?? 0;
-}
+const googleEnabled = computed(() => (currentUser.value?.googleAuth ?? 0) === 1);
 
-async function onGoogleAuthChange(val: number) {
-  googleCode.value = '';
-  if (val === 1 && initialGoogleAuth.value === 0) {
-    try {
-      googleKey.value = (await fetchGoogleKeyApi()) ?? {};
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '获取谷歌密钥失败');
-      googleAuth.value = initialGoogleAuth.value;
-    }
-  } else {
-    googleKey.value = {};
+const googleQrSrc = computed(() => {
+  const value = String(googleKeyData.value.qrCode ?? '').trim();
+  if (!value) return '';
+  if (
+    value.startsWith('data:image') ||
+    value.startsWith('http://') ||
+    value.startsWith('https://')
+  ) {
+    return value;
   }
-}
-
-watch(googleAuth, (val, oldVal) => {
-  if (val !== oldVal) void onGoogleAuthChange(val);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(value)}`;
 });
 
-async function saveProfile() {
-  if (!googleAuthChanged.value) return;
-  profileSaving.value = true;
+async function loadProfile() {
   try {
-    await updateProfileApi({
-      googleAuth: googleAuth.value,
-      googleCode: googleAuth.value === 1 ? googleCode.value.trim() : undefined,
-      googleKey: googleAuth.value === 1 ? googleKey.value.key : undefined,
-      loginUsername: userStore.userInfo?.username,
-      sysUserId: Number(userStore.userInfo?.userId),
-    });
-    message.success('修改成功');
-    await authStore.fetchUserInfo();
-    await loadProfile();
-    googleCode.value = '';
-    googleKey.value = {};
+    currentUser.value = await fetchCurrentUserApi(true);
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '更新失败');
-  } finally {
-    profileSaving.value = false;
+    console.error(error);
   }
-}
-
-function confirmProfile() {
-  Modal.confirm({
-    title: '确认更新信息',
-    content: '确认更新信息吗？',
-    okText: '确认',
-    cancelText: '取消',
-    onOk: () => saveProfile(),
-  });
 }
 
 function resetPwd() {
@@ -130,7 +95,7 @@ async function savePwd() {
     message.error('无法获取用户 ID，请重新登录');
     return;
   }
-  saving.value = true;
+  pwdSaving.value = true;
   try {
     await modifyPwdApi({
       recordId,
@@ -140,11 +105,11 @@ async function savePwd() {
     message.success('修改成功');
     await authStore.logout();
   } finally {
-    saving.value = false;
+    pwdSaving.value = false;
   }
 }
 
-function confirmSave() {
+function confirmSavePwd() {
   Modal.confirm({
     title: '确认更新密码',
     content: '确认更新密码吗？更新成功后需使用新密码重新登录。',
@@ -154,6 +119,63 @@ function confirmSave() {
   });
 }
 
+async function openGoogleModal() {
+  if (googleEnabled.value) {
+    message.info('已绑定谷歌验证器');
+    return;
+  }
+  googleCode.value = '';
+  googleKeyData.value = {};
+  googleModalOpen.value = true;
+  googleKeyLoading.value = true;
+  try {
+    googleKeyData.value = (await fetchGoogleKeyApi()) ?? {};
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '获取谷歌密钥失败');
+    googleModalOpen.value = false;
+  } finally {
+    googleKeyLoading.value = false;
+  }
+}
+
+watch(googleModalOpen, (open) => {
+  if (!open) {
+    googleKeyData.value = {};
+    googleCode.value = '';
+  }
+});
+
+async function submitGoogleBind() {
+  const code = googleCode.value.trim();
+  if (!/^\d{6}$/.test(code)) {
+    message.warning('请输入 6 位谷歌验证码');
+    return;
+  }
+  if (!googleKeyData.value.key) {
+    message.error('绑定信息已失效，请关闭后重试');
+    return;
+  }
+  googleBinding.value = true;
+  try {
+    // mch-api 无独立 /bindGoogle，走 PUT /current/user 启用
+    await updateProfileApi({
+      googleAuth: 1,
+      googleCode: code,
+      googleKey: googleKeyData.value.key,
+      loginUsername: userStore.userInfo?.username,
+      sysUserId: Number(userStore.userInfo?.userId),
+    });
+    message.success('绑定成功');
+    googleModalOpen.value = false;
+    await authStore.fetchUserInfo();
+    await loadProfile();
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '绑定失败');
+  } finally {
+    googleBinding.value = false;
+  }
+}
+
 onMounted(() => {
   void loadProfile();
 });
@@ -161,7 +183,7 @@ onMounted(() => {
 
 <template>
   <Page auto-content-height title="个人中心">
-    <Card class="max-w-2xl">
+    <Card class="userinfo-card">
       <Tabs
         v-model:active-key="activeTab"
         @change="
@@ -172,60 +194,64 @@ onMounted(() => {
       >
         <Tabs.TabPane key="basic" tab="基本信息">
           <Form
-            class="mt-2 max-w-xl"
+            class="userinfo-form mt-2"
             :label-col="{ span: 6 }"
             :wrapper-col="{ span: 16 }"
           >
-            <Form.Item label="用户登录名">
-              <Input :value="userStore.userInfo?.username" disabled />
+            <Form.Item label="商户号">
+              <Input :value="currentUser?.belongInfoId || ''" disabled />
             </Form.Item>
-            <Form.Item label="开启谷歌验证">
-              <Radio.Group v-model:value="googleAuth">
-                <Radio :value="1">启用</Radio>
-                <Radio :value="0">禁用</Radio>
-              </Radio.Group>
+            <Form.Item label="登录账号">
+              <Input
+                :value="
+                  currentUser?.loginUsername ||
+                  userStore.userInfo?.username ||
+                  ''
+                "
+                disabled
+              />
             </Form.Item>
-            <template v-if="googleAuth === 1 && initialGoogleAuth === 0">
-              <Form.Item label="谷歌二维码">
-                <div class="qr-box">
-                  <p class="tip">请使用 Google 验证器扫描</p>
-                  <div class="secret-box">{{ googleKey.key || '—' }}</div>
-                  <p class="tip small">otpauth 链接：</p>
-                  <div class="secret-box small">{{ googleKey.qrCode || '—' }}</div>
-                </div>
-              </Form.Item>
-              <Form.Item label="Google验证码">
-                <Input
-                  v-model:value="googleCode"
-                  :maxlength="6"
-                  placeholder="扫码后请在下方输入 6 位动态验证码"
-                />
-              </Form.Item>
-            </template>
-            <Form.Item :wrapper-col="{ offset: 6, span: 16 }">
-              <Button
-                type="primary"
-                :disabled="!googleAuthChanged"
-                :loading="profileSaving"
-                @click="confirmProfile"
-              >
-                确认更新
-              </Button>
+            <Form.Item label="用户类型">
+              <Input :value="currentUser?.sysType || ''" disabled />
+            </Form.Item>
+            <Form.Item label="账户状态">
+              <Tag :color="currentUser?.state === 1 ? 'success' : 'error'">
+                {{ currentUser?.state === 1 ? '启用' : '禁用' }}
+              </Tag>
+            </Form.Item>
+            <Form.Item label="谷歌验证器">
+              <Space>
+                <Tag :color="googleEnabled ? 'success' : 'default'">
+                  {{ googleEnabled ? '已绑定' : '未绑定' }}
+                </Tag>
+                <Button
+                  v-if="!googleEnabled"
+                  type="primary"
+                  @click="openGoogleModal"
+                >
+                  开启谷歌验证
+                </Button>
+              </Space>
             </Form.Item>
           </Form>
         </Tabs.TabPane>
 
         <Tabs.TabPane key="pwd" tab="密码设置">
           <Form
-            class="mt-2 max-w-xl"
+            class="userinfo-form mt-2"
             :label-col="{ span: 6 }"
             :wrapper-col="{ span: 16 }"
-            @finish="confirmSave"
+            @finish="confirmSavePwd"
           >
             <Form.Item label="用户登录名">
-              <Input :value="userStore.userInfo?.username" disabled />
+              <Input
+                :value="
+                  currentUser?.loginUsername || userStore.userInfo?.username
+                "
+                disabled
+              />
             </Form.Item>
-            <Form.Item label="原密码">
+            <Form.Item label="原密码" required>
               <Input.Password
                 v-model:value="pwdForm.originalPwd"
                 allow-clear
@@ -233,7 +259,7 @@ onMounted(() => {
                 placeholder="请输入原密码"
               />
             </Form.Item>
-            <Form.Item label="新密码">
+            <Form.Item label="新密码" required>
               <Input.Password
                 v-model:value="pwdForm.newPwd"
                 allow-clear
@@ -241,7 +267,7 @@ onMounted(() => {
                 placeholder="请输入新密码（6-12 位）"
               />
             </Form.Item>
-            <Form.Item label="确认新密码">
+            <Form.Item label="确认新密码" required>
               <Input.Password
                 v-model:value="pwdForm.confirmPwd"
                 allow-clear
@@ -250,43 +276,116 @@ onMounted(() => {
               />
             </Form.Item>
             <Form.Item :wrapper-col="{ offset: 6, span: 16 }">
-              <Button html-type="submit" type="primary" :loading="saving">
-                更新密码
+              <Button html-type="submit" type="primary" :loading="pwdSaving">
+                保存
               </Button>
             </Form.Item>
           </Form>
         </Tabs.TabPane>
       </Tabs>
     </Card>
+
+    <Modal
+      v-model:open="googleModalOpen"
+      title="开启谷歌验证"
+      ok-text="确认绑定"
+      cancel-text="关闭"
+      :confirm-loading="googleBinding"
+      destroy-on-close
+      @ok="submitGoogleBind"
+    >
+      <div v-if="googleKeyLoading" class="google-loading">加载密钥中…</div>
+      <div v-else class="google-bind">
+        <p class="google-tip">
+          使用 Google Authenticator 扫描下方二维码，或手动输入密钥后填写动态码：
+        </p>
+        <div class="qr-wrap">
+          <img
+            v-if="googleQrSrc"
+            :src="googleQrSrc"
+            alt="谷歌验证二维码"
+            class="qr-img"
+          />
+          <span v-else class="google-muted">无法展示二维码，请稍后重试</span>
+        </div>
+        <p v-if="googleKeyData.key" class="key-line">
+          密钥：<code>{{ googleKeyData.key }}</code>
+        </p>
+        <Input
+          :value="googleCode"
+          :maxlength="6"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          placeholder="请输入 6 位谷歌验证码"
+          @update:value="
+            (v) => (googleCode = String(v ?? '').replace(/\D/g, '').slice(0, 6))
+          "
+        />
+      </div>
+    </Modal>
   </Page>
 </template>
 
 <style scoped>
-.secret-box {
-  background: hsl(var(--muted));
+.userinfo-card {
+  max-width: 640px;
+}
+
+.userinfo-form {
+  max-width: 520px;
+  padding: 8px 8px 16px;
+}
+
+.google-bind {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.google-tip {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+}
+
+.google-muted {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
+
+.google-loading {
+  color: hsl(var(--muted-foreground));
+  padding: 24px 0;
+  text-align: center;
+}
+
+.qr-wrap {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 168px;
+}
+
+.qr-img {
   border-radius: 6px;
-  font-family: monospace;
-  font-size: 14px;
-  padding: 8px 12px;
+  height: 168px;
+  width: 168px;
+}
+
+.key-line {
+  font-size: 13px;
+  margin: 0;
+  text-align: center;
   word-break: break-all;
 }
 
-.secret-box.small {
-  font-size: 11px;
-}
-
-.qr-box {
-  width: 100%;
-}
-
-.tip {
-  color: hsl(var(--muted-foreground));
+.key-line code {
+  background: hsl(var(--muted));
+  border-radius: 4px;
   font-size: 13px;
-  margin: 0 0 6px;
-}
-
-.tip.small {
-  font-size: 12px;
-  margin-top: 10px;
+  padding: 2px 6px;
 }
 </style>

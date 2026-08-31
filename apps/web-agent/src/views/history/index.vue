@@ -204,7 +204,7 @@ onMounted(async () => {
               </Form.Item>
             </Col>
           </Row>
-          <Row :gutter="[16, 16]" class="mt-1">
+          <Row :gutter="[16, 16]">
             <Col :span="24" class="ap-filter-actions">
               <FilterActions
                 submit-text="搜索"

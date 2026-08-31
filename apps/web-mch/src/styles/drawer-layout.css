@@ -78,44 +78,55 @@
   margin-bottom: 20px !important;
 }
 
-.ap-page-filter :deep(.ant-form-inline) {
+/*
+ * 注意：本文件是全局 CSS（bootstrap 直接 import），不能用 Vue SFC 的 :deep()，
+ * 否则选择器无效、样式整段不生效。
+ */
+
+/*
+ * 筛选区换行间距：用 margin 而不是 row-gap。
+ * ant-form-inline 下 row-gap 在部分结构里不生效；网格筛选（ap-pay-order-filter）
+ * 也不是 inline 布局，清掉 form-item margin 后行距会变成 0。
+ */
+.ap-page-filter .ant-form-inline {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: flex-start;
   column-gap: 8px;
 }
 
-.ap-page-filter :deep(.ant-form-inline > .ant-form-item),
-.ap-page-filter :deep(.ant-form-inline .ant-form-item) {
-  margin-inline-end: 8px !important;
+.ap-page-filter .ant-form-inline > .ant-form-item {
+  margin-inline-end: 0 !important;
   margin-bottom: 16px !important;
 }
 
-/* 支付订单：网格筛选，间距交给 Row gutter */
-.ap-page-filter :deep(.ap-pay-order-filter .ant-form-item) {
+/* 网格筛选：同行内交给 Row gutter；多段 Row 之间补 16px */
+.ap-page-filter .ap-pay-order-filter .ant-form-item {
   margin-bottom: 0 !important;
   margin-inline-end: 0 !important;
 }
 
-.ap-page-filter :deep(.ap-pay-order-filter .ant-row + .ant-row) {
-  margin-top: 4px;
+.ap-page-filter .ap-pay-order-filter .ant-row + .ant-row {
+  margin-top: 16px;
 }
 
-/* 查询/重置按钮与筛选输入拉开 */
-.ap-page-filter :deep(.ant-form-item:has(.ant-btn)),
+/* 查询/重置：独占一行，避免挤在筛选项旁换行后贴得太近 */
+.ap-page-filter .ant-form-inline > .ant-form-item:has(.ant-btn),
 .ap-page-filter .ap-filter-actions {
-  margin-inline-start: 12px !important;
+  flex: 0 0 100%;
+  margin-inline-start: 0 !important;
   margin-inline-end: 0 !important;
 }
 
-.ap-page-filter .ap-filter-actions :deep(.ant-space),
-.ap-page-filter :deep(.ant-form-item:has(.ant-btn) .ant-space) {
+.ap-page-filter .ap-filter-actions .ant-space,
+.ap-page-filter .ant-form-item:has(.ant-btn) .ant-space {
   gap: 12px !important;
 }
 
-/* 全局：内联筛选表单的按钮项与输入拉开（覆盖未加 class 的页面） */
+/* 全局兜底：内联筛选表单的按钮项独占一行 */
 .ant-form-inline > .ant-form-item:has(.ant-btn) {
-  margin-inline-start: 12px !important;
+  flex: 0 0 100%;
+  margin-inline-start: 0 !important;
 }
 
 .ant-form-inline > .ant-form-item:has(.ant-btn) .ant-space {

@@ -20,6 +20,7 @@ import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
+import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS, MCH_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
 import { formatDateTime, formatYuan, signedYuan } from '#/utils/format';
@@ -84,7 +85,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 120 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'payOrderId', title: '订单号', width: 180 },
+  { dataIndex: 'orderNo', title: '订单号', width: 280 },
   { dataIndex: 'payOrderAmount', title: '订单金额', width: 110 },
   { dataIndex: 'bizType', title: '业务类型', width: 100 },
   { dataIndex: 'createdAt', title: '创建日期', width: 170 },
@@ -233,8 +234,7 @@ onMounted(async () => {
         @change="onTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="false" />
-          <template v-else-if="column.dataIndex === 'beforeBalance'">
+          <template v-if="column.dataIndex === 'beforeBalance'">
             {{ formatYuan(record.beforeBalance as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
@@ -249,6 +249,12 @@ onMounted(async () => {
           </template>
           <template v-else-if="column.dataIndex === 'afterBalance'">
             {{ formatYuan(record.afterBalance as number) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'orderNo'">
+            <CellCopyStack
+              :pay-order-id="record.payOrderId as string"
+              :mch-order-no="record.mchOrderNo as string"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'payOrderAmount'">
             {{ formatYuan(record.payOrderAmount as number) }}

@@ -2,7 +2,8 @@
 import type { TableColumnsType } from 'ant-design-vue';
 import type { Dayjs } from 'dayjs';
 
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 import {
@@ -39,6 +40,7 @@ import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
+import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import TableActionLinks, {
   type TableActionItem,
 } from '#/components/table/TableActionLinks.vue';
@@ -54,6 +56,7 @@ import {
   payOrderStateLabel,
 } from '#/constants/order';
 import { hasEnt } from '#/utils/access';
+import { defaultTodayRange } from '#/utils/date-range';
 import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
 
 import PayOrderChangeDialog from './components/PayOrderChangeDialog.vue';
@@ -63,6 +66,9 @@ import PayOrderForceDialog from './components/PayOrderForceDialog.vue';
 defineOptions({ name: 'PayOrderListPage' });
 
 const STORAGE_KEY = 'asiapay_mgr_pay_order_list_ui_v1';
+
+const route = useRoute();
+const router = useRouter();
 
 const loading = ref(false);
 const dataSource = ref<PayOrder[]>([]);
@@ -92,6 +98,13 @@ const query = reactive({
 
 const createdRange = ref<[string, string] | undefined>();
 const successRange = ref<[string, string] | undefined>();
+
+function applyTodayRange() {
+  const [start, end] = defaultTodayRange();
+  query.createdStart = start;
+  query.createdEnd = end;
+  createdRange.value = [start, end];
+}
 
 const passageOptions = ref<{ label: string; value: number }[]>([]);
 const productOptions = ref<{ label: string; value: number }[]>([]);
@@ -133,7 +146,7 @@ const canCount = computed(() => hasEnt('ENT_C_MAIN_PAY_COUNT'));
 
 const columns: TableColumnsType<PayOrder> = [
   { dataIndex: 'mchNo', fixed: 'left', title: '商户号/商户', width: 160 },
-  { dataIndex: 'payOrderId', title: '订单号（点击复制）', width: 200 },
+  { dataIndex: 'orderNo', title: '订单号（点击复制）', width: 310 },
   { dataIndex: 'productName', ellipsis: true, title: '支付产品', width: 160 },
   { dataIndex: 'amount', title: '支付金额', width: 110 },
   { dataIndex: 'state', title: '支付状态', width: 100 },
@@ -353,12 +366,10 @@ function onReset() {
   query.minAmount = '';
   query.maxAmount = '';
   query.timeRange = undefined;
-  query.createdStart = '';
-  query.createdEnd = '';
   query.successTimeStart = '';
   query.successTimeEnd = '';
-  createdRange.value = undefined;
   successRange.value = undefined;
+  applyTodayRange();
   void loadData(true);
 }
 
@@ -375,16 +386,6 @@ async function openDetail(row: PayOrder) {
     detail.value = await fetchPayOrderDetailApi(row.payOrderId);
   } finally {
     detailLoading.value = false;
-  }
-}
-
-async function copyOrderId(text?: string) {
-  if (!text) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    message.success('已复制');
-  } catch {
-    message.error('复制失败');
   }
 }
 
@@ -508,12 +509,41 @@ function onVisibilityChange() {
 
 watch(showStat, () => writeStoredUi());
 
+function cleanUnionOrderId() {
+  const { unionOrderId: _removed, ...rest } = route.query;
+  void router.replace({ query: rest });
+}
+
+watch(
+  () => route.query.unionOrderId,
+  (value) => {
+    const id =
+      typeof value === 'string'
+        ? value.trim()
+        : Array.isArray(value)
+          ? String(value[0] ?? '').trim()
+          : '';
+    if (!id) return;
+    if (query.mchOrderNo === id) {
+      cleanUnionOrderId();
+      return;
+    }
+    query.mchOrderNo = id;
+    void nextTick(() => {
+      void loadData(true);
+    });
+    cleanUnionOrderId();
+  },
+  { immediate: true },
+);
+
 onMounted(async () => {
   readStoredUi();
   document.addEventListener('visibilitychange', onVisibilityChange);
   await loadFilterOptions();
   await restoreRunningTask();
   await syncReportDownloadAvailability();
+  applyTodayRange();
   void loadData(true);
   if (autoRefresh.value) startTimer();
 });
@@ -582,7 +612,7 @@ onUnmounted(() => {
             </Col>
           </Row>
 
-          <Row :gutter="[16, 16]" class="mt-1">
+          <Row :gutter="[16, 16]">
             <Col :xs="24" :sm="12" :md="8" :lg="4" :xl="4">
               <Form.Item>
                 <Input
@@ -652,7 +682,7 @@ onUnmounted(() => {
             </Col>
           </Row>
 
-          <Row :gutter="[16, 16]" class="mt-1">
+          <Row :gutter="[16, 16]">
             <Col :xs="24" :sm="12" :md="8" :lg="4" :xl="4">
               <Form.Item>
                 <Select
@@ -786,15 +816,11 @@ onUnmounted(() => {
                 </div>
               </div>
             </template>
-            <template v-else-if="column.dataIndex === 'payOrderId'">
-              <div>
-                <a class="text-brand" @click="copyOrderId(record.payOrderId)">
-                  {{ record.payOrderId }}
-                </a>
-                <div class="text-muted-foreground text-xs">
-                  {{ record.mchOrderNo }}
-                </div>
-              </div>
+            <template v-else-if="column.dataIndex === 'orderNo'">
+              <CellCopyStack
+                :pay-order-id="record.payOrderId"
+                :mch-order-no="record.mchOrderNo"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'productName'">
               <div>

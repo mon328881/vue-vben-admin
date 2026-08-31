@@ -4,6 +4,7 @@ import type { TableColumnsType } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
 import {
   Button,
   Card,
@@ -38,6 +39,9 @@ import ListStatCards, {
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
+import TableActionLinks, {
+  type TableActionItem,
+} from '#/components/table/TableActionLinks.vue';
 import { hasEnt } from '#/utils/access';
 import { formatRateDecimal, formatYuan } from '#/utils/format';
 
@@ -175,7 +179,7 @@ const columns: TableColumnsType<PayPassage> = [
     title: '三方用户/通道标识',
     width: 160,
   },
-  { dataIndex: 'action', fixed: 'right', title: '操作', width: 280 },
+  { dataIndex: 'action', fixed: 'right', title: '操作', width: 220 },
 ];
 
 function parseConfig(row: PayPassage) {
@@ -312,6 +316,35 @@ function confirmDelete(row: PayPassage) {
       void loadData(true);
     },
   });
+}
+
+function opItems(row: PayPassage): TableActionItem[] {
+  return [
+    { key: 'edit', label: '修改', hidden: !canEdit.value },
+    { key: 'bind', label: '通道绑定', hidden: !canEdit.value },
+    {
+      key: 'payParam',
+      label: '接口配置',
+      hidden: !(canConfig.value && row.ifCode),
+    },
+    { key: 'copy', label: '一键复制', hidden: !canEdit.value },
+    { key: 'test', label: '通道测试', hidden: !canEdit.value },
+    {
+      key: 'delete',
+      label: '删除通道',
+      danger: true,
+      hidden: !canEdit.value,
+    },
+  ];
+}
+
+function onOpClick(key: string, row: PayPassage) {
+  if (key === 'edit') formRef.value?.show(row.payPassageId);
+  else if (key === 'bind') mchBindRef.value?.show(row);
+  else if (key === 'payParam') payParamRef.value?.show(row);
+  else if (key === 'copy') copyRef.value?.show(row);
+  else if (key === 'test') testRef.value?.show(row);
+  else if (key === 'delete') confirmDelete(row);
 }
 
 function openBatch() {
@@ -520,15 +553,18 @@ onMounted(() => {
                 class="passage-cell"
                 @click="detailRef?.show(record as PayPassage)"
               >
-                <div class="passage-cell__name">
+                <div class="passage-cell__name" :title="`[${record.payPassageId}] ${record.payPassageName}`">
                   [{{ record.payPassageId }}] {{ record.payPassageName }}
                 </div>
                 <div class="passage-cell__product">
                   <AssetsIcon
-                    :filename="String(record.productIcon ?? '')"
+                    :filename="String(record.icon ?? '')"
                     :size="16"
                   />
-                  <span class="text-muted-foreground text-xs">
+                  <span
+                    class="passage-cell__product-text"
+                    :title="`[${record.productId}] ${record.productName || ''}`"
+                  >
                     [{{ record.productId }}] {{ record.productName || '' }}
                   </span>
                 </div>
@@ -566,15 +602,25 @@ onMounted(() => {
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'weights'">
-              <Button
-                v-if="canEdit"
-                type="link"
-                class="!px-0"
-                @click="weightsRef?.show(record as PayPassage)"
-              >
-                {{ record.weights ?? '--' }}
-              </Button>
-              <span v-else>{{ record.weights ?? '--' }}</span>
+              <div class="inline-action-cell">
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  shape="square"
+                  class="inline-action-cell__icon-btn"
+                  @click="weightsRef?.show(record as PayPassage)"
+                >
+                  <template #icon>
+                    <IconifyIcon
+                      class="inline-action-cell__icon"
+                      icon="ant-design:setting-outlined"
+                    />
+                  </template>
+                </Button>
+                <span class="inline-action-cell__value">{{
+                  record.weights ?? '--'
+                }}</span>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'timeLimitState'">
               <Button
@@ -624,63 +670,11 @@ onMounted(() => {
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <div class="ap-table-ops">
-                <Button
-                  v-if="canEdit"
-                  size="small"
-                  type="link"
-                  class="ap-table-ops__link"
-                  @click="formRef?.show(record.payPassageId)"
-                >
-                  修改
-                </Button>
-                <Button
-                  v-if="canEdit"
-                  size="small"
-                  type="link"
-                  class="ap-table-ops__link"
-                  @click="mchBindRef?.show(record as PayPassage)"
-                >
-                  通道绑定
-                </Button>
-                <Button
-                  v-if="canConfig && record.ifCode"
-                  size="small"
-                  type="link"
-                  class="ap-table-ops__link"
-                  @click="payParamRef?.show(record as PayPassage)"
-                >
-                  接口配置
-                </Button>
-                <Button
-                  v-if="canEdit"
-                  size="small"
-                  type="link"
-                  class="ap-table-ops__link"
-                  @click="copyRef?.show(record as PayPassage)"
-                >
-                  一键复制
-                </Button>
-                <Button
-                  v-if="canEdit"
-                  size="small"
-                  type="link"
-                  class="ap-table-ops__link"
-                  @click="testRef?.show(record as PayPassage)"
-                >
-                  通道测试
-                </Button>
-                <Button
-                  v-if="canEdit"
-                  danger
-                  size="small"
-                  type="link"
-                  class="ap-table-ops__link"
-                  @click="confirmDelete(record as PayPassage)"
-                >
-                  删除
-                </Button>
-              </div>
+              <TableActionLinks
+                :items="opItems(record as PayPassage)"
+                :max-visible="4"
+                @click="onOpClick($event, record as PayPassage)"
+              />
             </template>
           </template>
         </Table>
@@ -731,24 +725,35 @@ onMounted(() => {
 <style scoped>
 .passage-cell {
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
-}
-
-.passage-cell:hover .passage-cell__name {
-  color: hsl(var(--primary));
 }
 
 .passage-cell__name {
-  font-weight: 500;
+  color: hsl(var(--primary));
+  font-weight: 600;
   line-height: 1.4;
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .passage-cell__product {
-  display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 2px;
+  color: hsl(var(--muted-foreground));
+  display: flex;
+  font-size: 12px;
+  gap: 4px;
   min-width: 0;
+}
+
+.passage-cell__product-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

@@ -316,7 +316,7 @@ onMounted(async () => {
             </Col>
           </Row>
 
-          <Row :gutter="[16, 16]" class="mt-1">
+          <Row :gutter="[16, 16]">
             <Col :lg="4" :md="7" :sm="12" :span="24" :xl="4">
               <Form.Item>
                 <Select

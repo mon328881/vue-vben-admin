@@ -7,7 +7,8 @@ export interface PayPassage {
   payPassageName: string;
   productId?: number;
   productName?: string;
-  productIcon?: string;
+  /** 所属产品图标文件名（接口字段为 icon，对齐旧端） */
+  icon?: string;
   ifCode?: string;
   payType?: number;
   payRules?: string;

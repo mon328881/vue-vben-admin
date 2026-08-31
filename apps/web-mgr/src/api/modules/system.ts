@@ -206,3 +206,16 @@ export async function modifyPwdApi(payload: {
 }) {
   return requestClient.put('/current/modifyPwd', payload);
 }
+
+export async function fetchGoogleKeyApi() {
+  return requestClient.get<{ key?: string; qrCode?: string }>(
+    '/current/getGoogleKey',
+  );
+}
+
+export async function bindGoogleApi(payload: {
+  googleCode: string;
+  googleKey: string;
+}) {
+  return requestClient.put('/current/bindGoogle', payload);
+}

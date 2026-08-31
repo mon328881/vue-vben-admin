@@ -6,16 +6,17 @@ import { useUserStore } from '@vben/stores';
 import {
   Button,
   Card,
-  Descriptions,
   Form,
   Input,
   Modal,
+  Space,
   Tabs,
   Tag,
   message,
 } from 'ant-design-vue';
 
 import { useQRCode } from '@vueuse/integrations/useQRCode';
+
 import { bindGoogleApi, fetchGoogleKeyApi, modifyPasswordApi } from '#/api';
 import { fetchCurrentUserApi } from '#/api/core/user';
 import type { CurrentUser } from '#/api/types';
@@ -147,7 +148,7 @@ onMounted(() => {
 
 <template>
   <Page auto-content-height title="个人中心">
-    <Card class="max-w-3xl">
+    <Card class="userinfo-card">
       <Tabs
         v-model:active-key="activeTab"
         @change="
@@ -157,44 +158,52 @@ onMounted(() => {
         "
       >
         <Tabs.TabPane key="basic" tab="基本信息">
-          <Descriptions bordered :column="1" class="mt-2 max-w-xl">
-            <Descriptions.Item label="代理号">
-              <b class="text-primary">{{
-                currentUser?.belongInfoId || '—'
-              }}</b>
-            </Descriptions.Item>
-            <Descriptions.Item label="登录账号">
-              {{ currentUser?.loginUsername || userStore.userInfo?.username || '—' }}
-            </Descriptions.Item>
-            <Descriptions.Item label="用户类型">
-              {{ currentUser?.sysType || '—' }}
-            </Descriptions.Item>
-            <Descriptions.Item label="账户状态">
+          <Form
+            class="userinfo-form mt-2"
+            :label-col="{ span: 6 }"
+            :wrapper-col="{ span: 16 }"
+          >
+            <Form.Item label="代理号">
+              <Input :value="currentUser?.belongInfoId || ''" disabled />
+            </Form.Item>
+            <Form.Item label="登录账号">
+              <Input
+                :value="
+                  currentUser?.loginUsername ||
+                  userStore.userInfo?.username ||
+                  ''
+                "
+                disabled
+              />
+            </Form.Item>
+            <Form.Item label="用户类型">
+              <Input :value="currentUser?.sysType || ''" disabled />
+            </Form.Item>
+            <Form.Item label="账户状态">
               <Tag :color="currentUser?.state === 1 ? 'success' : 'error'">
                 {{ currentUser?.state === 1 ? '启用' : '禁用' }}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="谷歌验证器">
-              <Tag :color="googleEnabled ? 'success' : 'default'">
-                {{ googleEnabled ? '已绑定' : '未绑定' }}
-              </Tag>
-              <Button
-                v-if="!googleEnabled"
-                class="ml-3"
-                size="small"
-                type="primary"
-                ghost
-                @click="openGoogleModal"
-              >
-                绑定谷歌验证器
-              </Button>
-            </Descriptions.Item>
-          </Descriptions>
+            </Form.Item>
+            <Form.Item label="谷歌验证器">
+              <Space>
+                <Tag :color="googleEnabled ? 'success' : 'default'">
+                  {{ googleEnabled ? '已绑定' : '未绑定' }}
+                </Tag>
+                <Button
+                  v-if="!googleEnabled"
+                  type="primary"
+                  @click="openGoogleModal"
+                >
+                  开启谷歌验证
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
         </Tabs.TabPane>
 
         <Tabs.TabPane key="pwd" tab="修改密码">
           <Form
-            class="mt-2 max-w-xl"
+            class="userinfo-form mt-2"
             :label-col="{ span: 6 }"
             :wrapper-col="{ span: 16 }"
             @finish="savePwd"
@@ -205,7 +214,6 @@ onMounted(() => {
                 allow-clear
                 autocomplete="current-password"
                 placeholder="请输入原密码"
-                style="max-width: 280px"
               />
             </Form.Item>
             <Form.Item label="新密码" required>
@@ -213,8 +221,7 @@ onMounted(() => {
                 v-model:value="pwdForm.newPwd"
                 allow-clear
                 autocomplete="new-password"
-                placeholder="6-12 位"
-                style="max-width: 280px"
+                placeholder="请输入新密码（6-12 位）"
               />
             </Form.Item>
             <Form.Item :wrapper-col="{ offset: 6, span: 16 }">
@@ -229,7 +236,7 @@ onMounted(() => {
 
     <Modal
       v-model:open="googleModalOpen"
-      title="绑定谷歌验证器"
+      title="开启谷歌验证"
       ok-text="确认绑定"
       cancel-text="关闭"
       :confirm-loading="googleBinding"
@@ -239,7 +246,7 @@ onMounted(() => {
       <div v-if="googleKeyLoading" class="google-loading">加载密钥中…</div>
       <div v-else class="google-bind">
         <p class="google-tip">
-          使用 Google Authenticator 扫描下方二维码，或手动输入密钥：
+          使用 Google Authenticator 扫描下方二维码，或手动输入密钥后填写动态码：
         </p>
         <div class="qr-wrap">
           <img
@@ -254,9 +261,14 @@ onMounted(() => {
           密钥：<code>{{ googleKeyData.key }}</code>
         </p>
         <Input
-          v-model:value="googleCode"
+          :value="googleCode"
           :maxlength="6"
+          inputmode="numeric"
+          autocomplete="one-time-code"
           placeholder="请输入 6 位谷歌验证码"
+          @update:value="
+            (v) => (googleCode = String(v ?? '').replace(/\D/g, '').slice(0, 6))
+          "
         />
       </div>
     </Modal>
@@ -264,18 +276,27 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.userinfo-card {
+  max-width: 640px;
+}
+
+.userinfo-form {
+  max-width: 520px;
+  padding: 8px 8px 16px;
+}
+
 .google-bind {
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  align-items: center;
 }
 
 .google-tip {
-  margin: 0;
   color: hsl(var(--muted-foreground));
   font-size: 13px;
   line-height: 1.5;
+  margin: 0;
   text-align: center;
 }
 
@@ -285,29 +306,29 @@ onMounted(() => {
 }
 
 .google-loading {
+  color: hsl(var(--muted-foreground));
   padding: 24px 0;
   text-align: center;
-  color: hsl(var(--muted-foreground));
 }
 
 .qr-wrap {
+  align-items: center;
   display: flex;
   justify-content: center;
-  align-items: center;
   min-height: 168px;
 }
 
 .qr-img {
-  width: 168px;
-  height: 168px;
   border-radius: 6px;
+  height: 168px;
+  width: 168px;
 }
 
 .key-line {
-  margin: 0;
   font-size: 13px;
-  word-break: break-all;
+  margin: 0;
   text-align: center;
+  word-break: break-all;
 }
 
 .key-line code {
@@ -315,9 +336,5 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 13px;
   padding: 2px 6px;
-}
-
-.text-primary {
-  color: hsl(var(--primary));
 }
 </style>

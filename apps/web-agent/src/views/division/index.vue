@@ -240,19 +240,6 @@ onMounted(async () => {
 <template>
   <Page auto-content-height title="结算管理">
     <div class="ap-page-stack">
-      <div class="division-overview">
-        <ListStatCards :items="listStatItems" />
-        <div class="apply-slot">
-          <Button
-            type="primary"
-            :disabled="applyDisabled"
-            @click="openApply"
-          >
-            申请结算
-          </Button>
-        </div>
-      </div>
-
       <Card class="ap-page-filter">
         <Form class="ap-pay-order-filter" @finish="onSearch">
           <Row :gutter="[16, 16]">
@@ -297,7 +284,18 @@ onMounted(async () => {
         </Form>
       </Card>
 
+      <ListStatCards :items="listStatItems" />
+
       <Card>
+        <div class="ap-table-toolbar">
+          <Button
+            type="primary"
+            :disabled="applyDisabled"
+            @click="openApply"
+          >
+            申请结算
+          </Button>
+        </div>
         <Table
           :columns="columns"
           :data-source="list"
@@ -385,18 +383,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.division-overview {
-  display: grid;
-  gap: 12px;
-}
-
-.apply-slot {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.mch-no {
+.agent-no {
   color: hsl(var(--primary));
   font-weight: 600;
   margin-right: 4px;

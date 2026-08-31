@@ -9,7 +9,6 @@ import {
   Card,
   Form,
   Input,
-  message,
   RangePicker,
   Table,
   Tag,
@@ -26,6 +25,7 @@ import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
 import PassageSelector from '#/components/selectors/PassageSelector.vue';
+import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import {
   notifyStateColor,
   notifyStateLabel,
@@ -91,7 +91,7 @@ const listStatItems = computed<ListStatCardItem[]>(() => {
 
 const columns: TableColumnsType = [
   { dataIndex: 'mchNo', fixed: 'left', title: '商户号/商户', width: 160 },
-  { dataIndex: 'payOrderId', title: '订单号（点击复制）', width: 200 },
+  { dataIndex: 'orderNo', title: '订单号（点击复制）', width: 310 },
   { dataIndex: 'amount', title: '支付金额', width: 110 },
   { dataIndex: 'forceChangeBeforeState', title: '补单前', width: 100 },
   { dataIndex: 'state', title: '当前状态', width: 100 },
@@ -153,16 +153,6 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
   pagination.current = pag.current ?? 1;
   pagination.pageSize = pag.pageSize ?? 20;
   void loadData();
-}
-
-async function copyText(text?: string | null) {
-  if (!text) return;
-  try {
-    await navigator.clipboard.writeText(String(text));
-    message.success('已复制');
-  } catch {
-    message.error('复制失败');
-  }
 }
 
 async function openDetail(row: PayOrder) {
@@ -259,16 +249,11 @@ onMounted(() => {
               </div>
             </div>
           </template>
-          <template v-else-if="column.dataIndex === 'payOrderId'">
-            <div
-              class="cursor-pointer"
-              @click="copyText(record.payOrderId as string)"
-            >
-              <div class="text-brand">{{ record.payOrderId }}</div>
-              <div class="text-muted-foreground text-xs">
-                {{ record.mchOrderNo }}
-              </div>
-            </div>
+          <template v-else-if="column.dataIndex === 'orderNo'">
+            <CellCopyStack
+              :pay-order-id="record.payOrderId as string"
+              :mch-order-no="record.mchOrderNo as string"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
             <b class="text-brand">{{ formatYuan(record.amount as number) }}</b>

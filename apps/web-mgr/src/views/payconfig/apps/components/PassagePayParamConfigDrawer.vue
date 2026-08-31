@@ -41,13 +41,21 @@ const formRef = ref();
 const passage = ref<PayPassage | null>(null);
 const defs = ref<ParamDef[]>([]);
 const values = reactive<Record<string, unknown>>({});
+/** 打开时是否已有支付参数（敏感项 star=1 时可留空保留原值） */
+const hasExistingConfig = ref(false);
 
+/** 必填星号：以 verify=required 为准（star=1 表示敏感展示，不是免填） */
 function isRequired(item: ParamDef) {
-  return item.verify === 'required' && item.star !== '1';
+  return item.verify === 'required';
 }
 
+/**
+ * 校验规则：普通必填始终校验；
+ * 敏感项（star=1）在已有配置时可留空（不覆盖原值语义），新建时仍必填。
+ */
 function fieldRules(item: ParamDef) {
   if (!isRequired(item)) return undefined;
+  if (item.star === '1' && hasExistingConfig.value) return undefined;
   return [
     {
       required: true,
@@ -55,6 +63,14 @@ function fieldRules(item: ParamDef) {
       trigger: item.type === 'radio' ? 'change' : 'blur',
     },
   ];
+}
+
+function initValueKeys(defList: ParamDef[]) {
+  for (const item of defList) {
+    if (!Object.prototype.hasOwnProperty.call(values, item.name)) {
+      values[item.name] = item.type === 'radio' ? undefined : '';
+    }
+  }
 }
 
 function parseDefs(raw: string): ParamDef[] {
@@ -123,6 +139,7 @@ async function show(row: PayPassage) {
   passage.value = { ...row };
   Object.keys(values).forEach((key) => delete values[key]);
   defs.value = [];
+  hasExistingConfig.value = false;
   visible.value = true;
   loading.value = true;
   try {
@@ -137,11 +154,15 @@ async function show(row: PayPassage) {
     ) {
       try {
         const parsed = JSON.parse(String(row.payInterfaceConfig));
-        if (parsed && typeof parsed === 'object') Object.assign(values, parsed);
+        if (parsed && typeof parsed === 'object') {
+          Object.assign(values, parsed);
+          hasExistingConfig.value = Object.keys(parsed).length > 0;
+        }
       } catch {
         message.error('当前支付参数 JSON 解析失败，已以空表单打开');
       }
     }
+    initValueKeys(defs.value);
   } catch {
     message.error('加载支付接口定义失败');
     visible.value = false;
@@ -156,7 +177,10 @@ async function save() {
   } catch {
     return;
   }
-  if (Object.keys(values).length === 0) {
+  const filled = Object.entries(values).some(
+    ([, v]) => v != null && String(v).trim() !== '',
+  );
+  if (!filled) {
     message.error('参数不能为空！');
     return;
   }

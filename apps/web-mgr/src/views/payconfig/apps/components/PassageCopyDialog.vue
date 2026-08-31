@@ -105,27 +105,29 @@ defineExpose({ show });
     ok-text="确定复制"
     @ok="submit"
   >
-    <div v-if="source">
+    <div v-if="source" class="copy-passage-dialog">
       <Alert
-        class="mb-4"
+        class="copy-passage-dialog__alert"
         type="info"
         show-icon
         message="以下配置将复制到新通道；新通道余额为 0，状态为 启用。商户绑定、机器人绑定不会复制，需在新通道上单独配置。"
       />
-      <div class="mb-2 flex items-center gap-2">
-        <span class="font-semibold">新通道名称</span>
-        <Tag color="warning">必填</Tag>
-      </div>
-      <Input
-        v-model:value="newName"
-        allow-clear
-        size="large"
-        placeholder="请输入新通道名称"
-      />
-      <p class="text-muted-foreground mt-2 text-xs">
-        系统自动生成默认名称，建议根据实际情况修改
-      </p>
-      <div class="my-3 font-medium">原通道信息（将继承）</div>
+      <section class="copy-passage-dialog__name-section">
+        <div class="copy-passage-dialog__name-panel">
+          <span class="copy-passage-dialog__name-panel-label">新通道名称</span>
+          <Tag color="warning">必填</Tag>
+        </div>
+        <Input
+          v-model:value="newName"
+          allow-clear
+          size="large"
+          placeholder="请输入新通道名称"
+        />
+        <p class="copy-passage-dialog__hint">
+          系统自动生成默认名称，建议根据实际情况修改
+        </p>
+      </section>
+      <div class="copy-passage-dialog__section-title">原通道信息（将继承）</div>
       <Descriptions :column="2" bordered size="small">
         <Descriptions.Item label="原通道">
           [{{ source.payPassageId }}] {{ source.payPassageName }}
@@ -172,3 +174,37 @@ defineExpose({ show });
     </div>
   </Modal>
 </template>
+
+<style scoped>
+.copy-passage-dialog__alert {
+  margin-bottom: 20px;
+}
+
+.copy-passage-dialog__name-section {
+  border-left: 3px solid hsl(var(--primary));
+  margin-bottom: 16px;
+  padding-left: 12px;
+}
+
+.copy-passage-dialog__name-panel {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.copy-passage-dialog__name-panel-label {
+  font-weight: 600;
+}
+
+.copy-passage-dialog__hint {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.copy-passage-dialog__section-title {
+  font-weight: 500;
+  margin: 4px 0 12px;
+}
+</style>

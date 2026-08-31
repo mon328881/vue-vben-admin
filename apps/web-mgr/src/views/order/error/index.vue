@@ -26,6 +26,7 @@ import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
+import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import {
   payOrderStateColor,
   payOrderStateLabel,
@@ -74,7 +75,7 @@ const canView = computed(() => hasEnt('ENT_PAY_ORDER_VIEW'));
 
 const columns: TableColumnsType = [
   { dataIndex: 'mchNo', fixed: 'left', title: '商户号/商户', width: 160 },
-  { dataIndex: 'mchOrderNo', title: '商户订单号（点击复制）', width: 200 },
+  { dataIndex: 'orderNo', title: '商户订单号（点击复制）', width: 200 },
   { dataIndex: 'amount', title: '支付金额', width: 110 },
   { dataIndex: 'productName', ellipsis: true, title: '支付产品', width: 140 },
   { dataIndex: 'state', title: '支付状态', width: 100 },
@@ -130,16 +131,6 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
   pagination.current = pag.current ?? 1;
   pagination.pageSize = pag.pageSize ?? 20;
   void loadData();
-}
-
-async function copyText(text?: unknown) {
-  if (!text) return;
-  try {
-    await navigator.clipboard.writeText(String(text));
-    message.success('已复制');
-  } catch {
-    message.error('复制失败');
-  }
 }
 
 async function openDetail(row: Record<string, unknown>) {
@@ -224,13 +215,8 @@ onMounted(() => {
               </div>
             </div>
           </template>
-          <template v-else-if="column.dataIndex === 'mchOrderNo'">
-            <span
-              class="cursor-pointer"
-              @click="copyText(record.mchOrderNo)"
-            >
-              {{ record.mchOrderNo }}
-            </span>
+          <template v-else-if="column.dataIndex === 'orderNo'">
+            <CellCopyStack :mch-order-no="record.mchOrderNo as string" />
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
             {{ formatYuan(record.amount as number) }}
