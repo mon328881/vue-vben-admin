@@ -1,0 +1,249 @@
+/** 配置类抽屉通用区块间距（对齐旧端 drawer-section，并略放宽） */
+.ap-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 0 12px;
+}
+
+.ap-drawer-section {
+  padding: 16px 0;
+}
+
+.ap-drawer-section + .ap-drawer-section {
+  border-top: 1px solid hsl(var(--border) / 60%);
+}
+
+.ap-drawer-mch-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ap-drawer-mch-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.ap-drawer-label {
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.ap-drawer-filter :deep(.ant-form-item) {
+  margin-inline-end: 16px;
+  margin-bottom: 10px;
+}
+
+.ap-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ap-drawer-table-card {
+  padding: 12px 0 0;
+}
+
+.ap-drawer-body :deep(.ant-form-inline .ant-form-item) {
+  margin-bottom: 0;
+}
+
+.ap-drawer-body :deep(.ant-drawer-body) {
+  padding-top: 8px;
+}
+
+/* —— 列表页间距 —— */
+.ap-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ap-page-stack > .ant-card,
+.ap-page-stack > .ant-row {
+  margin-bottom: 0 !important;
+}
+
+/* 未包 stack 的旧写法兜底：筛选项与下方信息区拉开 */
+.vben-page-content > .ant-card.mb-4,
+.vben-page-content > .ant-card:first-child {
+  margin-bottom: 20px !important;
+}
+
+.ap-page-filter :deep(.ant-form-inline) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start;
+  column-gap: 8px;
+}
+
+.ap-page-filter :deep(.ant-form-inline > .ant-form-item),
+.ap-page-filter :deep(.ant-form-inline .ant-form-item) {
+  margin-inline-end: 8px !important;
+  margin-bottom: 16px !important;
+}
+
+/* 支付订单：网格筛选，间距交给 Row gutter */
+.ap-page-filter :deep(.ap-pay-order-filter .ant-form-item) {
+  margin-bottom: 0 !important;
+  margin-inline-end: 0 !important;
+}
+
+.ap-page-filter :deep(.ap-pay-order-filter .ant-row + .ant-row) {
+  margin-top: 4px;
+}
+
+/* 查询/重置按钮与筛选输入拉开 */
+.ap-page-filter :deep(.ant-form-item:has(.ant-btn)),
+.ap-page-filter .ap-filter-actions {
+  margin-inline-start: 12px !important;
+  margin-inline-end: 0 !important;
+}
+
+.ap-page-filter .ap-filter-actions :deep(.ant-space),
+.ap-page-filter :deep(.ant-form-item:has(.ant-btn) .ant-space) {
+  gap: 12px !important;
+}
+
+/* 全局：内联筛选表单的按钮项与输入拉开（覆盖未加 class 的页面） */
+.ant-form-inline > .ant-form-item:has(.ant-btn) {
+  margin-inline-start: 12px !important;
+}
+
+.ant-form-inline > .ant-form-item:has(.ant-btn) .ant-space {
+  gap: 12px !important;
+}
+
+.ap-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding-top: 12px;
+  border-top: 1px solid hsl(var(--border) / 50%);
+}
+
+.ap-page-stats {
+  margin-bottom: 0;
+}
+
+.ap-page-stats :deep(.ant-card) {
+  height: 100%;
+}
+
+.ap-page-stats :deep(.ant-col) {
+  margin-bottom: 0;
+}
+
+/* 抽屉内表单垂直间距 */
+.ap-drawer-form :deep(.ant-form-item) {
+  margin-bottom: 18px;
+}
+
+.ap-drawer-form :deep(.ant-divider) {
+  margin: 8px 0 20px;
+}
+
+.inline-action-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.inline-action-cell :deep(.ant-btn) {
+  flex-shrink: 0;
+  white-space: nowrap;
+  height: auto;
+  min-height: 24px;
+  padding: 0 8px;
+  line-height: 1.4;
+}
+
+.inline-action-cell__value.text-error {
+  color: #ff4d4f;
+}
+
+.quota-value--disabled {
+  color: hsl(var(--muted-foreground));
+  text-decoration: line-through;
+}
+
+/* 抽屉内筛选与信息区 */
+.ap-drawer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ap-drawer-filter :deep(.ant-form-inline) {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+.ap-drawer-filter :deep(.ant-form-item) {
+  margin-inline-end: 16px !important;
+  margin-bottom: 4px !important;
+}
+
+/* 自动结算模式卡片选项（抽屉表单） */
+.settle-mode-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.settle-mode-group :deep(.ant-radio-wrapper) {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  height: auto;
+  margin-inline-end: 0;
+  padding: 12px 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.settle-mode-group :deep(.ant-radio-wrapper:hover),
+.settle-mode-group :deep(.ant-radio-wrapper-checked) {
+  border-color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 8%);
+}
+
+.settle-mode-group :deep(.ant-radio) {
+  margin-top: 3px;
+}
+
+.settle-mode-group :deep(.ant-radio + span) {
+  flex: 1;
+  padding-inline-start: 8px;
+  white-space: normal;
+}
+
+.settle-mode-title {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.settle-mode-description {
+  margin: 4px 0 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  line-height: 1.6;
+}

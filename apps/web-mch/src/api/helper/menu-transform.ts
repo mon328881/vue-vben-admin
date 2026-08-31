@@ -5,9 +5,15 @@ import type { MenuNode } from '#/api/types';
 /** 业务页尚未迁移时的占位组件 */
 const PLACEHOLDER_COMPONENT = '/_core/fallback/coming-soon';
 
-/** 已知 menuUri → 视图路径 */
+/** 已知 menuUri → 视图路径（对齐 mch-web router） */
 const VIEW_MAP: Record<string, string> = {
   '/main': '/dashboard/main/index',
+  '/dayStat': '/stats/day-stat/index',
+  '/pay': '/order/pay/index',
+  '/history': '/history/index',
+  '/division': '/division/index',
+  '/apps': '/apps/index',
+  '/current/userinfo': '/system/userinfo/index',
 };
 
 /** ant-design menuIcon → Iconify */

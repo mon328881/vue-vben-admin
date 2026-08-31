@@ -92,6 +92,28 @@ const coreRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+  {
+    name: 'Cashier',
+    path: '/cashier',
+    component: () => import('#/views/cashier/index.vue'),
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      title: '收银台',
+    },
+  },
+  {
+    name: 'ApiDoc',
+    path: '/doc',
+    component: () => import('#/views/apidoc/index.vue'),
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      title: 'API 文档',
+    },
+  },
 ];
 
 export { coreRoutes, fallbackNotFoundRoute };

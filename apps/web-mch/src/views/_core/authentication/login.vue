@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import type { VbenFormSchema } from '@vben/common-ui';
 
-import { computed, markRaw } from 'vue';
+import { computed, markRaw, onMounted, ref } from 'vue';
 
 import { AuthenticationLogin, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 import { message } from 'ant-design-vue';
 
+import { getTitleApi } from '#/api';
 import {
   loginCaptchaSession,
   reloadLoginCaptcha,
@@ -18,6 +19,7 @@ import CaptchaInput from './captcha-input.vue';
 defineOptions({ name: 'Login' });
 
 const authStore = useAuthStore();
+const siteTitle = ref('亚洲支付 · 商户端');
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -81,6 +83,15 @@ async function handleLogin(values: Record<string, any>) {
     await reloadLoginCaptcha();
   }
 }
+
+onMounted(async () => {
+  try {
+    const title = await getTitleApi();
+    if (title) siteTitle.value = title;
+  } catch {
+    // ignore
+  }
+});
 </script>
 
 <template>
@@ -92,7 +103,7 @@ async function handleLogin(values: Record<string, any>) {
     :show-qrcode-login="false"
     :show-register="false"
     :show-third-party-login="false"
-    title="亚洲支付 · 商户端"
+    :title="siteTitle"
     sub-title="请使用商户账号登录"
     @submit="handleLogin"
   />

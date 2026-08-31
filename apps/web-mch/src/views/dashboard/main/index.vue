@@ -1,47 +1,51 @@
 <script lang="ts" setup>
-import { Page } from '@vben/common-ui';
-import { useUserStore } from '@vben/stores';
+import { onMounted, ref } from 'vue';
 
-import { Card, Col, Row, Statistic } from 'ant-design-vue';
+import { Page } from '@vben/common-ui';
+import { Col, Row } from 'ant-design-vue';
+
+import { fetchMchInfoApi } from '#/api';
+import type { MchInfoDetail } from '#/api/types/business';
+
+import MchInfoCard from '../components/MchInfoCard.vue';
+import ProductStatTable from '../components/ProductStatTable.vue';
+import TopMetrics from '../components/TopMetrics.vue';
 
 defineOptions({ name: 'MainDashboard' });
 
-const userStore = useUserStore();
+const loading = ref(false);
+const mch = ref<MchInfoDetail | null>(null);
+const productStatRef = ref<InstanceType<typeof ProductStatTable>>();
+
+async function loadMchInfo() {
+  loading.value = true;
+  try {
+    const data = await fetchMchInfoApi();
+    mch.value = data?.mchInfo ?? null;
+  } catch (error) {
+    console.error('加载商户信息失败', error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(async () => {
+  await loadMchInfo();
+  await productStatRef.value?.load();
+});
 </script>
 
 <template>
-  <Page description="商户端工作台" title="主页">
+  <Page auto-content-height title="主页">
+    <TopMetrics class="mb-4" />
+
     <Row :gutter="[16, 16]">
-      <Col :md="8" :span="24">
-        <Card>
-          <Statistic
-            title="当前账号"
-            :value="userStore.userInfo?.realName || '-'"
-          />
-        </Card>
+      <Col :lg="16" :span="24">
+        <ProductStatTable ref="productStatRef" />
       </Col>
-      <Col :md="8" :span="24">
-        <Card>
-          <Statistic
-            title="系统类型"
-            :value="(userStore.userInfo as any)?.sysType || 'MCH'"
-          />
-        </Card>
-      </Col>
-      <Col :md="8" :span="24">
-        <Card>
-          <Statistic
-            title="权限数"
-            :value="((userStore.userInfo as any)?.entIdList || []).length"
-          />
-        </Card>
+      <Col :lg="8" :span="24">
+        <MchInfoCard :loading="loading" :mch="mch" />
       </Col>
     </Row>
-    <Card class="mt-4" title="说明">
-      <p class="text-muted-foreground m-0 text-sm">
-        已对接 mch-api 登录与菜单。业务页面将按模块从旧版 mch-web
-        逐步迁移；暂未迁移的菜单会进入「即将上线」占位页。
-      </p>
-    </Card>
   </Page>
 </template>
