@@ -83,25 +83,17 @@ export async function changePayOrderAmountApi(
   payOrderId: string,
   amountCent: number,
 ) {
-  const keyData = await queryForcePayOrderKeyApi(payOrderId);
-  const code =
-    keyData && typeof keyData === 'object' && 'key' in keyData
-      ? String(keyData.key ?? '')
-      : '';
+  // 生产：GET /payOrder/{id}/changePayOrder/{amountCent}，不传验证码
   return requestClient.get<PayOrder>(
     `/payOrder/${payOrderId}/changePayOrder/${amountCent}`,
-    { params: { code } },
   );
 }
 
 export async function forcePayOrderRedoApi(payOrderId: string) {
-  const keyData = await queryForcePayOrderKeyApi(payOrderId);
-  const code =
-    keyData && typeof keyData === 'object' && 'key' in keyData
-      ? String(keyData.key ?? '')
-      : '';
+  // 生产：GET /payOrder/{id}/forcePayOrderRedo，不传验证码
+  // 勿先调 queryForcePayOrderKey：该接口 assertCanForce 仅允许 1/3/6，
+  // 而冲正要求订单已成功(state=2)，会误报「订单状态错误」
   return requestClient.get<PayOrder>(
     `/payOrder/${payOrderId}/forcePayOrderRedo`,
-    { params: { code } },
   );
 }

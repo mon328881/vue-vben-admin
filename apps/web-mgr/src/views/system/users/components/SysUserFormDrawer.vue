@@ -52,6 +52,11 @@ async function showEdit(sysUserId: number) {
   visible.value = true;
   try {
     const data = await fetchSysUserApi(sysUserId);
+    if (!data) {
+      message.error('操作员不存在或已删除');
+      visible.value = false;
+      return;
+    }
     form.loginUsername = data.loginUsername ?? '';
     form.isAdmin = Number(data.isAdmin ?? 0);
   } finally {

@@ -23,7 +23,7 @@ import ListStatCards, {
 import { useAgentStatExport } from '#/composables/use-async-export';
 
 import { defaultWeekRange } from '#/utils/date-range';
-import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
+import { formatDateTime, formatSuccessRate, formatYuan } from '#/utils/format';
 
 defineOptions({ name: 'AgentStatPage' });
 
@@ -213,7 +213,12 @@ onMounted(async () => {
             {{ formatYuan(record.totalAgentIncome as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'successRate'">
-            {{ formatRateDecimal(record.successRate as number) }}
+            {{
+              formatSuccessRate(
+                record.orderSuccessCount as number,
+                record.totalOrderCount as number,
+              )
+            }}
           </template>
           <template v-else-if="column.dataIndex === 'createdAt'">
             {{ formatDateTime(record.createdAt as string) }}
