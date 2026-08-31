@@ -48,7 +48,7 @@ defineExpose({ show });
     :confirm-loading="loading"
     ok-text="确定"
     cancel-text="取消"
-    width="520px"
+    width="640px"
     @ok="submit"
   >
     <div class="mb-3 space-y-1 text-sm text-gray-500">

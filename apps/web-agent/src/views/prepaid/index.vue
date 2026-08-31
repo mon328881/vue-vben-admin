@@ -357,7 +357,7 @@ onMounted(async () => {
       title="凭证预览"
       :footer="null"
       destroy-on-close
-      width="520"
+      width="640"
     >
       <div v-if="picPreviewLoading" class="pic-loading">加载中…</div>
       <Image

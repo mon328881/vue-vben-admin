@@ -173,7 +173,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     title="批量操作供应商"
-    :width="520"
+    :width="640"
     destroy-on-close
     @close="onClose"
   >

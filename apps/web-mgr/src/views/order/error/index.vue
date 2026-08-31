@@ -249,7 +249,7 @@ onMounted(() => {
     <Drawer
       v-model:open="detailOpen"
       title="异常订单详情"
-      width="560"
+      width="680"
       :loading="detailLoading"
     >
       <Descriptions v-if="detail" :column="1" bordered size="small">

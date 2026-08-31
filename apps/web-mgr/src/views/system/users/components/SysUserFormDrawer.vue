@@ -117,7 +117,7 @@ defineExpose({ showCreate, showEdit });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增操作员' : '修改操作员'"
-    :width="'40%'"
+    :width="'48%'"
     :destroy-on-close="true"
     :mask-closable="false"
     @close="resetForm"

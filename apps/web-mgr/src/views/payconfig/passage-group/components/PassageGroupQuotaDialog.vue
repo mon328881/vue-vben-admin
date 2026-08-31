@@ -67,7 +67,7 @@ defineExpose({ show });
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
-    width="560px"
+    width="680px"
     destroy-on-close
     @ok="submit"
   >

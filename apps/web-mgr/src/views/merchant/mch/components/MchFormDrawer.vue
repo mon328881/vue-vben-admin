@@ -247,7 +247,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增商户' : '修改商户'"
-    :width="560"
+    :width="680"
     :mask-closable="false"
     destroy-on-close
     class="mch-form-drawer"

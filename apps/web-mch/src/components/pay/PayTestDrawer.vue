@@ -134,7 +134,7 @@ watch(visible, (open) => {
   >
     <div class="pay-test-drawer">
       <section class="pay-test-drawer__section">
-        <Form layout="vertical" :label-col="{ style: { width: '190px' } }">
+        <Form layout="vertical" class="ap-form-label-wide">
           <Form.Item label="当前产品">
             <div class="product-context">
               <span class="product-context__id">[{{ productIdLabel }}]</span>
@@ -167,7 +167,7 @@ watch(visible, (open) => {
 
       <section class="pay-test-drawer__section pay-test-drawer__result">
         <div class="result-card">
-          <Form layout="vertical" :label-col="{ style: { width: '180px' } }">
+          <Form layout="vertical" class="ap-form-label-wide">
             <Form.Item label="测试商户订单号">
               <div class="result-order-row">
                 <Input :value="testOrderNo" readonly class="result-input" />

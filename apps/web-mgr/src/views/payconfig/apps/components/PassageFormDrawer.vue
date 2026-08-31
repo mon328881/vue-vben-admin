@@ -259,7 +259,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增通道' : '修改通道'"
-    :width="520"
+    :width="640"
     :destroy-on-close="true"
     :mask-closable="false"
     @close="closeDrawer"

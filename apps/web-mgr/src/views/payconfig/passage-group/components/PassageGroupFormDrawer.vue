@@ -204,7 +204,7 @@ defineExpose({ show, showCreate, showEdit });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增通道供应商' : '修改通道供应商'"
-    :width="520"
+    :width="640"
     :mask-closable="false"
     destroy-on-close
     @close="closeDrawer"
@@ -215,7 +215,7 @@ defineExpose({ show, showCreate, showEdit });
         ref="formRef"
         :model="form"
         layout="vertical"
-        class="ap-drawer-body"
+        class="ap-drawer-body ap-form-label-wide"
       >
         <Divider orientation="left">基础信息</Divider>
         <Form.Item

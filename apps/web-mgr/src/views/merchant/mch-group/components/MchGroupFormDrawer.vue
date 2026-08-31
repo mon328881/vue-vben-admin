@@ -156,7 +156,12 @@ defineExpose({ showCreate, showEdit });
     @close="closeDrawer"
   >
     <div class="ap-drawer-body">
-      <Form ref="formRef" :model="form" layout="vertical">
+      <Form
+        ref="formRef"
+        :model="form"
+        layout="vertical"
+        class="ap-form-label-wide"
+      >
         <Divider orientation="left">
           <Tag color="processing">基础信息</Tag>
         </Divider>

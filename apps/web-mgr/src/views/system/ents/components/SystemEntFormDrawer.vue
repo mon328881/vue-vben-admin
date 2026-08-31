@@ -123,7 +123,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     :title="title"
-    :width="520"
+    :width="640"
     destroy-on-close
     :mask-closable="false"
     @close="close"

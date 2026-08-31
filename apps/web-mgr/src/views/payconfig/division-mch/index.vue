@@ -401,7 +401,7 @@ onMounted(async () => {
     <Drawer
       v-model:open="drawerVisible"
       title="订单详情"
-      width="480"
+      width="560"
       destroy-on-close
       @close="closeDetail"
     >

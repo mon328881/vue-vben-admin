@@ -370,3 +370,84 @@
   font-size: 12px;
   line-height: 1.6;
 }
+
+/*
+ * 弹框 / 抽屉内 Form layout="vertical" → 对齐旧端 TDesign：
+ * 标签与内容同一行（字段名：数据）；标签顶对齐控件首行（不高块垂直居中）；
+ * 标签强制单行不换行。
+ */
+.ant-modal-body .ant-form-vertical .ant-form-item-row,
+.ant-drawer-body .ant-form-vertical .ant-form-item-row {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-label,
+.ant-drawer-body .ant-form-vertical .ant-form-item-label {
+  flex: 0 0 132px;
+  width: 132px !important;
+  max-width: 132px;
+  /* 与 32px 高输入框首行视觉对齐，勿对 Radio 卡片等高块垂直居中 */
+  padding: 5px 12px 0 0 !important;
+  line-height: 1.5715;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-label > label,
+.ant-drawer-body .ant-form-vertical .ant-form-item-label > label {
+  display: inline;
+  height: auto;
+  margin-inline-end: 0;
+  line-height: 1.5715;
+  white-space: nowrap;
+}
+
+/* vertical 默认隐藏冒号，恢复为「标签：」 */
+.ant-modal-body .ant-form-vertical .ant-form-item-label > label::after,
+.ant-drawer-body .ant-form-vertical .ant-form-item-label > label::after {
+  display: inline-block !important;
+  margin-inline: 2px 0 0 !important;
+  content: ':' !important;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-control,
+.ant-drawer-body .ant-form-vertical .ant-form-item-control {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-control-input,
+.ant-drawer-body .ant-form-vertical .ant-form-item-control-input {
+  min-height: 32px;
+  align-items: center;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-control-input-content,
+.ant-drawer-body .ant-form-vertical .ant-form-item-control-input-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 32px;
+}
+
+/* 长标签（支付参数 / 支付测试等）：加宽，仍不换行 */
+.ant-modal-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label,
+.ant-drawer-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label {
+  flex: 0 0 180px;
+  width: 180px !important;
+  max-width: 180px;
+  padding-top: 5px !important;
+  white-space: nowrap;
+}
+
+.ant-modal-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label > label,
+.ant-drawer-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label > label {
+  height: auto;
+  white-space: nowrap;
+}
+

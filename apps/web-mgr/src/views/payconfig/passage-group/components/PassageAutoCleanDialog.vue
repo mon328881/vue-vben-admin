@@ -76,7 +76,7 @@ defineExpose({ show });
   <Modal
     v-model:open="visible"
     title="设置通道自动日切清零"
-    width="520px"
+    width="640px"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"

@@ -44,7 +44,7 @@ defineExpose({ show });
   <Modal
     v-model:open="visible"
     title="调整通道权重"
-    width="500px"
+    width="600px"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"

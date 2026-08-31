@@ -89,7 +89,7 @@ defineExpose({ open });
   <Modal
     v-model:open="visible"
     :title="header"
-    width="500px"
+    width="600px"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"

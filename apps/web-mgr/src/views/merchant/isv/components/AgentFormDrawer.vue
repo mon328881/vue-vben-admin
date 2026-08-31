@@ -113,7 +113,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增代理商' : '修改代理商'"
-    :width="'40%'"
+    :width="'48%'"
     :destroy-on-close="true"
     :mask-closable="false"
     @close="closeDrawer"

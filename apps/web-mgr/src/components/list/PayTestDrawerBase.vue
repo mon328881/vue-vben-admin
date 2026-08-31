@@ -163,7 +163,7 @@ defineExpose({ resetState });
   >
     <div class="pay-test-drawer">
       <div class="pay-test-drawer__section">
-        <Form layout="vertical" class="ap-drawer-form">
+        <Form layout="vertical" class="ap-drawer-form ap-form-label-wide">
           <Form.Item :label="selectorLabel">
             <div class="pay-test-drawer__selector">
               <slot name="selector" />
@@ -199,7 +199,7 @@ defineExpose({ resetState });
 
       <div class="pay-test-drawer__section pay-test-drawer__result">
         <div class="pay-test-drawer__result-card">
-          <Form layout="vertical">
+          <Form layout="vertical" class="ap-form-label-wide">
             <Form.Item label="测试商户订单号">
               <div class="pay-test-drawer__order-row">
                 <div class="pay-test-display pay-test-display--single">

@@ -56,7 +56,7 @@ defineExpose({ show });
     :title="
       row ? `设置通道[费率] - ${row.payPassageName}` : '设置通道[费率]'
     "
-    width="500px"
+    width="600px"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"

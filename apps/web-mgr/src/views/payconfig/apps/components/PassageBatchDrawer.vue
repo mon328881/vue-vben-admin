@@ -462,7 +462,7 @@ defineExpose({ show, closeAndReset });
   <Drawer
     v-model:open="visible"
     title="批量操作通道"
-    :width="520"
+    :width="640"
     destroy-on-close
     class="passage-batch-drawer-wrap"
     @close="onDrawerClose"
@@ -617,7 +617,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.state"
     title="批量开关通道"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     :ok-button-props="{ disabled: form.state == null }"
     ok-text="确定"
@@ -638,7 +638,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.product"
     title="批量设置产品"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -659,7 +659,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.ifCode"
     title="批量设置支付接口"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -685,7 +685,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.rate"
     title="批量设置费率"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -717,7 +717,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.payRules"
     title="批量设置收款规则"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -753,7 +753,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.weights"
     title="批量设置轮询权重"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -777,7 +777,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.gate"
     title="批量设置下单网关"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -800,7 +800,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.ip"
     title="批量设置回调 IP"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -823,7 +823,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.mchNo"
     title="批量设置商户号"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -840,7 +840,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.secret"
     title="批量设置密钥"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -857,7 +857,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.timeLimitState"
     title="批量开关通道定时"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"
@@ -877,7 +877,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.timeLimitRules"
     title="通道定时开启设置"
-    :width="520"
+    :width="640"
     :footer="null"
     destroy-on-close
   >
@@ -930,7 +930,7 @@ defineExpose({ show, closeAndReset });
   <Modal
     v-model:open="dialogs.passageGroup"
     title="通道供应商批量设置"
-    :width="520"
+    :width="640"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"

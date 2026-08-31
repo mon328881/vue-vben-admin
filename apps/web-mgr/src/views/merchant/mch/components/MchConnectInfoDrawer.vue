@@ -68,7 +68,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     title="商户对接信息"
-    :width="520"
+    :width="640"
     :mask-closable="false"
     destroy-on-close
   >

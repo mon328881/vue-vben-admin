@@ -249,7 +249,7 @@ onMounted(() => {
       </Table>
     </Card>
 
-    <Drawer v-model:open="detailOpen" title="通知详情" width="520">
+    <Drawer v-model:open="detailOpen" title="通知详情" width="640">
       <Descriptions v-if="detail" :column="1" bordered size="small">
         <Descriptions.Item label="订单号">
           {{ detail.orderId }}

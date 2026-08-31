@@ -298,7 +298,7 @@ defineExpose({ show });
       title="凭证预览"
       :footer="null"
       destroy-on-close
-      width="520"
+      width="640"
     >
       <Image v-if="picPreviewSrc" :src="picPreviewSrc" alt="凭证" />
     </Modal>

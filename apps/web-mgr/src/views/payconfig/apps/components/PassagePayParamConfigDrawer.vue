@@ -226,7 +226,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     title="通道支付参数配置"
-    :width="520"
+    :width="640"
     :mask-closable="false"
     destroy-on-close
   >
@@ -238,6 +238,7 @@ defineExpose({ show });
         v-if="!loading && defs.length"
         ref="formRef"
         :model="values"
+        class="ap-form-label-wide"
         layout="vertical"
         :required-mark="true"
       >

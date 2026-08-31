@@ -74,7 +74,7 @@ defineExpose({ show });
   <Modal
     v-model:open="visible"
     title="通道定时开启设置"
-    width="520px"
+    width="640px"
     destroy-on-close
     :footer="null"
   >

@@ -75,7 +75,7 @@ defineExpose({ confirm });
     :confirm-loading="loading"
     ok-text="确定"
     cancel-text="取消"
-    width="400px"
+    width="680px"
     @ok="submit"
   >
     <Form layout="vertical">

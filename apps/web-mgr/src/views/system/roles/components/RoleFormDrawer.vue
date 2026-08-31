@@ -174,7 +174,7 @@ defineExpose({ showCreate, showEdit });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增角色' : '修改角色'"
-    :width="480"
+    :width="560"
     :destroy-on-close="true"
     :mask-closable="false"
     @close="resetForm"

@@ -65,7 +65,7 @@ defineExpose({ show });
   <Modal
     v-model:open="visible"
     title="设置商户自动日切结算"
-    width="480px"
+    width="680px"
     :confirm-loading="saving"
     ok-text="确定"
     cancel-text="取消"

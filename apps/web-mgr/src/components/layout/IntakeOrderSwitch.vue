@@ -107,7 +107,7 @@ onMounted(() => {
         cancel-text="取消"
         :mask-closable="false"
         destroy-on-close
-        width="480px"
+        width="680px"
         @ok="confirmOpenState"
         @cancel="cancelOpenChange"
       >
