@@ -59,7 +59,11 @@ function setupAccessGuard(router: Router) {
             preferences.app.defaultHomePath,
         );
       }
-      return true;
+      // 个人中心等挂在 Root 下的核心页：已登录但菜单未生成时不能早退，
+      // 否则刷新后左侧菜单为空。
+      if (!(accessStore.accessToken && !accessStore.isAccessChecked)) {
+        return true;
+      }
     }
 
     // accessToken 检查
