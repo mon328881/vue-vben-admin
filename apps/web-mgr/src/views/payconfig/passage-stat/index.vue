@@ -20,6 +20,9 @@ import {
 import { fetchPassageStatApi, fetchPassageStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
+import PassageSelector from '#/components/selectors/PassageSelector.vue';
+import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import { usePassageStatExport } from '#/composables/use-async-export';
 
 import { defaultWeekRange } from '#/utils/date-range';
@@ -146,13 +149,22 @@ onMounted(async () => {
           <Input v-model:value="query.payPassageName" allow-clear placeholder="通道名" />
         </Form.Item>
         <Form.Item>
-          <Input v-model:value="query.payPassageId" allow-clear placeholder="对应通道" />
+          <PassageSelector
+            v-model="query.payPassageId"
+            placeholder="对应通道"
+          />
         </Form.Item>
         <Form.Item>
-          <Input v-model:value="query.productId" allow-clear placeholder="对应产品" />
+          <ProductSelector
+            v-model="query.productId"
+            placeholder="对应产品"
+          />
         </Form.Item>
         <Form.Item>
-          <Input v-model:value="query.passageGroupName" allow-clear placeholder="通道供应商" />
+          <PassageGroupSelector
+            v-model="query.passageGroupName"
+            placeholder="通道供应商"
+          />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
           <Space>

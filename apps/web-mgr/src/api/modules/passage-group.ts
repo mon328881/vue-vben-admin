@@ -1,5 +1,6 @@
 import { requestClient } from '#/api/request';
 
+import type { PrepaidHistoryStat } from '#/api/modules/history';
 import type { PageResult } from '#/api/types/business';
 
 export interface PassageGroupInfo {
@@ -95,7 +96,7 @@ export async function fetchPassagePrepaidHistoryByGroupApi(
 export async function fetchPassagePrepaidHistoryByGroupStatApi(
   params: Record<string, unknown>,
 ) {
-  return requestClient.post<{ totalAmount?: number }>(
+  return requestClient.post<PrepaidHistoryStat>(
     '/passagePrepaidHistory/stat',
     params,
   );

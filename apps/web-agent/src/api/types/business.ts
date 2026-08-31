@@ -100,6 +100,7 @@ export interface PrepaidHistory {
   amount: number;
   afterBalance: number;
   fundDirection: number;
+  createdUid?: number | string;
   operator?: string;
   createdLoginName?: string;
   remark?: string;

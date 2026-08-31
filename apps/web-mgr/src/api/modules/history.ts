@@ -7,6 +7,16 @@ export interface HistoryStat {
   totalCount?: number;
 }
 
+/** 预付流水统计（生产字段序：totalAmount, totalUChange, totalUNet, avgRate） */
+export interface PrepaidHistoryStat {
+  totalAmount?: number;
+  totalUChange?: number;
+  totalUNet?: number;
+  avgRate?: number;
+  /** 兼容旧契约 */
+  totalCount?: number;
+}
+
 export interface HistoryListParams {
   pageNumber?: number;
   pageSize?: number;
@@ -23,7 +33,10 @@ export async function fetchMchPrepaidHistoryApi(params: HistoryListParams) {
 }
 
 export async function fetchMchPrepaidHistoryStatApi(params: HistoryListParams) {
-  return requestClient.post<HistoryStat>('/mchPrepaidHistory/stat', params);
+  return requestClient.post<PrepaidHistoryStat>(
+    '/mchPrepaidHistory/stat',
+    params,
+  );
 }
 
 /** 商户资金流水 */
@@ -72,7 +85,7 @@ export async function fetchPassagePrepaidHistoryApi(params: HistoryListParams) {
 export async function fetchPassagePrepaidHistoryStatApi(
   params: HistoryListParams,
 ) {
-  return requestClient.post<HistoryStat>(
+  return requestClient.post<PrepaidHistoryStat>(
     '/passagePrepaidHistoryPage/stat',
     params,
   );

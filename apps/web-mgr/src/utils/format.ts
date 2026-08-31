@@ -52,6 +52,36 @@ export function formatDateTime(value?: string | null): string {
   return String(value).replace('T', ' ').slice(0, 19);
 }
 
+export function signedYuan(value?: number | null): string {
+  if (value == null || value === 0) return '0.00';
+  const text = formatYuan(value);
+  return value > 0 ? `+${text}` : text;
+}
+
+export function formatOptionalText(value?: unknown): string {
+  if (value == null || value === '') return '—';
+  return String(value);
+}
+
+/** 预付流水汇率展示 */
+export function formatExchangeRate(value?: number | string | null): string {
+  if (value == null || value === '') return '—';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  return num.toLocaleString('zh-CN', {
+    maximumFractionDigits: 6,
+    minimumFractionDigits: 0,
+  });
+}
+
+/** 预付流水数量（后端存分则按元展示） */
+export function formatPrepaidQuantity(value?: number | string | null): string {
+  if (value == null || value === '') return '—';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  return formatYuan(num);
+}
+
 /** 余额正负色 class */
 export function amountSignedClass(value?: number | string | null): string {
   const num = toNum(value);

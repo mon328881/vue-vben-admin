@@ -33,6 +33,7 @@ import {
   payOrderStateColor,
   payOrderStateLabel,
 } from '#/constants/order';
+import PassageSelector from '#/components/selectors/PassageSelector.vue';
 import { formatDateTime, formatYuan } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
 
@@ -186,9 +187,8 @@ onMounted(() => {
           <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
         </Form.Item>
         <Form.Item>
-          <Input
-            v-model:value="query.passageId"
-            allow-clear
+          <PassageSelector
+            v-model="query.passageId"
             placeholder="对应通道"
           />
         </Form.Item>

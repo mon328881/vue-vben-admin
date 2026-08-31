@@ -41,6 +41,8 @@ import type { MchInfo, MchStatInfo } from '#/api/types/business';
 import GoogleDangerConfirmDialog from '#/components/common/GoogleDangerConfirmDialog.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import AgentSelector from '#/components/selectors/AgentSelector.vue';
+import MchGroupSelector from '#/components/selectors/MchGroupSelector.vue';
 import { useMchListExport } from '#/composables/use-async-export';
 import { LOCKED_MCH_NO } from '#/constants/merchant';
 import { hasEnt } from '#/utils/access';
@@ -382,17 +384,16 @@ onMounted(async () => {
           <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
         </Form.Item>
         <Form.Item>
-          <Input
-            v-model:value="query.agentNo"
-            allow-clear
-            placeholder="代理商号"
+          <AgentSelector
+            v-model="query.agentNo"
+            placeholder="代理商"
           />
         </Form.Item>
         <Form.Item>
-          <Input
-            v-model:value="query.mchGroup"
-            allow-clear
+          <MchGroupSelector
+            v-model="query.mchGroup"
             placeholder="商户分组"
+            include-disabled
           />
         </Form.Item>
         <Form.Item>

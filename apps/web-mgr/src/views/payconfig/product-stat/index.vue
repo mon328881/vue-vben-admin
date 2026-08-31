@@ -9,7 +9,6 @@ import {
   Card,
   Col,
   Form,
-  Input,
   RangePicker,
   Row,
   Space,
@@ -20,6 +19,7 @@ import {
 import { fetchProductStatApi, fetchProductStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import { useProductStatExport } from '#/composables/use-async-export';
 
 import { defaultWeekRange } from '#/utils/date-range';
@@ -137,7 +137,10 @@ onMounted(async () => {
           />
         </Form.Item>
         <Form.Item>
-          <Input v-model:value="query.productId" allow-clear placeholder="对应产品" />
+          <ProductSelector
+            v-model="query.productId"
+            placeholder="对应产品"
+          />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
           <Space>

@@ -322,6 +322,24 @@ export async function fetchPassageGroupListShortApi() {
   );
 }
 
+export interface AgentShort {
+  agentNo: string;
+  agentName?: string;
+}
+
+export interface MchGroupShort {
+  mchGroupName: string;
+  state?: number;
+}
+
+export async function fetchAgentInfoListShortApi() {
+  return requestClient.post<AgentShort[]>('/agentInfoListShort', {});
+}
+
+export async function fetchMchGroupListShortApi() {
+  return requestClient.post<MchGroupShort[]>('/mchGroupListShort', {});
+}
+
 /** —— 凭证图片 —— */
 export async function uploadPicApi(file: File) {
   const form = new FormData();

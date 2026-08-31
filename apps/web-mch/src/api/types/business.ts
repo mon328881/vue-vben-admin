@@ -118,6 +118,7 @@ export interface MchPrepaidHistory {
   amount?: number;
   afterBalance?: number;
   fundDirection?: number;
+  createdUid?: number | string;
   operator?: string;
   createdLoginName?: string;
   remark?: string;

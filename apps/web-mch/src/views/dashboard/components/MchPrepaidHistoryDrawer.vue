@@ -8,6 +8,8 @@ import {
   DatePicker,
   Drawer,
   Form,
+  Image,
+  Modal,
   Select,
   Space,
   Table,
@@ -20,6 +22,7 @@ import {
   fetchMchPrepaidHistoryStatApi,
 } from '#/api';
 import type { MchInfoDetail, MchPrepaidHistory } from '#/api/types/business';
+import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/history';
@@ -47,6 +50,8 @@ const pageSize = ref(20);
 const summary = reactive({ totalAmount: 0, totalCount: 0 });
 const createdRange = ref<[dayjs.Dayjs, dayjs.Dayjs] | undefined>();
 const fundDirection = ref<number | undefined>();
+const picPreviewOpen = ref(false);
+const picPreviewSrc = ref('');
 
 const {
   exportLoading,
@@ -65,11 +70,12 @@ const {
 } = useMchPrepaidHistoryExport();
 
 const columns: TableColumnsType<MchPrepaidHistory> = [
-  { dataIndex: 'createdAt', title: '创建日期', width: 170 },
+  { dataIndex: 'createdAt', title: '操作时间', width: 170 },
   { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 110 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'operator', title: '操作员', width: 120 },
+  { dataIndex: 'operator', title: '操作员', width: 200 },
+  { dataIndex: 'pic', title: '凭证', width: 90, align: 'center' },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
 ];
 
@@ -148,6 +154,12 @@ async function onPageChange(current: number, size: number) {
   pageNumber.value = current;
   pageSize.value = size;
   await load();
+}
+
+function previewPic(pic?: string) {
+  if (!pic) return;
+  picPreviewSrc.value = pic;
+  picPreviewOpen.value = true;
 }
 
 defineExpose({ show });
@@ -248,7 +260,21 @@ defineExpose({ show });
               <b>{{ formatYuan(record.afterBalance) }}</b>
             </template>
             <template v-else-if="column.dataIndex === 'operator'">
-              {{ record.createdLoginName || record.operator || '—' }}
+              <HistoryPrepaidOperatorCell
+                :created-login-name="record.createdLoginName || record.operator"
+                :created-uid="record.createdUid"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'pic'">
+              <Button
+                v-if="record.pic"
+                size="small"
+                type="link"
+                @click="previewPic(record.pic)"
+              >
+                查看
+              </Button>
+              <span v-else>—</span>
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
               <b>{{ record.remark || '' }}</b>
@@ -266,6 +292,16 @@ defineExpose({ show });
       @download="downloadFile"
       @remove="deleteCompletedItem"
     />
+
+    <Modal
+      v-model:open="picPreviewOpen"
+      title="凭证预览"
+      :footer="null"
+      destroy-on-close
+      width="520"
+    >
+      <Image v-if="picPreviewSrc" :src="picPreviewSrc" alt="凭证" />
+    </Modal>
   </Drawer>
 </template>
 

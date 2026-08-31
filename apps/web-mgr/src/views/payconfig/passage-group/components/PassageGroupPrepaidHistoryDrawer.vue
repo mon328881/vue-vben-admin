@@ -5,13 +5,11 @@ import { nextTick, reactive, ref } from 'vue';
 
 import {
   Button,
-  Card,
   Drawer,
   Form,
   RangePicker,
   Select,
   Space,
-  Statistic,
   Table,
 } from 'ant-design-vue';
 
@@ -19,14 +17,27 @@ import {
   fetchPassagePrepaidHistoryByGroupApi,
   fetchPassagePrepaidHistoryByGroupStatApi,
 } from '#/api';
+import type { PrepaidHistoryStat } from '#/api/modules/history';
+import type { PassagePrepaidHistory } from '#/api/types/business';
+import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
+import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
+import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
-import { formatDateTime, formatYuan } from '#/utils/format';
+import {
+  amountSignedClass,
+  formatDateTime,
+  formatExchangeRate,
+  formatOptionalText,
+  formatPrepaidQuantity,
+  formatYuan,
+  signedYuan,
+} from '#/utils/format';
 
 const visible = ref(false);
 const loading = ref(false);
-const dataSource = ref<Record<string, unknown>[]>([]);
+const dataSource = ref<PassagePrepaidHistory[]>([]);
 const total = ref(0);
-const totalAmount = ref(0);
+const stat = ref<PrepaidHistoryStat>({});
 const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>();
 const query = reactive({
@@ -34,13 +45,17 @@ const query = reactive({
   fundDirection: undefined as string | undefined,
 });
 
-const columns: TableColumnsType = [
-  { dataIndex: 'createdAt', title: '创建日期', width: 180 },
-  { dataIndex: 'beforeBalance', title: '变更前余额', width: 130 },
-  { dataIndex: 'amount', title: '变更金额', width: 130 },
-  { dataIndex: 'afterBalance', title: '变更后余额', width: 130 },
-  { dataIndex: 'operator', ellipsis: true, title: '操作员', width: 140 },
-  { dataIndex: 'remark', ellipsis: true, title: '备注', width: 200 },
+const columns: TableColumnsType<PassagePrepaidHistory> = [
+  { dataIndex: 'beforeBalance', title: '变更前预付', width: 120 },
+  { dataIndex: 'amount', title: '变更金额', width: 120 },
+  { dataIndex: 'afterBalance', title: '变更后预付', width: 120 },
+  { dataIndex: 'currencyType', title: '货币类型', width: 100 },
+  { dataIndex: 'quantity', title: '数量', width: 110 },
+  { dataIndex: 'exchangeRate', title: '汇率', width: 100 },
+  { dataIndex: 'pic', title: '凭证', width: 80, align: 'center' },
+  { dataIndex: 'operator', title: '操作员', width: 200 },
+  { dataIndex: 'remark', ellipsis: true, title: '备注', width: 160 },
+  { dataIndex: 'createdAt', title: '操作时间', width: 170 },
 ];
 
 function buildParams() {
@@ -57,10 +72,10 @@ function buildParams() {
 
 async function loadStat() {
   try {
-    const data = await fetchPassagePrepaidHistoryByGroupStatApi(buildParams());
-    totalAmount.value = data?.totalAmount ?? 0;
+    stat.value =
+      (await fetchPassagePrepaidHistoryByGroupStatApi(buildParams())) ?? {};
   } catch {
-    totalAmount.value = 0;
+    stat.value = {};
   }
 }
 
@@ -71,7 +86,7 @@ async function loadData(resetPage = false) {
   try {
     void loadStat();
     const page = await fetchPassagePrepaidHistoryByGroupApi(buildParams());
-    dataSource.value = (page?.records as Record<string, unknown>[]) ?? [];
+    dataSource.value = page?.records ?? [];
     total.value = page?.total ?? 0;
   } finally {
     loading.value = false;
@@ -109,7 +124,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     :title="`预付记录 — ${query.passageGroupName}`"
-    :width="900"
+    :width="1100"
     :footer="false"
     destroy-on-close
   >
@@ -120,7 +135,7 @@ defineExpose({ show });
             v-model:value="dateRange"
             show-time
             value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
+            :placeholder="['操作时间开始', '操作时间结束']"
           />
         </Form.Item>
         <Form.Item>
@@ -140,9 +155,7 @@ defineExpose({ show });
         </Form.Item>
       </Form>
 
-      <Card size="small">
-        <Statistic title="变更金额合计" :value="formatYuan(totalAmount)" />
-      </Card>
+      <PrepaidHistoryStatCards :stat="stat" />
 
       <Table
         :columns="columns"
@@ -155,32 +168,56 @@ defineExpose({ show });
           showTotal: (t: number) => `共 ${t} 条`,
           total,
         }"
-        :row-key="
-          (r: any, i?: number) =>
-            String(r.passageGroupPrepaidHistoryId ?? r.id ?? i ?? 0)
-        "
+        row-key="passageGroupPrepaidHistoryId"
         size="middle"
-        :scroll="{ x: 900 }"
+        :scroll="{ x: 1100 }"
         @change="onTableChange"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'beforeBalance'">
-            {{ formatYuan(record.beforeBalance as number) }}
+          <template v-if="column.dataIndex === 'beforeBalance'">
+            <b>{{ formatYuan(record.beforeBalance) }}</b>
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            {{ formatYuan(record.amount as number) }}
+            <b :class="amountSignedClass(record.amount)">
+              {{ signedYuan(record.amount) }}
+            </b>
           </template>
           <template v-else-if="column.dataIndex === 'afterBalance'">
-            {{ formatYuan(record.afterBalance as number) }}
+            <b>{{ formatYuan(record.afterBalance) }}</b>
+          </template>
+          <template v-else-if="column.dataIndex === 'currencyType'">
+            {{ formatOptionalText(record.currencyType) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'quantity'">
+            {{ formatPrepaidQuantity(record.quantity) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'exchangeRate'">
+            {{ formatExchangeRate(record.exchangeRate) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'pic'">
+            <PicPreviewButton :pic="record.pic" />
           </template>
           <template v-else-if="column.dataIndex === 'operator'">
-            {{ record.createdLoginName || record.operator || '-' }}
+            <HistoryPrepaidOperatorCell
+              :created-login-name="record.createdLoginName"
+              :created-uid="record.createdUid"
+            />
+          </template>
+          <template v-else-if="column.dataIndex === 'createdAt'">
+            {{ formatDateTime(record.createdAt) }}
           </template>
         </template>
       </Table>
     </div>
   </Drawer>
 </template>
+
+<style scoped>
+.amount-positive {
+  color: hsl(142 71% 40%);
+}
+
+.amount-negative {
+  color: hsl(var(--destructive));
+}
+</style>

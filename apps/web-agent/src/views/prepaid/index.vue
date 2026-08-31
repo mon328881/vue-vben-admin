@@ -18,6 +18,7 @@ import {
   Space,
   Statistic,
   Table,
+  Tag,
   message,
 } from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -28,6 +29,7 @@ import {
   fetchPrepaidHistoryStatApi,
 } from '#/api';
 import type { PrepaidHistory } from '#/api/types/business';
+import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/history';
@@ -85,13 +87,14 @@ const {
 } = useMchPrepaidHistoryExport();
 
 const columns: TableColumnsType<PrepaidHistory> = [
+  { dataIndex: 'createdAt', title: '操作时间', width: 170 },
   { dataIndex: 'mchNo', title: '商户号', width: 130 },
   { dataIndex: 'mchName', title: '商户名称', width: 140, ellipsis: true },
+  { dataIndex: 'fundDirection', title: '方向', width: 90, align: 'center' },
   { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 110 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'createdAt', title: '创建日期', width: 170 },
-  { dataIndex: 'operator', title: '操作员', width: 120 },
+  { dataIndex: 'operator', title: '操作员', width: 200 },
   { dataIndex: 'pic', title: '凭证', width: 90 },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
 ];
@@ -314,6 +317,17 @@ onMounted(async () => {
             </template>
             <template v-else-if="column.dataIndex === 'createdAt'">
               {{ formatDateTime(record.createdAt) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'fundDirection'">
+              <Tag :color="record.fundDirection === 1 ? 'success' : 'error'">
+                {{ record.fundDirection === 1 ? '加款' : '减款' }}
+              </Tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'operator'">
+              <HistoryPrepaidOperatorCell
+                :created-login-name="record.createdLoginName || record.operator"
+                :created-uid="record.createdUid"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'pic'">
               <Button

@@ -35,6 +35,8 @@ import {
 } from '#/api';
 import GoogleDangerConfirmDialog from '#/components/common/GoogleDangerConfirmDialog.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
+import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
+import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import { hasEnt } from '#/utils/access';
 import { formatRateDecimal, formatYuan } from '#/utils/format';
 
@@ -359,16 +361,14 @@ onMounted(() => {
             />
           </Form.Item>
           <Form.Item>
-            <Input
-              v-model:value="query.productId"
-              allow-clear
+            <ProductSelector
+              v-model="query.productId"
               placeholder="对应产品"
             />
           </Form.Item>
           <Form.Item>
-            <Input
-              v-model:value="query.passageGroup"
-              allow-clear
+            <PassageGroupSelector
+              v-model="query.passageGroup"
               placeholder="通道供应商"
             />
           </Form.Item>

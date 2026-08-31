@@ -10,7 +10,6 @@ import {
   Card,
   Col,
   Form,
-  Input,
   Modal,
   Popconfirm,
   Row,
@@ -49,6 +48,7 @@ import {
 } from '#/constants/merchant';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
+import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 
 import PassageAutoCleanDialog from './components/PassageAutoCleanDialog.vue';
 import PassageGroupBatchDrawer from './components/PassageGroupBatchDrawer.vue';
@@ -367,10 +367,10 @@ onMounted(async () => {
     <Card class="ap-page-filter">
       <Form layout="inline" @finish="onSearch">
         <Form.Item>
-          <Input
-            v-model:value="query.passageGroupName"
-            allow-clear
+          <PassageGroupSelector
+            v-model="query.passageGroupName"
             placeholder="供应商名称"
+            style="width: 240px"
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">

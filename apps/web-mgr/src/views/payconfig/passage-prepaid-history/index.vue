@@ -7,24 +7,34 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Form,
   Input,
   RangePicker,
-  Row,
   Select,
   Space,
-  Statistic,
   Table,
 } from 'ant-design-vue';
 
 import { fetchPassagePrepaidHistoryApi, fetchPassagePrepaidHistoryStatApi } from '#/api';
+import type { PrepaidHistoryStat } from '#/api/modules/history';
+import type { PassagePrepaidHistory } from '#/api/types/business';
+import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
+import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
+import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import { usePassagePrepaidHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
-import { formatDateTime, formatYuan } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
+import {
+  amountSignedClass,
+  formatDateTime,
+  formatExchangeRate,
+  formatOptionalText,
+  formatPrepaidQuantity,
+  formatYuan,
+  signedYuan,
+} from '#/utils/format';
 
 defineOptions({ name: 'PassageGroupPrepaidHistoryListPage' });
 
@@ -45,7 +55,7 @@ const {
 } = usePassagePrepaidHistoryExport();
 
 const loading = ref(false);
-const dataSource = ref<Record<string, unknown>[]>([]);
+const dataSource = ref<PassagePrepaidHistory[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>(defaultTodayRange());
@@ -53,16 +63,20 @@ const query = reactive({
   passageGroupName: '' as any,
   fundDirection: '' as any,
 });
-const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
+const stat = ref<PrepaidHistoryStat>({});
 
-const columns: TableColumnsType = [
-  { dataIndex: 'passageGroupName', title: '供应商名称', width: 160 },
-  { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
+const columns: TableColumnsType<PassagePrepaidHistory> = [
+  { dataIndex: 'passageGroupName', title: '通道商名称', width: 160, ellipsis: true },
+  { dataIndex: 'beforeBalance', title: '变更前预付', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 120 },
-  { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'createdAt', title: '创建日期', width: 170 },
-  { dataIndex: 'createdUid', title: '操作员', width: 100 },
-  { dataIndex: 'remark', title: '备注', ellipsis: true },
+  { dataIndex: 'afterBalance', title: '变更后预付', width: 120 },
+  { dataIndex: 'currencyType', title: '货币类型', width: 100 },
+  { dataIndex: 'quantity', title: '数量', width: 110 },
+  { dataIndex: 'exchangeRate', title: '汇率', width: 100 },
+  { dataIndex: 'pic', title: '凭证', width: 80, align: 'center' },
+  { dataIndex: 'operator', title: '操作员', width: 200 },
+  { dataIndex: 'remark', title: '备注', ellipsis: true, width: 160 },
+  { dataIndex: 'createdAt', title: '操作时间', width: 170 },
 ];
 
 function buildParams() {
@@ -90,7 +104,7 @@ async function loadData(resetPage = false) {
   try {
     void loadStat();
     const page = await fetchPassagePrepaidHistoryApi(buildParams());
-    dataSource.value = (page?.records as Record<string, unknown>[]) ?? [];
+    dataSource.value = page?.records ?? [];
     total.value = page?.total ?? 0;
   } finally {
     loading.value = false;
@@ -129,98 +143,123 @@ onMounted(async () => {
   <Page auto-content-height title="供应商预付流水">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @finish="onSearch">
-        <Form.Item>
-          <RangePicker
-            v-model:value="dateRange"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.passageGroupName" allow-clear placeholder="供应商名称" />
-        </Form.Item>
-        <Form.Item>
-          <Select
-            v-model:value="query.fundDirection"
-            allow-clear
-            placeholder="资金变动方向"
-            style="width: 140px"
-            :options="FUND_DIRECTION_OPTIONS"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-            <AsyncExportButtons
-              danger
-              :loading="exportLoading"
-              :progress="exportProgress"
-              :has-report-downloads="hasReportDownloads"
-              @export="onExport"
-              @open-report-list="openReportList"
+        <Form layout="inline" @finish="onSearch">
+          <Form.Item>
+            <RangePicker
+              v-model:value="dateRange"
+              show-time
+              value-format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="['操作时间开始', '操作时间结束']"
             />
-          </Space>
-        </Form.Item>
-      </Form>
-    </Card>
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="变更金额汇总" :value="formatYuan(stat.totalAmount)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="记录条数" :value="stat.totalCount ?? 0" />
-        </Card>
-      </Col>
-    </Row>
-    <Card>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-key="(r: any, i?: number) => String(r.passageGroupName ?? i ?? 0)"
-        size="middle"
-        :scroll="{ x: 1200 }"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="false" />
-          <template v-else-if="column.dataIndex === 'beforeBalance'">
-            {{ formatYuan(record.beforeBalance as number) }}
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.passageGroupName"
+              allow-clear
+              placeholder="通道商名称"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Select
+              v-model:value="query.fundDirection"
+              allow-clear
+              placeholder="资金变动方向"
+              style="width: 140px"
+              :options="FUND_DIRECTION_OPTIONS"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <Space>
+              <Button html-type="submit" type="primary">查询</Button>
+              <Button @click="onReset">重置</Button>
+              <AsyncExportButtons
+                danger
+                :loading="exportLoading"
+                :progress="exportProgress"
+                :has-report-downloads="hasReportDownloads"
+                @export="onExport"
+                @open-report-list="openReportList"
+              />
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
+      <PrepaidHistoryStatCards :stat="stat" />
+      <Card>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          row-key="passageGroupPrepaidHistoryId"
+          size="middle"
+          :scroll="{ x: 1400 }"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'beforeBalance'">
+              <b>{{ formatYuan(record.beforeBalance) }}</b>
+            </template>
+            <template v-else-if="column.dataIndex === 'amount'">
+              <b :class="amountSignedClass(record.amount)">
+                {{ signedYuan(record.amount) }}
+              </b>
+            </template>
+            <template v-else-if="column.dataIndex === 'afterBalance'">
+              <b>{{ formatYuan(record.afterBalance) }}</b>
+            </template>
+            <template v-else-if="column.dataIndex === 'currencyType'">
+              {{ formatOptionalText(record.currencyType) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'quantity'">
+              {{ formatPrepaidQuantity(record.quantity) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'exchangeRate'">
+              {{ formatExchangeRate(record.exchangeRate) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'pic'">
+              <PicPreviewButton :pic="record.pic" />
+            </template>
+            <template v-else-if="column.dataIndex === 'operator'">
+              <HistoryPrepaidOperatorCell
+                :created-login-name="record.createdLoginName"
+                :created-uid="record.createdUid"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt) }}
+            </template>
           </template>
-          <template v-else-if="column.dataIndex === 'amount'">
-            {{ formatYuan(record.amount as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'afterBalance'">
-            {{ formatYuan(record.afterBalance as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-
-        </template>
-      </Table>
-    </Card>
-    <ExportReportListDialog
-      v-model:visible="reportListVisible"
-      :loading="reportListLoading"
-      :title="reportListTitle"
-      :data="completedExports"
-      @download="downloadFile"
-      @remove="deleteCompletedItem"
-    />
+        </Table>
+      </Card>
+      <ExportReportListDialog
+        v-model:visible="reportListVisible"
+        :loading="reportListLoading"
+        :title="reportListTitle"
+        :data="completedExports"
+        @download="downloadFile"
+        @remove="deleteCompletedItem"
+      />
     </div>
   </Page>
 </template>
+
+<style scoped>
+.amount-positive {
+  color: hsl(142 71% 40%);
+}
+
+.amount-negative {
+  color: hsl(var(--destructive));
+}
+
+.amount-zero {
+  color: inherit;
+}
+</style>

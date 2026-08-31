@@ -65,6 +65,26 @@ export interface MchPrepaidHistory {
   beforeBalance?: number;
   amount?: number;
   afterBalance?: number;
+  currencyType?: string;
+  quantity?: number;
+  exchangeRate?: number | string;
+  createdAt?: string;
+  createdUid?: number | string;
+  createdLoginName?: string;
+  pic?: string;
+  remark?: string;
+  fundDirection?: number | string;
+}
+
+export interface PassagePrepaidHistory {
+  passageGroupPrepaidHistoryId?: number | string;
+  passageGroupName?: string;
+  beforeBalance?: number;
+  amount?: number;
+  afterBalance?: number;
+  currencyType?: string;
+  quantity?: number;
+  exchangeRate?: number | string;
   createdAt?: string;
   createdUid?: number | string;
   createdLoginName?: string;
