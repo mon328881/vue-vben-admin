@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 
-import { Button, Card, Modal, Tag } from 'ant-design-vue';
+import { Button, Modal, Spin, Tag } from 'ant-design-vue';
 
 import type { MchInfoDetail } from '#/api/types/business';
 import { amountSignedClass, formatDateTime, formatYuan } from '#/utils/format';
@@ -29,7 +29,7 @@ function openPrepaid() {
 </script>
 
 <template>
-  <Card title="商户信息" :loading="loading">
+  <Spin :spinning="!!loading">
     <div v-if="mch" class="mch-info">
       <div class="mch-info__head">
         <span class="mch-info__name">{{ mch.mchName || '—' }}</span>
@@ -44,11 +44,13 @@ function openPrepaid() {
       <div class="mch-info__stats">
         <div>
           <span class="label">当前余额</span>
-          <b>{{ formatYuan(mch.balance) }}</b>
+          <b :class="amountSignedClass(mch.balance)">{{
+            formatYuan(mch.balance)
+          }}</b>
         </div>
         <div>
           <span class="label">当前预付</span>
-          <b>{{ formatYuan(mch.prepaid) }}</b>
+          <b class="text-brand">{{ formatYuan(mch.prepaid) }}</b>
         </div>
         <div>
           <span class="label">剩余预付</span>
@@ -67,6 +69,7 @@ function openPrepaid() {
         创建于 {{ formatDateTime(mch.createdAt) }}
       </div>
     </div>
+    <div v-else-if="!loading" class="mch-info__empty">暂无商户信息</div>
 
     <Modal
       v-model:open="secretOpen"
@@ -77,10 +80,18 @@ function openPrepaid() {
     </Modal>
 
     <MchPrepaidHistoryDrawer ref="prepaidDrawerRef" />
-  </Card>
+  </Spin>
 </template>
 
 <style scoped>
+.mch-info {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 320px;
+  height: 100%;
+}
+
 .mch-info__head {
   align-items: center;
   display: flex;
@@ -101,21 +112,45 @@ function openPrepaid() {
 
 .mch-info__stats {
   display: grid;
+  flex: 1 1 auto;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
   margin-bottom: 16px;
+}
+
+.mch-info__stats > div {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 25%);
 }
 
 .mch-info__stats .label {
   color: hsl(var(--muted-foreground));
   display: block;
   font-size: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.mch-info__stats b {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.text-brand {
+  color: hsl(var(--primary));
 }
 
 .mch-info__actions {
   display: flex;
   gap: 8px;
+  margin-top: auto;
   margin-bottom: 12px;
 }
 
@@ -124,11 +159,20 @@ function openPrepaid() {
   font-size: 12px;
 }
 
+.mch-info__empty {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .amount-positive {
-  color: hsl(142 71% 40%);
+  color: #4bd884;
 }
 
 .amount-negative {
-  color: hsl(var(--destructive));
+  color: #db4b4b;
 }
 </style>

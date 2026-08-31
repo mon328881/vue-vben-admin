@@ -12,6 +12,9 @@ import {
   ref,
 } from 'vue';
 
+import { CountTo } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
+
 import { fetchTwoDayCountApi } from '#/api';
 import { formatYuan, rateValue } from '#/utils/format';
 
@@ -146,19 +149,18 @@ onUnmounted(() => {
     <div class="left-card-content">
       <div class="left-card-item left-card-item--featured">
         <span class="item-bg-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <path
-              d="M3 17l6-6 4 4 7-8"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <IconifyIcon icon="lucide:trending-up" class="size-6" />
         </span>
         <div class="item-main">
           <span class="item-title">今日成交金额</span>
-          <span class="item-number">{{ formatYuan(todayAmount) }}</span>
+          <span class="item-number">
+            <CountTo
+              :end-val="todayAmount / 100"
+              :decimals="2"
+              :duration="1200"
+              prefix="¥"
+            />
+          </span>
           <span class="item-yesterday item-yesterday--stack">
             <span class="item-yesterday__label">
               昨日: {{ formatYuan(yesterdayAmount) }}
@@ -178,18 +180,13 @@ onUnmounted(() => {
           class="item-bg-icon item-bg-icon--accent-balance"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <path
-              d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconifyIcon icon="lucide:shopping-cart" class="size-6" />
         </span>
         <div class="item-main">
           <span class="item-title">今日成交订单</span>
-          <span class="item-number">{{ todayOrders }}</span>
+          <span class="item-number is-brand">
+            <CountTo :end-val="todayOrders" :duration="1200" />
+          </span>
           <span class="item-yesterday item-yesterday--stack">
             <span class="item-yesterday__label">昨日: {{ yesterdayOrders }}</span>
             <TrendTag
@@ -207,23 +204,13 @@ onUnmounted(() => {
           class="item-bg-icon item-bg-icon--accent-stat-warning"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <path
-              d="M6 4h9l3 3v13H6V4Z"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <path
-              d="M9 12h6M9 16h4"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconifyIcon icon="lucide:file-stack" class="size-6" />
         </span>
         <div class="item-main">
           <span class="item-title">今日订单总数</span>
-          <span class="item-number">{{ todayTotal }}</span>
+          <span class="item-number">
+            <CountTo :end-val="todayTotal" :duration="1200" />
+          </span>
           <span class="item-yesterday item-yesterday--stack">
             <span class="item-yesterday__label">昨日: {{ yesterdayTotal }}</span>
             <TrendTag
@@ -241,25 +228,18 @@ onUnmounted(() => {
           class="item-bg-icon item-bg-icon--accent-profit"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <circle
-              cx="12"
-              cy="12"
-              r="8"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <path
-              d="M12 7v10M9.5 9.5c.6-1 1.5-1.5 2.5-1.5 1.4 0 2.5.8 2.5 2s-1.1 2-2.5 2h-1c-1.4 0-2.5.8-2.5 2s1.1 2 2.5 2c1 0 1.9-.5 2.5-1.5"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconifyIcon icon="lucide:wallet" class="size-6" />
         </span>
         <div class="item-main">
           <span class="item-title">今日平台利润</span>
-          <span class="item-number">{{ formatYuan(todayIncome) }}</span>
+          <span class="item-number is-positive">
+            <CountTo
+              :end-val="todayIncome / 100"
+              :decimals="2"
+              :duration="1200"
+              prefix="¥"
+            />
+          </span>
           <span class="item-yesterday item-yesterday--stack">
             <span class="item-yesterday__label">
               昨日: {{ formatYuan(yesterdayIncome) }}
@@ -279,26 +259,17 @@ onUnmounted(() => {
           class="item-bg-icon item-bg-icon--accent-geekblue"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <path
-              d="M4 16l5-5 3 3 7-7"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M15 7h4v4"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconifyIcon icon="lucide:percent" class="size-6" />
         </span>
         <div class="item-main">
           <span class="item-title">今日成功率</span>
-          <span class="item-number">
-            {{ rateValue(todayOrders, todayTotal) }}%
+          <span class="item-number is-positive">
+            <CountTo
+              :end-val="rateValue(todayOrders, todayTotal)"
+              :decimals="2"
+              :duration="1200"
+              suffix="%"
+            />
           </span>
           <span class="item-yesterday item-yesterday--stack">
             <span class="item-yesterday__label">
@@ -319,37 +290,20 @@ onUnmounted(() => {
           class="item-bg-icon item-bg-icon--accent-slate"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-            <circle
-              cx="9"
-              cy="8"
-              r="3"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <circle
-              cx="16.5"
-              cy="9.5"
-              r="2.5"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <path
-              d="M3.5 18c.8-2.4 2.8-3.5 5.5-3.5s4.7 1.1 5.5 3.5M14 14.2c1.7-.2 3.2.4 4 1.8"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
+          <IconifyIcon icon="lucide:users" class="size-6" />
         </span>
         <div class="item-main item-main--stacked-pair">
           <div class="stacked-metric">
             <span class="stacked-metric__label">商户数量</span>
-            <span class="stacked-metric__value">{{ mchNum }}</span>
+            <span class="stacked-metric__value">
+              <CountTo :end-val="mchNum" :duration="1200" />
+            </span>
           </div>
           <div class="stacked-metric">
             <span class="stacked-metric__label">代理数量</span>
-            <span class="stacked-metric__value">{{ agentNum }}</span>
+            <span class="stacked-metric__value">
+              <CountTo :end-val="agentNum" :duration="1200" />
+            </span>
           </div>
         </div>
       </div>
@@ -493,6 +447,22 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
+.left-card-item--surface .item-number.is-brand {
+  color: hsl(var(--primary));
+}
+
+.left-card-item--surface .item-number.is-positive {
+  color: #4bd884;
+}
+
+.left-card-item--surface .item-number.is-warning {
+  color: #fa9d2a;
+}
+
+.left-card-item--surface .item-number :deep(.count-to) {
+  color: inherit;
+}
+
 .left-card-item--surface .item-yesterday {
   color: hsl(var(--muted-foreground));
 }
@@ -566,6 +536,18 @@ onUnmounted(() => {
   margin-bottom: auto;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+.item-number :deep(.count-to) {
+  display: inline-flex;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.stacked-metric__value :deep(.count-to) {
+  display: inline-flex;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .item-yesterday {

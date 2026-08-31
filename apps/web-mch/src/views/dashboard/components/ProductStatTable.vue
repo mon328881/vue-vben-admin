@@ -3,7 +3,7 @@ import type { TableColumnsType } from 'ant-design-vue';
 
 import { computed, ref, watch } from 'vue';
 
-import { Card, Radio, Table } from 'ant-design-vue';
+import { Radio, Table } from 'ant-design-vue';
 
 import { fetchProductStatPageApi } from '#/api';
 import type { MchProductStat } from '#/api/types/business';
@@ -72,13 +72,13 @@ defineExpose({ load });
 </script>
 
 <template>
-  <Card title="支付产品统计">
-    <template #extra>
+  <div>
+    <div class="table-toolbar">
       <Radio.Group v-model:value="statRadio" size="small">
         <Radio.Button value="1">今日</Radio.Button>
         <Radio.Button value="2">昨日</Radio.Button>
       </Radio.Group>
-    </template>
+    </div>
 
     <Table
       :columns="columns"
@@ -119,10 +119,16 @@ defineExpose({ load });
         </template>
       </template>
     </Table>
-  </Card>
+  </div>
 </template>
 
 <style scoped>
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
 .amount-positive {
   color: hsl(142 71% 40%);
 }

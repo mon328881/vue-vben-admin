@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
+import { CountTo } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
+
 import { fetchTwoDayCountApi } from '#/api';
 import { formatYuan, rateValue } from '#/utils/format';
 
@@ -99,9 +102,19 @@ onUnmounted(() => {
 <template>
   <div class="metrics-grid">
     <div class="metric-card metric-card--featured">
+      <span class="metric-card__icon" aria-hidden="true">
+        <IconifyIcon icon="lucide:trending-up" class="size-5" />
+      </span>
       <div class="metric-card__main">
         <span class="metric-card__label">今日成交金额</span>
-        <span class="metric-card__value">{{ formatYuan(todayAmount) }}</span>
+        <span class="metric-card__value">
+          <CountTo
+            :end-val="todayAmount / 100"
+            :decimals="2"
+            :duration="1200"
+            prefix="¥"
+          />
+        </span>
         <span class="metric-card__sub">
           昨日 {{ formatYuan(yesterdayAmount) }}
           <TrendTag
@@ -114,9 +127,14 @@ onUnmounted(() => {
     </div>
 
     <div class="metric-card">
+      <span class="metric-card__icon metric-card__icon--muted" aria-hidden="true">
+        <IconifyIcon icon="lucide:shopping-cart" class="size-5" />
+      </span>
       <div class="metric-card__main">
         <span class="metric-card__label">今日成交订单</span>
-        <span class="metric-card__value">{{ todayOrders }}</span>
+        <span class="metric-card__value is-brand">
+          <CountTo :end-val="todayOrders" :duration="1200" />
+        </span>
         <span class="metric-card__sub">
           昨日 {{ yesterdayOrders }}
           <TrendTag
@@ -129,10 +147,18 @@ onUnmounted(() => {
     </div>
 
     <div class="metric-card">
+      <span class="metric-card__icon metric-card__icon--muted" aria-hidden="true">
+        <IconifyIcon icon="lucide:percent" class="size-5" />
+      </span>
       <div class="metric-card__main">
         <span class="metric-card__label">今日成功率</span>
-        <span class="metric-card__value">
-          {{ rateValue(todayOrders, todayTotal).toFixed(2) }}%
+        <span class="metric-card__value is-positive">
+          <CountTo
+            :end-val="rateValue(todayOrders, todayTotal)"
+            :decimals="2"
+            :duration="1200"
+            suffix="%"
+          />
         </span>
         <span class="metric-card__sub">
           昨日 {{ rateValue(yesterdayOrders, yesterdayTotal).toFixed(2) }}%
@@ -141,17 +167,32 @@ onUnmounted(() => {
     </div>
 
     <div class="metric-card">
+      <span class="metric-card__icon metric-card__icon--muted" aria-hidden="true">
+        <IconifyIcon icon="lucide:file-stack" class="size-5" />
+      </span>
       <div class="metric-card__main">
         <span class="metric-card__label">今日订单量</span>
-        <span class="metric-card__value">{{ todayTotal }}</span>
+        <span class="metric-card__value">
+          <CountTo :end-val="todayTotal" :duration="1200" />
+        </span>
         <span class="metric-card__sub">昨日 {{ yesterdayTotal }}</span>
       </div>
     </div>
 
     <div class="metric-card">
+      <span class="metric-card__icon metric-card__icon--muted" aria-hidden="true">
+        <IconifyIcon icon="lucide:wallet" class="size-5" />
+      </span>
       <div class="metric-card__main">
         <span class="metric-card__label">今日服务费</span>
-        <span class="metric-card__value">{{ formatYuan(todayCost) }}</span>
+        <span class="metric-card__value is-warning">
+          <CountTo
+            :end-val="todayCost / 100"
+            :decimals="2"
+            :duration="1200"
+            prefix="¥"
+          />
+        </span>
         <span class="metric-card__sub">昨日 {{ formatYuan(yesterdayCost) }}</span>
       </div>
     </div>
@@ -172,6 +213,7 @@ onUnmounted(() => {
   min-height: 120px;
   padding: 16px;
   position: relative;
+  overflow: hidden;
 }
 
 .metric-card--featured {
@@ -183,6 +225,18 @@ onUnmounted(() => {
   border-color: hsl(var(--primary) / 40%);
   color: #fff;
   grid-column: span 2;
+}
+
+.metric-card__icon {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  opacity: 0.85;
+}
+
+.metric-card__icon--muted {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.55;
 }
 
 .metric-card__label {
@@ -202,6 +256,29 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.metric-card__value.is-brand {
+  color: hsl(var(--primary));
+}
+
+.metric-card__value.is-positive {
+  color: #4bd884;
+}
+
+.metric-card__value.is-warning {
+  color: #fa9d2a;
+}
+
+.metric-card__value.is-negative {
+  color: #db4b4b;
+}
+
+.metric-card__value :deep(.count-to) {
+  display: inline-flex;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 .metric-card__sub {

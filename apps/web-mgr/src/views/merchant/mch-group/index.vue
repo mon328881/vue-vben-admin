@@ -259,6 +259,7 @@ onMounted(() => {
                   <Button
                     size="small"
                     type="primary"
+                    class="inline-action-cell__action"
                     :loading="settlingName === record.mchGroupName"
                     :disabled="!!settlingName"
                   >
@@ -269,8 +270,10 @@ onMounted(() => {
                   class="inline-action-cell__value"
                   :class="
                     settleDiffValue(record as MchGroupInfo) < 0
-                      ? 'text-error'
-                      : ''
+                      ? 'amount-negative'
+                      : settleDiffValue(record as MchGroupInfo) > 0
+                        ? 'amount-positive'
+                        : ''
                   "
                 >
                   {{ formatYuan(settleDiffValue(record as MchGroupInfo)) }}

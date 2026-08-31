@@ -1,17 +1,15 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
-  Button,
   Card,
   Col,
   DatePicker,
   Form,
   Row,
-  Space,
   Table,
   message,
 } from 'ant-design-vue';
@@ -19,6 +17,10 @@ import dayjs from 'dayjs';
 
 import { fetchDayStatCountApi, fetchDayStatListApi } from '#/api';
 import type { AgentDayStat } from '#/api/types/business';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import {
   defaultWeekRange,
   formatDateOnly,
@@ -43,6 +45,28 @@ const summary = reactive({
   totalSuccessCount: 0,
   totalAgentIncome: 0,
 });
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '成交订单金额',
+    value: Number(summary.totalSuccessAmount ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+  {
+    title: '成交订单数',
+    value: Number(summary.totalSuccessCount ?? 0),
+    icon: 'lucide:list-ordered',
+  },
+  {
+    title: '代理收入',
+    value: Number(summary.totalAgentIncome ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:trending-up',
+  },
+]);
 
 const columns: TableColumnsType<AgentDayStat> = [
   { dataIndex: 'statisticsDate', title: '日期', width: 140 },
@@ -151,50 +175,17 @@ onMounted(async () => {
               </Form.Item>
             </Col>
             <Col :lg="16" :md="12" :span="24" class="ap-filter-actions">
-              <Space>
-                <Button
-                  html-type="submit"
-                  type="primary"
-                  :loading="searchLoading"
-                >
-                  搜索
-                </Button>
-                <Button @click="onReset">重置</Button>
-              </Space>
+              <FilterActions
+                submit-text="搜索"
+                :loading="searchLoading"
+                @reset="onReset"
+              />
             </Col>
           </Row>
         </Form>
       </Card>
 
-      <div class="day-stat-row">
-        <div class="day-stat-card">
-          <div class="day-stat-icon day-stat-icon--brand">¥</div>
-          <div class="day-stat-content">
-            <div class="day-stat-title">成交订单金额</div>
-            <div class="day-stat-value day-stat-value--amount">
-              {{ formatYuan(summary.totalSuccessAmount) }}
-            </div>
-          </div>
-        </div>
-        <div class="day-stat-card">
-          <div class="day-stat-icon day-stat-icon--success">#</div>
-          <div class="day-stat-content">
-            <div class="day-stat-title">成交订单数</div>
-            <div class="day-stat-value day-stat-value--count">
-              {{ summary.totalSuccessCount || 0 }}
-            </div>
-          </div>
-        </div>
-        <div class="day-stat-card">
-          <div class="day-stat-icon day-stat-icon--warning">%</div>
-          <div class="day-stat-content">
-            <div class="day-stat-title">代理收入</div>
-            <div class="day-stat-value">
-              {{ formatYuan(summary.totalAgentIncome) }}
-            </div>
-          </div>
-        </div>
-      </div>
+      <ListStatCards :items="listStatItems" />
 
       <Card>
         <Table
@@ -258,77 +249,3 @@ onMounted(async () => {
   </Page>
 </template>
 
-<style scoped>
-.day-stat-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .day-stat-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-.day-stat-card {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  padding: 16px 20px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  background: hsl(var(--card));
-}
-
-.day-stat-icon {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.day-stat-icon--brand {
-  color: hsl(var(--primary));
-  background: hsl(var(--primary) / 12%);
-}
-
-.day-stat-icon--success {
-  color: hsl(142 71% 40%);
-  background: hsl(142 71% 40% / 12%);
-}
-
-.day-stat-icon--warning {
-  color: hsl(38 92% 50%);
-  background: hsl(38 92% 50% / 12%);
-}
-
-.day-stat-title {
-  margin-bottom: 4px;
-  color: hsl(var(--muted-foreground));
-  font-size: 13px;
-}
-
-.day-stat-value {
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.day-stat-value--amount {
-  color: hsl(142 71% 40%);
-}
-
-.day-stat-value--count {
-  color: hsl(var(--primary));
-}
-
-.amount-positive {
-  color: hsl(142 71% 40%);
-}
-</style>

@@ -137,12 +137,60 @@
   margin-bottom: 0;
 }
 
-.ap-page-stats :deep(.ant-card) {
-  height: 100%;
+/* Ant Row 信息区：列等分宽度，避免 md 栅格留白或挤换行 */
+.ap-page-stats.ant-row {
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.ap-page-stats :deep(.ant-col) {
+.ap-page-stats.ant-row > .ant-col {
+  flex: 1 1 160px;
+  width: auto !important;
+  max-width: 100%;
   margin-bottom: 0;
+}
+
+.ap-page-stats .ant-card,
+.ap-page-stats :deep(.ant-card) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 88px;
+}
+
+/* —— 列表/信息区高亮色 —— */
+.text-brand {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+.text-success {
+  color: #52c41a;
+}
+
+.text-error {
+  color: #db4b4b;
+}
+
+.amount-positive {
+  color: #4bd884;
+  font-weight: 600;
+}
+
+.amount-negative {
+  color: #db4b4b;
+  font-weight: 600;
+}
+
+.amount-zero {
+  color: hsl(var(--foreground));
+}
+
+.amount-warning {
+  color: #fa9d2a;
+  font-weight: 600;
 }
 
 /* 抽屉内表单垂直间距 */

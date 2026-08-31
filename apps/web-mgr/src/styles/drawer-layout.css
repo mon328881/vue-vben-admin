@@ -138,12 +138,26 @@
   margin-bottom: 0;
 }
 
-.ap-page-stats .ant-card {
-  height: 100%;
+/* Ant Row 信息区：列等分宽度，避免 md 栅格留白或挤换行 */
+.ap-page-stats.ant-row {
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.ap-page-stats .ant-col {
+.ap-page-stats.ant-row > .ant-col {
+  flex: 1 1 160px;
+  width: auto !important;
+  max-width: 100%;
   margin-bottom: 0;
+}
+
+.ap-page-stats .ant-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 88px;
 }
 
 /* 抽屉内表单垂直间距 */
@@ -163,22 +177,83 @@
   flex-wrap: nowrap;
 }
 
-.inline-action-cell .ant-btn {
+/* 列表内「调额 / 结算」等：统一 small primary */
+.inline-action-cell .ant-btn,
+.inline-action-cell .ant-btn.ant-btn-sm {
   flex-shrink: 0;
   white-space: nowrap;
-  height: auto;
+  height: 24px;
   min-height: 24px;
   padding: 0 8px;
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.inline-action-cell .ant-btn-link {
+  height: auto;
+  min-height: 0;
+  padding: 0;
   line-height: 1.4;
 }
 
-.inline-action-cell__value.text-error {
-  color: #ff4d4f;
+.inline-action-cell__value {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.inline-action-cell__value.text-error,
+.inline-action-cell__value.amount-negative {
+  color: #db4b4b;
 }
 
 .quota-value--disabled {
   color: hsl(var(--muted-foreground));
   text-decoration: line-through;
+}
+
+/* —— 列表高亮色（对齐旧端 mgr-web） —— */
+.text-brand {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+.text-success {
+  color: #52c41a;
+}
+
+.text-error {
+  color: #db4b4b;
+}
+
+.amount-positive {
+  color: #4bd884;
+  font-weight: 600;
+}
+
+.amount-negative {
+  color: #db4b4b;
+  font-weight: 600;
+}
+
+.amount-zero {
+  color: hsl(var(--foreground));
+}
+
+/* 行操作链接：详情 / 补单 / 修改 等 */
+.ap-table-ops {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.ap-table-ops .ant-btn-link,
+.ap-table-ops__link.ant-btn-link {
+  height: auto;
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* 抽屉内筛选与信息区 */

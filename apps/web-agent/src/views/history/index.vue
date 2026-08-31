@@ -5,7 +5,6 @@ import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
-  Button,
   Card,
   Col,
   DatePicker,
@@ -13,7 +12,6 @@ import {
   Input,
   Row,
   Select,
-  Space,
   Table,
   message,
 } from 'ant-design-vue';
@@ -23,6 +21,7 @@ import { fetchAgentHistoryListApi } from '#/api';
 import type { AgentHistory } from '#/api/types/business';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
 import {
   BIZ_TYPE_OPTIONS,
   FUND_DIRECTION_OPTIONS,
@@ -207,11 +206,11 @@ onMounted(async () => {
           </Row>
           <Row :gutter="[16, 16]" class="mt-1">
             <Col :span="24" class="ap-filter-actions">
-              <Space>
-                <Button html-type="submit" type="primary" :loading="loading">
-                  搜索
-                </Button>
-                <Button @click="onReset">重置</Button>
+              <FilterActions
+                submit-text="搜索"
+                :loading="loading"
+                @reset="onReset"
+              >
                 <AsyncExportButtons
                   danger
                   :has-report-downloads="hasReportDownloads"
@@ -220,7 +219,7 @@ onMounted(async () => {
                   @export="onExport"
                   @open-report-list="openReportList"
                 />
-              </Space>
+              </FilterActions>
             </Col>
           </Row>
         </Form>

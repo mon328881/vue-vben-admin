@@ -7,14 +7,11 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Form,
   Input,
   Popconfirm,
-  Row,
   Select,
   Space,
-  Statistic,
   Table,
   Tag,
   message,
@@ -27,6 +24,9 @@ import {
   type AgentStatInfo,
 } from '#/api';
 import type { AgentInfo } from '#/api/types/business';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime, formatYuan } from '#/utils/format';
 
@@ -56,6 +56,28 @@ const balanceRef = ref<InstanceType<typeof AgentBalanceAdjustDialog>>();
 const canAdd = computed(() => hasEnt('ENT_ISV_INFO_ADD'));
 const canEdit = computed(() => hasEnt('ENT_ISV_INFO_EDIT'));
 const canDel = computed(() => hasEnt('ENT_ISV_INFO_DEL'));
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '代理总数',
+    value: Number(stat.value.agentNum ?? 0),
+    icon: 'lucide:users',
+  },
+  {
+    title: '代理总余额',
+    value: Number(stat.value.totalBalance ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+  {
+    title: '冻结金额汇总',
+    value: Number(stat.value.freezeBalance ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:lock',
+  },
+]);
 
 const columns: TableColumnsType<AgentInfo> = [
   {
@@ -177,29 +199,7 @@ onMounted(() => {
       </div>
     </Card>
 
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="8" :span="24">
-        <Card size="small">
-          <Statistic title="代理总数" :value="stat.agentNum ?? 0" />
-        </Card>
-      </Col>
-      <Col :md="8" :span="24">
-        <Card size="small">
-          <Statistic
-            title="代理总余额"
-            :value="formatYuan(stat.totalBalance)"
-          />
-        </Card>
-      </Col>
-      <Col :md="8" :span="24">
-        <Card size="small">
-          <Statistic
-            title="冻结金额汇总"
-            :value="formatYuan(stat.freezeBalance)"
-          />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
 
     <Card>
       <Table
@@ -219,23 +219,27 @@ onMounted(() => {
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'balance'">
-            <Space>
+            <div class="inline-action-cell">
               <Button
                 v-if="canEdit"
                 size="small"
                 type="primary"
+                class="inline-action-cell__action"
                 @click="balanceRef?.show(record as AgentInfo)"
               >
                 调额
               </Button>
               <b
+                class="inline-action-cell__value"
                 :class="
-                  (record.balance ?? 0) > 0 ? 'text-success' : 'text-error'
+                  (record.balance ?? 0) > 0
+                    ? 'amount-positive'
+                    : 'amount-negative'
                 "
               >
                 {{ formatYuan(record.balance) }}
               </b>
-            </Space>
+            </div>
           </template>
           <template v-else-if="column.dataIndex === 'state'">
             <Tag :color="record.state === 1 ? 'success' : 'default'">
@@ -249,25 +253,33 @@ onMounted(() => {
             {{ formatDateTime(record.updatedAt) }}
           </template>
           <template v-else-if="column.dataIndex === 'action'">
-            <Space>
-              <Button
-                v-if="canEdit"
-                size="small"
-                type="link"
-                @click="formRef?.show(record.agentNo)"
-              >
-                修改
-              </Button>
-              <Popconfirm
-                v-if="canDel"
-                title="确认删除？"
-                description="请确认该代理商下未分配商户。"
-                @confirm="onDelete(record as AgentInfo)"
-              >
-                <Button danger size="small" type="link">删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
+              <div class="ap-table-ops">
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="link"
+                  class="ap-table-ops__link"
+                  @click="formRef?.show(record.agentNo)"
+                >
+                  修改
+                </Button>
+                <Popconfirm
+                  v-if="canDel"
+                  title="确认删除？"
+                  description="请确认该代理商下未分配商户。"
+                  @confirm="onDelete(record as AgentInfo)"
+                >
+                  <Button
+                    danger
+                    size="small"
+                    type="link"
+                    class="ap-table-ops__link"
+                  >
+                    删除
+                  </Button>
+                </Popconfirm>
+              </div>
+            </template>
         </template>
       </Table>
     </Card>
@@ -277,12 +289,3 @@ onMounted(() => {
     </div>
   </Page>
 </template>
-
-<style scoped>
-.text-success {
-  color: #52c41a;
-}
-.text-error {
-  color: #ff4d4f;
-}
-</style>

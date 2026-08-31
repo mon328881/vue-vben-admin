@@ -5,7 +5,6 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
-  Button,
   Card,
   Col,
   DatePicker,
@@ -13,8 +12,6 @@ import {
   Input,
   Row,
   Select,
-  Space,
-  Statistic,
   Table,
   message,
 } from 'ant-design-vue';
@@ -24,6 +21,10 @@ import { fetchHistoryCountApi, fetchHistoryListApi } from '#/api';
 import type { MchAccountHistory } from '#/api/types/business';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import {
   BIZ_TYPE_OPTIONS,
@@ -65,6 +66,21 @@ const summary = reactive({ totalAmount: 0, totalCount: 0 });
 const canCount = computed(
   () => hasEnt('ENT_C_MAIN_PAY_COUNT'),
 );
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '变更金额汇总',
+    value: Number(summary.totalAmount ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+  {
+    title: '记录条数',
+    value: Number(summary.totalCount ?? 0),
+    icon: 'lucide:list-ordered',
+  },
+]);
 
 const {
   exportLoading,
@@ -183,24 +199,6 @@ onMounted(async () => {
 <template>
   <Page auto-content-height title="资金流水">
     <div class="ap-page-stack">
-      <Row v-if="canCount" :gutter="[16, 16]" class="ap-page-stats">
-        <Col :md="12" :span="24">
-          <Card>
-            <Statistic
-              title="变更金额汇总"
-              :precision="2"
-              :value="summary.totalAmount / 100"
-              prefix="¥"
-            />
-          </Card>
-        </Col>
-        <Col :md="12" :span="24">
-          <Card>
-            <Statistic title="记录条数" :value="summary.totalCount" />
-          </Card>
-        </Col>
-      </Row>
-
       <Card class="ap-page-filter">
         <Form class="ap-pay-order-filter" @finish="onSearch">
           <Row :gutter="[16, 16]">
@@ -257,11 +255,11 @@ onMounted(async () => {
           </Row>
           <Row :gutter="[16, 16]" class="mt-1">
             <Col :span="24" class="ap-filter-actions">
-              <Space>
-                <Button html-type="submit" type="primary" :loading="loading">
-                  搜索
-                </Button>
-                <Button @click="onReset">重置</Button>
+              <FilterActions
+                submit-text="搜索"
+                :loading="loading"
+                @reset="onReset"
+              >
                 <AsyncExportButtons
                   danger
                   :has-report-downloads="hasReportDownloads"
@@ -270,11 +268,13 @@ onMounted(async () => {
                   @export="onExport"
                   @open-report-list="openReportList"
                 />
-              </Space>
+              </FilterActions>
             </Col>
           </Row>
         </Form>
       </Card>
+
+      <ListStatCards v-if="canCount" :items="listStatItems" />
 
       <Card>
         <Table

@@ -1,54 +1,58 @@
 <script lang="ts" setup>
-import { Card, Col, Row, Statistic } from 'ant-design-vue';
+import { computed } from 'vue';
 
 import type { PrepaidHistoryStat } from '#/api/modules/history';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import {
   formatExchangeRate,
   formatPrepaidQuantity,
-  formatYuan,
   signedYuan,
 } from '#/utils/format';
 
-defineProps<{
+const props = defineProps<{
   stat: PrepaidHistoryStat;
 }>();
 
-function formatAvgRate(value?: number | null) {
-  if (value == null) return '—';
-  return formatExchangeRate(value);
-}
+const items = computed<ListStatCardItem[]>(() => {
+  const s = props.stat ?? {};
+  const uNet = s.totalUNet;
+  let uNetDisplay: string | undefined;
+  if (uNet == null) uNetDisplay = '—';
+  else if (uNet === 0) uNetDisplay = '0.00';
+  else uNetDisplay = signedYuan(uNet);
 
-function formatUNet(value?: number | null) {
-  if (value == null) return '—';
-  if (value === 0) return '0.00';
-  return signedYuan(value);
-}
+  const avg = s.avgRate;
+  const avgDisplay = avg == null ? '—' : formatExchangeRate(avg);
+
+  return [
+    {
+      title: '变更金额总计',
+      value: Number(s.totalAmount ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:wallet',
+    },
+    {
+      title: 'U变更总数',
+      display: formatPrepaidQuantity(s.totalUChange),
+      icon: 'lucide:coins',
+    },
+    {
+      title: 'U净总数',
+      display: uNetDisplay,
+      icon: 'lucide:scale',
+    },
+    {
+      title: '平均费率',
+      display: avgDisplay,
+      icon: 'lucide:percent',
+    },
+  ];
+});
 </script>
 
 <template>
-  <Row :gutter="[12, 12]" class="ap-page-stats">
-    <Col :md="6" :span="12">
-      <Card size="small">
-        <Statistic title="变更金额总计" :value="formatYuan(stat.totalAmount)" />
-      </Card>
-    </Col>
-    <Col :md="6" :span="12">
-      <Card size="small">
-        <Statistic
-          title="U变更总数"
-          :value="formatPrepaidQuantity(stat.totalUChange)"
-        />
-      </Card>
-    </Col>
-    <Col :md="6" :span="12">
-      <Card size="small">
-        <Statistic title="U净总数" :value="formatUNet(stat.totalUNet)" />
-      </Card>
-    </Col>
-    <Col :md="6" :span="12">
-      <Card size="small">
-        <Statistic title="平均费率" :value="formatAvgRate(stat.avgRate)" />
-      </Card>
-    </Col>
-  </Row>
+  <ListStatCards :items="items" />
 </template>

@@ -1,25 +1,25 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Form,
   Input,
   RangePicker,
-  Row,
   Space,
-  Statistic,
   Table,
 } from 'ant-design-vue';
 
 import { fetchPassageStatApi, fetchPassageStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import PassageSelector from '#/components/selectors/PassageSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
@@ -58,6 +58,28 @@ const query = reactive({
   passageGroupName: '',
 });
 const stat = ref<Record<string, any>>({});
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '成交订单金额',
+    value: Number(stat.value.totalSuccessAmount ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+  {
+    title: '成交订单数',
+    value: Number(stat.value.totalSuccessCount ?? 0),
+    icon: 'lucide:list-ordered',
+  },
+  {
+    title: '通道成本',
+    value: Number(stat.value.totalCost ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:percent',
+  },
+]);
 
 const columns: TableColumnsType = [
   { dataIndex: 'createdAt', title: '日期', width: 120 },
@@ -182,23 +204,7 @@ onMounted(async () => {
         </Form.Item>
       </Form>
     </Card>
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="成交订单金额" :value="formatYuan(stat.totalSuccessAmount)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="成交订单数" :value="stat.totalSuccessCount ?? 0" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="通道成本" :value="formatYuan(stat.totalCost)" />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
     <Card>
       <Table
         :columns="columns"

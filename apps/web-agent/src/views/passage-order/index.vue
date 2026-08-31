@@ -13,7 +13,6 @@ import {
   Input,
   Row,
   Select,
-  Space,
   Table,
   Tag,
   message,
@@ -28,6 +27,7 @@ import {
 import type { PayOrder, ProductShort } from '#/api/types/business';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
 import PayOrderDetailDrawer from '#/components/order/PayOrderDetailDrawer.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import { copyText } from '#/utils/copy';
@@ -288,12 +288,11 @@ onMounted(async () => {
             </Col>
             <Col :lg="4" :md="6" :sm="12" :span="24" :xl="4">
               <Form.Item class="ap-filter-actions">
-                <Space>
-                  <Button html-type="submit" type="primary" :loading="loading">
-                    搜索
-                  </Button>
-                  <Button @click="onReset">重置</Button>
-                </Space>
+                <FilterActions
+                  submit-text="搜索"
+                  :loading="loading"
+                  @reset="onReset"
+                />
               </Form.Item>
             </Col>
           </Row>

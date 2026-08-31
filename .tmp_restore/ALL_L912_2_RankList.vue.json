@@ -1,0 +1,4 @@
+{
+  "old_string": "import { EchartsUI, useEcharts } from '@vben/plugins/echarts';\nimport {\n  Card,\n  Col,\n  RadioButton,\n  RadioGroup,\n  Row,\n  Table,\n} from 'ant-design-vue';",
+  "new_string": "import { AnalysisChartCard } from '@vben/common-ui';\nimport { EchartsUI, useEcharts } from '@vben/plugins/echarts';\nimport {\n  Col,\n  RadioButton,\n  RadioGroup,\n  Row,\n  Table,\n} from 'ant-design-vue';"
+}

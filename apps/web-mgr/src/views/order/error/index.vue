@@ -7,15 +7,11 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Descriptions,
   Drawer,
   Form,
   Input,
   RangePicker,
-  Row,
-  Space,
-  Statistic,
   Table,
   Tag,
   message,
@@ -26,6 +22,10 @@ import {
   fetchErrorOrderListApi,
   fetchErrorOrderStatApi,
 } from '#/api';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import {
   payOrderStateColor,
   payOrderStateLabel,
@@ -48,6 +48,25 @@ const query = reactive({
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
 const detailOpen = ref(false);
+
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '订单总金额',
+      value: Number(s.totalAmount ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '订单总数',
+      value: Number(s.totalCount ?? 0),
+      icon: 'lucide:list-ordered',
+    },
+  ];
+});
+
 const detailLoading = ref(false);
 const detail = ref<Record<string, unknown> | null>(null);
 
@@ -172,26 +191,12 @@ onMounted(() => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>
 
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="订单总金额" :value="formatYuan(stat.totalAmount)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="订单总数" :value="stat.totalCount ?? 0" />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
 
     <Card>
       <Table

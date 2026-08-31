@@ -15,7 +15,6 @@ import {
   Modal,
   Row,
   Select,
-  Space,
   Table,
   Tag,
   message,
@@ -28,6 +27,10 @@ import {
   fetchDivisionInfoApi,
   fetchDivisionListApi,
 } from '#/api';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import type { DivisionRecord } from '#/api/types/business';
 import {
   DIVISION_STATE_OPTIONS,
@@ -80,6 +83,38 @@ const applyDisabled = computed(() => config.agentVisible !== 1);
 const feeRateText = computed(
   () => `${((config.agentFeeRate || 0) * 100).toFixed(2)}%`,
 );
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '账户总余额',
+    value: Number(totalBalance.value ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+  {
+    title: '可提现余额',
+    value: Number(info.balance ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:banknote',
+  },
+  {
+    title: '冻结余额',
+    value: Number(info.freezeBalance ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:lock',
+  },
+  {
+    title: '最小结算',
+    value: Number(config.agentMinWithdraw ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    sub: `手续费 ${formatYuan(config.agentFee)} · 费率 ${feeRateText.value}`,
+    icon: 'lucide:settings-2',
+  },
+]);
 
 const columns: TableColumnsType<DivisionRecord> = [
   { dataIndex: 'recordId', title: '流水单号', width: 150 },
@@ -205,50 +240,18 @@ onMounted(async () => {
 <template>
   <Page auto-content-height title="结算管理">
     <div class="ap-page-stack">
-      <Row :gutter="[16, 16]" class="division-overview">
-        <Col :lg="4" :md="8" :span="12">
-          <Card class="top-stat-card">
-            <div class="top-stat-title">账户总余额</div>
-            <div class="top-stat-value stat-total">
-              {{ formatYuan(totalBalance) }}
-            </div>
-          </Card>
-        </Col>
-        <Col :lg="4" :md="8" :span="12">
-          <Card class="top-stat-card">
-            <div class="top-stat-title">可提现余额</div>
-            <div class="top-stat-value stat-withdrawable">
-              {{ formatYuan(info.balance) }}
-            </div>
-          </Card>
-        </Col>
-        <Col :lg="4" :md="8" :span="12">
-          <Card class="top-stat-card">
-            <div class="top-stat-title">冻结余额</div>
-            <div class="top-stat-value stat-freeze">
-              {{ formatYuan(info.freezeBalance) }}
-            </div>
-          </Card>
-        </Col>
-        <Col :lg="6" :md="12" :span="24">
-          <Card class="division-fee-card">
-            <p>最小结算: <b>{{ formatYuan(config.agentMinWithdraw) }}</b></p>
-            <p>单笔手续费: <b>{{ formatYuan(config.agentFee) }}</b></p>
-            <p>单笔费率: <b>{{ feeRateText }}</b></p>
-          </Card>
-        </Col>
-        <Col :lg="6" :md="12" :span="24">
-          <div class="apply-slot">
-            <Button
-              type="primary"
-              :disabled="applyDisabled"
-              @click="openApply"
-            >
-              申请结算
-            </Button>
-          </div>
-        </Col>
-      </Row>
+      <div class="division-overview">
+        <ListStatCards :items="listStatItems" />
+        <div class="apply-slot">
+          <Button
+            type="primary"
+            :disabled="applyDisabled"
+            @click="openApply"
+          >
+            申请结算
+          </Button>
+        </div>
+      </div>
 
       <Card class="ap-page-filter">
         <Form class="ap-pay-order-filter" @finish="onSearch">
@@ -284,16 +287,11 @@ onMounted(async () => {
               </Form.Item>
             </Col>
             <Col :lg="8" :md="24" :span="24" class="ap-filter-actions">
-              <Space>
-                <Button
-                  html-type="submit"
-                  type="primary"
-                  :loading="searchLoading"
-                >
-                  搜索
-                </Button>
-                <Button @click="onReset">重置</Button>
-              </Space>
+              <FilterActions
+                submit-text="搜索"
+                :loading="searchLoading"
+                @reset="onReset"
+              />
             </Col>
           </Row>
         </Form>
@@ -387,79 +385,21 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.division-overview :deep(.ant-col) {
-  display: flex;
-  align-items: stretch;
-}
-
-.top-stat-card {
-  width: 100%;
-  height: 100%;
-}
-
-.top-stat-card :deep(.ant-card-body) {
-  min-height: 80px;
-  padding: 14px 16px;
-}
-
-.top-stat-title {
-  margin-bottom: 6px;
-  color: hsl(var(--muted-foreground));
-  font-size: 13px;
-}
-
-.top-stat-value {
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.stat-total {
-  color: hsl(var(--primary));
-}
-
-.stat-withdrawable {
-  color: hsl(142 71% 40%);
-}
-
-.stat-freeze {
-  color: hsl(var(--destructive));
-}
-
-.division-fee-card {
-  width: 100%;
-  height: 100%;
-}
-
-.division-fee-card :deep(.ant-card-body) {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 80px;
-  padding: 8px 16px;
-}
-
-.division-fee-card p {
-  margin: 1px 0;
-  font-size: 13px;
-  line-height: 1.35;
+.division-overview {
+  display: grid;
+  gap: 12px;
 }
 
 .apply-slot {
   display: flex;
-  align-items: flex-start;
-  width: 100%;
-  height: 100%;
-  min-height: 80px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-.agent-no {
+.mch-no {
   color: hsl(var(--primary));
   font-weight: 600;
-}
-
-.agent-name {
-  margin-left: 4px;
+  margin-right: 4px;
 }
 
 .amount-apply {
@@ -467,10 +407,10 @@ onMounted(async () => {
 }
 
 .amount-receive {
-  color: hsl(142 71% 40%);
+  color: #4bd884;
 }
 
 .apply-form__text {
-  font-weight: 500;
+  color: hsl(var(--foreground));
 }
 </style>

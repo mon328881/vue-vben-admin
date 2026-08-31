@@ -1,0 +1,5 @@
+{
+  "path": "d:/Code/Diamond/asiapay-admin/apps/web-mgr/src/views/dashboard/components/TopPanel.vue",
+  "old_string": "import { fetchTwoDayCountApi } from '#/api';\nimport { formatYuan, rateValue } from '#/utils/format';\n\nimport TrendTag from './TrendTag.vue';",
+  "new_string": "import { CountTo } from '@vben/common-ui';\nimport { IconifyIcon } from '@vben/icons';\n\nimport { fetchTwoDayCountApi } from '#/api';\nimport { formatYuan, rateValue } from '#/utils/format';\n\nimport TrendTag from './TrendTag.vue';"
+}

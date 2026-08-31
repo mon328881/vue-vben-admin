@@ -8,13 +8,10 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Form,
   Modal,
   Popconfirm,
-  Row,
   Space,
-  Statistic,
   Switch,
   Table,
   Tag,
@@ -41,6 +38,10 @@ import type {
 } from '#/api/modules/passage-group';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import { usePassageGroupExport } from '#/composables/use-async-export';
 import {
   passageGroupSettleModeLabel,
@@ -102,6 +103,39 @@ const {
 } = usePassageGroupExport();
 
 const canEdit = computed(() => hasEnt('ENT_MCH_APP_EDIT'));
+
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '供应商总数',
+      value: Number(s.num ?? 0),
+      icon: 'lucide:users',
+    },
+    {
+      title: '预付汇总',
+      value: Number(s.totalPrepaid ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '余额汇总',
+      value: Number(s.totalBalance ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:circle-dollar-sign',
+    },
+    {
+      title: '差额汇总',
+      value:
+        (Number(s.totalPrepaid ?? 0) - Number(s.totalBalance ?? 0)) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:scale',
+    },
+  ];
+});
 
 const columns: TableColumnsType = [
   {
@@ -374,10 +408,7 @@ onMounted(async () => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
       <div
@@ -427,35 +458,7 @@ onMounted(async () => {
       </div>
     </Card>
 
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="供应商总数" :value="stat.num ?? 0" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="预付汇总" :value="formatYuan(stat.totalPrepaid)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="余额汇总" :value="formatYuan(stat.totalBalance)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic
-            title="差额汇总"
-            :value="
-              formatYuan(
-                (stat.totalPrepaid ?? 0) - (stat.totalBalance ?? 0),
-              )
-            "
-          />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
 
     <Card>
       <Table
@@ -511,19 +514,22 @@ onMounted(async () => {
                 v-if="canEdit"
                 size="small"
                 type="primary"
+                class="inline-action-cell__action"
                 @click="prepaidRef?.show(record as PassageGroupInfo)"
               >
                 调额
               </Button>
-              <b>{{ formatYuan(record.prepaid as number) }}</b>
+              <b class="inline-action-cell__value">{{
+                formatYuan(record.prepaid as number)
+              }}</b>
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'balance'">
             <b
               :class="
                 (record.balance as number) > 0
-                  ? 'text-green-500'
-                  : 'text-red-500'
+                  ? 'amount-positive'
+                  : 'amount-negative'
               "
             >
               {{ formatYuan(record.balance as number) }}
@@ -536,13 +542,20 @@ onMounted(async () => {
                 title="[结算]操作将清空余额并从预付中扣除，确认结算么?"
                 @confirm="confirmSettle(record as PassageGroupInfo)"
               >
-                <Button size="small" type="primary">结算</Button>
+                <Button
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__action"
+                >
+                  结算
+                </Button>
               </Popconfirm>
               <span
+                class="inline-action-cell__value"
                 :class="
                   Number(record.prepaid ?? 0) - Number(record.balance ?? 0) >= 0
                     ? ''
-                    : 'text-red-500'
+                    : 'text-error'
                 "
               >
                 {{
@@ -595,11 +608,13 @@ onMounted(async () => {
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'successAmount'">
-            {{
-              record.successAmount != null
-                ? formatYuan(record.successAmount as number)
-                : '-'
-            }}
+            <span class="text-brand">
+              {{
+                record.successAmount != null
+                  ? formatYuan(record.successAmount as number)
+                  : '-'
+              }}
+            </span>
           </template>
           <template v-else-if="column.dataIndex === 'successRate'">
             {{ formatRateDecimal(record.successRate as number) }}
@@ -624,10 +639,11 @@ onMounted(async () => {
             {{ formatDateTime(record.createdAt as string) }}
           </template>
           <template v-else-if="column.dataIndex === 'action'">
-            <Space>
+            <div class="ap-table-ops">
               <Button
                 size="small"
                 type="link"
+                class="ap-table-ops__link"
                 @click="
                   historyRef?.show(
                     (record as PassageGroupInfo).passageGroupName,
@@ -640,6 +656,7 @@ onMounted(async () => {
                 v-if="canEdit"
                 size="small"
                 type="link"
+                class="ap-table-ops__link"
                 @click="
                   formRef?.show(
                     (record as PassageGroupInfo).passageGroupName,
@@ -653,11 +670,12 @@ onMounted(async () => {
                 danger
                 size="small"
                 type="link"
+                class="ap-table-ops__link"
                 @click="confirmDelete(record as PassageGroupInfo)"
               >
                 删除
               </Button>
-            </Space>
+            </div>
           </template>
         </template>
       </Table>
@@ -686,19 +704,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.inline-action-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-  min-width: 0;
-}
-
-.inline-action-cell :deep(.ant-btn) {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 .quota-dot {
   display: inline-block;
   width: 8px;

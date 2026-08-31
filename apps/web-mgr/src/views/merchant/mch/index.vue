@@ -8,17 +8,14 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Dropdown,
   Form,
   Input,
   Menu,
   Modal,
   Popconfirm,
-  Row,
   Select,
   Space,
-  Statistic,
   Table,
   Tag,
   message,
@@ -41,6 +38,10 @@ import type { MchInfo, MchStatInfo } from '#/api/types/business';
 import GoogleDangerConfirmDialog from '#/components/common/GoogleDangerConfirmDialog.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import AgentSelector from '#/components/selectors/AgentSelector.vue';
 import MchGroupSelector from '#/components/selectors/MchGroupSelector.vue';
 import { useMchListExport } from '#/composables/use-async-export';
@@ -111,6 +112,38 @@ const {
 
 const canAdd = computed(() => hasEnt('ENT_MCH_INFO_ADD'));
 const canEdit = computed(() => hasEnt('ENT_MCH_INFO_EDIT'));
+
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '商户总数',
+      value: Number(s.mchNum ?? 0),
+      icon: 'lucide:users',
+    },
+    {
+      title: '预付汇总',
+      value: Number(s.prepaid ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '余额汇总',
+      value: Number(s.totalBalance ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:circle-dollar-sign',
+    },
+    {
+      title: '冻结汇总',
+      value: Number(s.freezeBalance ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:lock',
+    },
+  ];
+});
 const canView = computed(() => hasEnt('ENT_MCH_INFO_VIEW'));
 const canDel = computed(() => hasEnt('ENT_MCH_INFO_DEL'));
 const canConfig = computed(() => hasEnt('ENT_MCH_APP_CONFIG'));
@@ -409,10 +442,7 @@ onMounted(async () => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
 
@@ -471,34 +501,7 @@ onMounted(async () => {
       </div>
     </Card>
 
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="商户总数" :value="stat.mchNum ?? 0" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="预付汇总" :value="formatYuan(stat.prepaid)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic
-            title="余额汇总"
-            :value="formatYuan(stat.totalBalance)"
-          />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic
-            title="冻结汇总"
-            :value="formatYuan(stat.freezeBalance)"
-          />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
 
     <Card>
       <Table
@@ -524,13 +527,15 @@ onMounted(async () => {
               <Button
                 v-if="canEdit"
                 size="small"
-                type="link"
-                class="!px-0"
+                type="primary"
+                class="inline-action-cell__action"
                 @click="prepaidRef?.show(record as MchInfo)"
               >
                 调额
               </Button>
-              <b>{{ formatYuan(record.prepaid) }}</b>
+              <b class="inline-action-cell__value">{{
+                formatYuan(record.prepaid)
+              }}</b>
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'balance'">
@@ -538,15 +543,18 @@ onMounted(async () => {
               <Button
                 v-if="canEdit"
                 size="small"
-                type="link"
-                class="!px-0"
+                type="primary"
+                class="inline-action-cell__action"
                 @click="balanceRef?.show(record as MchInfo)"
               >
                 调额
               </Button>
               <b
+                class="inline-action-cell__value"
                 :class="
-                  (record.balance ?? 0) > 0 ? 'text-green-500' : 'text-red-500'
+                  (record.balance ?? 0) > 0
+                    ? 'amount-positive'
+                    : 'amount-negative'
                 "
               >
                 {{ formatYuan(record.balance) }}
@@ -560,14 +568,21 @@ onMounted(async () => {
                 title="[结算]操作将清空余额并从预付中扣除，确认结算么?"
                 @confirm="confirmSettle(record as MchInfo)"
               >
-                <Button size="small" type="link" class="!px-0">结算</Button>
+                <Button
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__action"
+                >
+                  结算
+                </Button>
               </Popconfirm>
               <span
+                class="inline-action-cell__value"
                 :class="
                   (record.diff ??
                     (record.prepaid ?? 0) - (record.balance ?? 0)) >= 0
                     ? ''
-                    : 'text-red-500'
+                    : 'text-error'
                 "
               >
                 {{
@@ -580,11 +595,13 @@ onMounted(async () => {
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'successAmount'">
-            {{
-              record.successAmount != null
-                ? formatYuan(record.successAmount)
-                : '-'
-            }}
+            <span class="text-brand">
+              {{
+                record.successAmount != null
+                  ? formatYuan(record.successAmount)
+                  : '-'
+              }}
+            </span>
           </template>
           <template v-else-if="column.dataIndex === 'successRate'">
             {{ formatRateDecimal(record.successRate) }}
@@ -618,11 +635,12 @@ onMounted(async () => {
             {{ record.remark || '' }}
           </template>
           <template v-else-if="column.dataIndex === 'action'">
-            <Space :size="0" wrap>
+            <div class="ap-table-ops">
               <Button
                 v-if="canConfig"
                 size="small"
                 type="link"
+                class="ap-table-ops__link"
                 @click="onPayConfig(record as MchInfo)"
               >
                 支付配置
@@ -631,6 +649,7 @@ onMounted(async () => {
                 v-if="canConfig"
                 size="small"
                 type="link"
+                class="ap-table-ops__link"
                 @click="onBindPassage(record as MchInfo)"
               >
                 通道绑定
@@ -639,12 +658,15 @@ onMounted(async () => {
                 v-if="canEdit"
                 size="small"
                 type="link"
+                class="ap-table-ops__link"
                 @click="onEdit(record as MchInfo)"
               >
                 修改
               </Button>
               <Dropdown v-if="hasMoreOps(record as MchInfo)">
-                <Button size="small" type="link">更多</Button>
+                <Button size="small" type="link" class="ap-table-ops__link">
+                  更多
+                </Button>
                 <template #overlay>
                   <Menu
                     @click="
@@ -687,7 +709,7 @@ onMounted(async () => {
                   </Menu>
                 </template>
               </Dropdown>
-            </Space>
+            </div>
           </template>
         </template>
       </Table>
@@ -728,12 +750,3 @@ onMounted(async () => {
     />
   </Page>
 </template>
-
-<style scoped>
-.inline-action-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-</style>

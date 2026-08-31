@@ -1,26 +1,25 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
-  Button,
   Card,
-  Col,
   Form,
   Input,
   RangePicker,
-  Row,
   Select,
-  Space,
-  Statistic,
   Table,
 } from 'ant-design-vue';
 
 import { fetchMchHistoryApi, fetchMchHistoryStatApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS, MCH_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
 import { formatDateTime, formatYuan } from '#/utils/format';
@@ -57,6 +56,24 @@ const query = reactive({
   bizType: '' as any,
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
+
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '变更金额汇总',
+      value: Number(s.totalAmount ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '记录条数',
+      value: Number(s.totalCount ?? 0),
+      icon: 'lucide:list-ordered',
+    },
+  ];
+});
 
 const columns: TableColumnsType = [
   { dataIndex: 'mchNo', title: '商户号', width: 130 },
@@ -175,9 +192,7 @@ onMounted(async () => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
+          <FilterActions @reset="onReset">
             <AsyncExportButtons
               danger
               :loading="exportLoading"
@@ -186,22 +201,11 @@ onMounted(async () => {
               @export="onExport"
               @open-report-list="openReportList"
             />
-          </Space>
+          </FilterActions>
         </Form.Item>
       </Form>
     </Card>
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="变更金额汇总" :value="formatYuan(stat.totalAmount)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="记录条数" :value="stat.totalCount ?? 0" />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
     <Card>
       <Table
         :columns="columns"

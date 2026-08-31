@@ -1,9 +1,20 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-import { Form, Input, Modal, Radio, message } from 'ant-design-vue';
+import {
+  Button,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Spin,
+  message,
+} from 'ant-design-vue';
 
 import { fetchSysEntBySysTypeApi, updateSysEntApi } from '#/api';
+
+defineOptions({ name: 'SystemEntFormDrawer' });
 
 const props = defineProps<{
   callbackFunc?: (payload: {
@@ -26,6 +37,8 @@ const form = ref({
   state: 1,
   menuType: '',
 });
+
+const title = computed(() => (creating.value ? '新增菜单' : '修改权限资源'));
 
 function resetForm() {
   form.value = {
@@ -107,42 +120,70 @@ defineExpose({ show });
 </script>
 
 <template>
-  <Modal
+  <Drawer
     v-model:open="visible"
-    :title="creating ? '新增菜单' : '修改菜单'"
-    :confirm-loading="saving"
+    :title="title"
+    :width="520"
+    destroy-on-close
     :mask-closable="false"
-    ok-text="确定"
-    cancel-text="取消"
-    width="520px"
-    @ok="save"
-    @cancel="close"
+    @close="close"
   >
-    <Form layout="vertical" :model="form">
-      <Form.Item label="资源名称" required>
-        <Input v-model:value="form.entName" placeholder="请输入资源名称" />
-      </Form.Item>
-      <Form.Item label="路径地址">
-        <Input v-model:value="form.menuUri" placeholder="路径地址" />
-      </Form.Item>
-      <Form.Item label="排序（正序显示）">
-        <Input v-model:value="form.entSort" placeholder="排序值" />
-      </Form.Item>
-      <Form.Item label="快速开始">
-        <Radio.Group
-          v-model:value="form.quickJump"
-          :disabled="form.menuType === 'PB' || !form.menuUri"
-        >
-          <Radio :value="1">是</Radio>
-          <Radio :value="0">否</Radio>
-        </Radio.Group>
-      </Form.Item>
-      <Form.Item label="状态">
-        <Radio.Group v-model:value="form.state">
-          <Radio :value="1">启用</Radio>
-          <Radio :value="0">停用</Radio>
-        </Radio.Group>
-      </Form.Item>
-    </Form>
-  </Modal>
+    <Spin :spinning="detailLoading">
+      <Form class="ap-drawer-form" layout="vertical" :model="form">
+        <Form.Item label="资源名称" required>
+          <Input
+            v-model:value="form.entName"
+            allow-clear
+            placeholder="请输入资源名称"
+          />
+        </Form.Item>
+        <Form.Item label="路径地址">
+          <Input
+            v-model:value="form.menuUri"
+            allow-clear
+            placeholder="如 /pay 或菜单 URI"
+          />
+        </Form.Item>
+        <Form.Item label="排序（正序显示）">
+          <InputNumber
+            v-model:value="form.entSort"
+            :min="0"
+            class="w-full"
+            placeholder="排序值"
+            style="width: 100%"
+          />
+        </Form.Item>
+        <Form.Item label="快速开始">
+          <Radio.Group
+            v-model:value="form.quickJump"
+            :disabled="form.menuType === 'PB' || !form.menuUri"
+          >
+            <Radio :value="1">是</Radio>
+            <Radio :value="0">否</Radio>
+          </Radio.Group>
+        </Form.Item>
+        <Form.Item label="状态">
+          <Radio.Group v-model:value="form.state">
+            <Radio :value="1">启用</Radio>
+            <Radio :value="0">停用</Radio>
+          </Radio.Group>
+        </Form.Item>
+      </Form>
+    </Spin>
+
+    <template #footer>
+      <div class="ent-drawer-footer">
+        <Button @click="close">取消</Button>
+        <Button type="primary" :loading="saving" @click="save">保存</Button>
+      </div>
+    </template>
+  </Drawer>
 </template>
+
+<style scoped>
+.ent-drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+</style>

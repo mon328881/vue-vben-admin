@@ -1,22 +1,16 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
-  Descriptions,
-  Drawer,
   Form,
   Input,
   message,
   RangePicker,
-  Row,
-  Space,
-  Statistic,
   Table,
   Tag,
 } from 'ant-design-vue';
@@ -27,15 +21,20 @@ import {
   fetchPayOrderForceListApi,
 } from '#/api';
 import type { PayOrder, PayRealTimeStat } from '#/api/types/business';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
+import PassageSelector from '#/components/selectors/PassageSelector.vue';
 import {
   notifyStateColor,
   notifyStateLabel,
   payOrderStateColor,
   payOrderStateLabel,
 } from '#/constants/order';
-import PassageSelector from '#/components/selectors/PassageSelector.vue';
-import { formatDateTime, formatYuan } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
+import { formatDateTime, formatYuan } from '#/utils/format';
+import PayOrderDetailDrawer from '../pay/components/PayOrderDetailDrawer.vue';
 
 defineOptions({ name: 'OrderForceListPage' });
 
@@ -55,6 +54,40 @@ const stat = ref<PayRealTimeStat>({});
 const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detail = ref<PayOrder | null>(null);
+
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '订单金额',
+      value: Number(s.successAmount ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      sub: `总：${formatYuan(s.totalAmount)}`,
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '订单数',
+      value: Number(s.successCount ?? 0),
+      sub: `总：${s.totalCount ?? 0}`,
+      icon: 'lucide:list-ordered',
+    },
+    {
+      title: '商户入账',
+      value: Number(s.totalMchIncome ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:building-2',
+    },
+    {
+      title: '平台利润',
+      value: Number(s.totalIncome ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:trending-up',
+    },
+  ];
+});
 
 const columns: TableColumnsType = [
   { dataIndex: 'mchNo', fixed: 'left', title: '商户号/商户', width: 160 },
@@ -193,46 +226,12 @@ onMounted(() => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>
 
-    <Row :gutter="[12, 12]" class="ap-page-stats">
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <div class="text-muted-foreground text-xs">订单金额</div>
-          <div class="text-lg font-semibold">
-            {{ formatYuan(stat.successAmount) }}
-          </div>
-          <div class="text-muted-foreground text-xs">
-            总：{{ formatYuan(stat.totalAmount) }}
-          </div>
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <div class="text-muted-foreground text-xs">订单数</div>
-          <div class="text-lg font-semibold">{{ stat.successCount ?? 0 }}</div>
-          <div class="text-muted-foreground text-xs">
-            总：{{ stat.totalCount ?? 0 }}
-          </div>
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="商户入账" :value="formatYuan(stat.totalMchIncome)" />
-        </Card>
-      </Col>
-      <Col :md="6" :span="12">
-        <Card size="small">
-          <Statistic title="平台利润" :value="formatYuan(stat.totalIncome)" />
-        </Card>
-      </Col>
-    </Row>
+    <ListStatCards :items="listStatItems" />
 
     <Card>
       <Table
@@ -254,22 +253,25 @@ onMounted(() => {
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'mchNo'">
             <div>
-              <div>{{ record.mchNo }}</div>
+              <div class="text-brand">{{ record.mchNo }}</div>
               <div class="text-muted-foreground text-xs">
                 {{ record.mchName || '' }}
               </div>
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'payOrderId'">
-            <div class="cursor-pointer" @click="copyText(record.payOrderId as string)">
-              <div>{{ record.payOrderId }}</div>
+            <div
+              class="cursor-pointer"
+              @click="copyText(record.payOrderId as string)"
+            >
+              <div class="text-brand">{{ record.payOrderId }}</div>
               <div class="text-muted-foreground text-xs">
                 {{ record.mchOrderNo }}
               </div>
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            {{ formatYuan(record.amount as number) }}
+            <b class="text-brand">{{ formatYuan(record.amount as number) }}</b>
           </template>
           <template v-else-if="column.dataIndex === 'forceChangeBeforeState'">
             <Tag :color="payOrderStateColor(record.forceChangeBeforeState as number)">
@@ -290,58 +292,26 @@ onMounted(() => {
             {{ formatDateTime(record.updatedAt as string) }}
           </template>
           <template v-else-if="column.dataIndex === 'action'">
-            <Button size="small" type="link" @click="openDetail(record as PayOrder)">
-              详情
-            </Button>
+            <div class="ap-table-ops">
+              <Button
+                size="small"
+                type="link"
+                class="ap-table-ops__link"
+                @click="openDetail(record as PayOrder)"
+              >
+                订单详情
+              </Button>
+            </div>
           </template>
         </template>
       </Table>
     </Card>
 
-    <Drawer
+    <PayOrderDetailDrawer
       v-model:open="detailOpen"
-      title="订单详情"
-      width="560"
+      :detail="detail"
       :loading="detailLoading"
-    >
-      <Descriptions v-if="detail" :column="1" bordered size="small">
-        <Descriptions.Item label="支付订单号">
-          {{ detail.payOrderId }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户订单号">
-          {{ detail.mchOrderNo }}
-        </Descriptions.Item>
-        <Descriptions.Item label="通道订单号">
-          {{ detail.passageOrderNo || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户号">{{ detail.mchNo }}</Descriptions.Item>
-        <Descriptions.Item label="商户名">
-          {{ detail.mchName || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付金额">
-          {{ formatYuan(detail.amount) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="补单前">
-          <Tag :color="payOrderStateColor(detail.forceChangeBeforeState)">
-            {{ payOrderStateLabel(detail.forceChangeBeforeState) }}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="当前状态">
-          <Tag :color="payOrderStateColor(detail.state)">
-            {{ payOrderStateLabel(detail.state) }}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="操作员">
-          {{ detail.forceChangeLoginName || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付通道">
-          {{ detail.passageName || detail.passageId || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="更新时间">
-          {{ formatDateTime(detail.updatedAt) }}
-        </Descriptions.Item>
-      </Descriptions>
-    </Drawer>
+    />
     </div>
   </Page>
 </template>

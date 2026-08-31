@@ -17,9 +17,9 @@ import {
   watch,
 } from 'vue';
 
+import { AnalysisChartCard } from '@vben/common-ui';
 import { EchartsUI, useEcharts } from '@vben/plugins/echarts';
 import {
-  Card,
   Col,
   RadioButton,
   RadioGroup,
@@ -67,6 +67,17 @@ const concurrentPage = reactive({ current: 1, pageSize: 10 });
 
 const chartRef = ref<EchartsUIType>();
 const { renderEcharts } = useEcharts(chartRef);
+
+const rankBoardTitle = computed(() => {
+  if (boardTab.value === '2') return '商户并发';
+  const map: Record<string, string> = {
+    '1': '商户排名',
+    '2': '通道排名',
+    '3': '供应商排名',
+    '4': '代理排名',
+  };
+  return map[rankTab.value] ?? '数据排名';
+});
 
 interface MonitorRow {
   name: string;
@@ -427,7 +438,7 @@ onUnmounted(() => {
 <template>
   <Row :gutter="16" class="rank-row">
     <Col :xs="24" :xl="12">
-      <Card class="dashboard-rank-card" :bordered="true">
+      <AnalysisChartCard class="dashboard-rank-card" :title="rankBoardTitle">
         <div class="card-header">
           <RadioGroup v-model:value="boardTab" button-style="solid" size="small">
             <RadioButton value="1">数据排名</RadioButton>
@@ -531,13 +542,12 @@ onUnmounted(() => {
             </template>
           </Table>
         </div>
-      </Card>
+      </AnalysisChartCard>
     </Col>
 
     <Col :xs="24" :xl="12">
-      <div class="monitor-panel">
+      <AnalysisChartCard class="monitor-panel" title="通道监控">
         <div class="monitor-header">
-          <span class="monitor-title">通道监控</span>
           <RadioGroup
             v-model:value="monitorMinutes"
             button-style="solid"
@@ -561,7 +571,7 @@ onUnmounted(() => {
             <div v-if="chartEmpty" class="monitor-empty">暂无数据</div>
           </div>
         </div>
-      </div>
+      </AnalysisChartCard>
     </Col>
   </Row>
 </template>
@@ -576,9 +586,10 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-.dashboard-rank-card :deep(.ant-card-body) {
-  padding: 16px 20px;
-  height: 100%;
+.dashboard-rank-card :deep([data-slot='card-content']),
+.dashboard-rank-card :deep(.p-6) {
+  padding-top: 0;
+  height: calc(100% - 64px);
   display: flex;
   flex-direction: column;
 }
@@ -605,10 +616,12 @@ onUnmounted(() => {
 .monitor-panel {
   height: 710px;
   box-sizing: border-box;
-  padding: 16px 20px;
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
+}
+
+.monitor-panel :deep([data-slot='card-content']),
+.monitor-panel :deep(.p-6) {
+  padding-top: 0;
+  height: calc(100% - 64px);
   display: flex;
   flex-direction: column;
 }
@@ -616,16 +629,10 @@ onUnmounted(() => {
 .monitor-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   flex-wrap: wrap;
   padding-bottom: 12px;
-}
-
-.monitor-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: hsl(var(--foreground));
 }
 
 .monitor-body {

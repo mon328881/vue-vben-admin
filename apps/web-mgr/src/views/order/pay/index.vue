@@ -9,8 +9,6 @@ import {
   Button,
   Card,
   Col,
-  Descriptions,
-  Drawer,
   Form,
   Input,
   Modal,
@@ -19,7 +17,6 @@ import {
   Select,
   Slider,
   Space,
-  Statistic,
   Switch,
   Table,
   Tag,
@@ -38,6 +35,13 @@ import {
 import type { PayOrder, PayRealTimeStat } from '#/api/types/business';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
+import TableActionLinks, {
+  type TableActionItem,
+} from '#/components/table/TableActionLinks.vue';
 import { usePayOrderExport } from '#/composables/use-async-export';
 import {
   FORCE_CHANGE_OPTIONS,
@@ -53,6 +57,7 @@ import { hasEnt } from '#/utils/access';
 import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
 
 import PayOrderChangeDialog from './components/PayOrderChangeDialog.vue';
+import PayOrderDetailDrawer from './components/PayOrderDetailDrawer.vue';
 import PayOrderForceDialog from './components/PayOrderForceDialog.vue';
 
 defineOptions({ name: 'PayOrderListPage' });
@@ -148,12 +153,70 @@ function successRateText() {
   return `${((s / t) * 100).toFixed(2)}%`;
 }
 
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '订单金额',
+      value: Number(s.successAmount ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      sub: `总：${formatYuan(s.totalAmount)}`,
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '订单数',
+      value: Number(s.successCount ?? 0),
+      sub: `总：${s.totalCount ?? 0}`,
+      icon: 'lucide:list-ordered',
+    },
+    {
+      title: '商户入账',
+      value: Number(s.totalMchIncome ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:building-2',
+    },
+    {
+      title: '平台利润',
+      value: Number(s.totalIncome ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:trending-up',
+    },
+    {
+      title: '成功率',
+      display: successRateText(),
+      icon: 'lucide:percent',
+    },
+  ];
+});
+
 function canForce(row: PayOrder) {
   return canEdit.value && [1, 3, 6].includes(Number(row.state));
 }
 
 function canRedo(row: PayOrder) {
   return canEdit.value && Number(row.state) === 2;
+}
+
+function opItems(row: PayOrder): TableActionItem[] {
+  return [
+    { key: 'detail', label: '详情', hidden: !canView.value },
+    { key: 'force', label: '补单', hidden: !canForce(row) },
+    { key: 'changeAmount', label: '调额', hidden: !canForce(row) },
+    { key: 'testRedo', label: '冲正', danger: true, hidden: !canRedo(row) },
+  ];
+}
+
+function onOpClick(key: string, row: PayOrder) {
+  const handlers: Record<string, () => void> = {
+    detail: () => void openDetail(row),
+    force: () => onForce(row),
+    changeAmount: () => onChangeAmount(row),
+    testRedo: () => onRedo(row),
+  };
+  handlers[key]?.();
 }
 
 function refreshTimeSecValue() {
@@ -656,10 +719,7 @@ onUnmounted(() => {
             </Col>
             <Col :xs="24" :sm="12" :md="8" :lg="3" :xl="3">
               <Form.Item>
-                <Space>
-                  <Button html-type="submit" type="primary">查询</Button>
-                  <Button @click="onReset">重置</Button>
-                </Space>
+                <FilterActions @reset="onReset" />
               </Form.Item>
             </Col>
           </Row>
@@ -695,46 +755,10 @@ onUnmounted(() => {
         </div>
       </Card>
 
-      <Row v-if="showStat && canCount" :gutter="[12, 12]" class="ap-page-stats">
-        <Col :md="5" :span="12">
-          <Card size="small">
-            <div class="text-muted-foreground text-xs">订单金额</div>
-            <div class="text-lg font-semibold">
-              {{ formatYuan(stat.successAmount) }}
-            </div>
-            <div class="text-muted-foreground text-xs">
-              总：{{ formatYuan(stat.totalAmount) }}
-            </div>
-          </Card>
-        </Col>
-        <Col :md="4" :span="12">
-          <Card size="small">
-            <div class="text-muted-foreground text-xs">订单数</div>
-            <div class="text-lg font-semibold">{{ stat.successCount ?? 0 }}</div>
-            <div class="text-muted-foreground text-xs">
-              总：{{ stat.totalCount ?? 0 }}
-            </div>
-          </Card>
-        </Col>
-        <Col :md="5" :span="12">
-          <Card size="small">
-            <Statistic
-              title="商户入账"
-              :value="formatYuan(stat.totalMchIncome)"
-            />
-          </Card>
-        </Col>
-        <Col :md="5" :span="12">
-          <Card size="small">
-            <Statistic title="平台利润" :value="formatYuan(stat.totalIncome)" />
-          </Card>
-        </Col>
-        <Col :md="5" :span="12">
-          <Card size="small">
-            <Statistic title="成功率" :value="successRateText()" />
-          </Card>
-        </Col>
-      </Row>
+      <ListStatCards
+        v-if="showStat && canCount"
+        :items="listStatItems"
+      />
 
       <Card>
         <Table
@@ -756,7 +780,7 @@ onUnmounted(() => {
           <template #bodyCell="{ column, record }">
             <template v-if="column.dataIndex === 'mchNo'">
               <div>
-                <div>{{ record.mchNo }}</div>
+                <div class="text-brand">{{ record.mchNo }}</div>
                 <div class="text-muted-foreground text-xs">
                   {{ record.mchName || '' }}
                 </div>
@@ -764,7 +788,7 @@ onUnmounted(() => {
             </template>
             <template v-else-if="column.dataIndex === 'payOrderId'">
               <div>
-                <a @click="copyOrderId(record.payOrderId)">
+                <a class="text-brand" @click="copyOrderId(record.payOrderId)">
                   {{ record.payOrderId }}
                 </a>
                 <div class="text-muted-foreground text-xs">
@@ -774,14 +798,14 @@ onUnmounted(() => {
             </template>
             <template v-else-if="column.dataIndex === 'productName'">
               <div>
-                <span class="text-muted-foreground text-xs">
+                <span class="text-brand text-xs">
                   [{{ record.productId ?? '--' }}]
                 </span>
                 {{ record.productName || '--' }}
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'amount'">
-              <b>{{ formatYuan(record.amount) }}</b>
+              <b class="text-brand">{{ formatYuan(record.amount) }}</b>
             </template>
             <template v-else-if="column.dataIndex === 'mchFeeAmount'">
               <div>
@@ -853,94 +877,21 @@ onUnmounted(() => {
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <Space>
-                <Button
-                  v-if="canView"
-                  size="small"
-                  type="link"
-                  @click="openDetail(record as PayOrder)"
-                >
-                  详情
-                </Button>
-                <Button
-                  v-if="canForce(record as PayOrder)"
-                  size="small"
-                  type="link"
-                  @click="onForce(record as PayOrder)"
-                >
-                  补单
-                </Button>
-                <Button
-                  v-if="canForce(record as PayOrder)"
-                  size="small"
-                  type="link"
-                  @click="onChangeAmount(record as PayOrder)"
-                >
-                  调额
-                </Button>
-                <Button
-                  v-if="canRedo(record as PayOrder)"
-                  danger
-                  size="small"
-                  type="link"
-                  @click="onRedo(record as PayOrder)"
-                >
-                  冲正
-                </Button>
-              </Space>
+              <TableActionLinks
+                :items="opItems(record as PayOrder)"
+                @click="onOpClick($event, record as PayOrder)"
+              />
             </template>
           </template>
         </Table>
       </Card>
     </div>
 
-    <Drawer
+    <PayOrderDetailDrawer
       v-model:open="detailOpen"
-      title="订单详情"
-      width="560"
+      :detail="detail"
       :loading="detailLoading"
-    >
-      <Descriptions v-if="detail" :column="1" bordered size="small">
-        <Descriptions.Item label="支付订单号">
-          {{ detail.payOrderId }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户订单号">
-          {{ detail.mchOrderNo }}
-        </Descriptions.Item>
-        <Descriptions.Item label="通道订单号">
-          {{ detail.passageOrderNo || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户号">
-          {{ detail.mchNo }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户名">
-          {{ detail.mchName || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付金额">
-          {{ formatYuan(detail.amount) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户入账">
-          {{ formatYuan(detail.mchIncome) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付产品">
-          {{ detail.productName || detail.productId || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付通道">
-          {{ detail.passageName || detail.passageId || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付状态">
-          <Tag :color="payOrderStateColor(detail.state)">
-            {{ payOrderStateLabel(detail.state) }}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="创建时间">
-          {{ formatDateTime(detail.createdAt) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="成功时间">
-          {{ formatDateTime(detail.successTime) }}
-        </Descriptions.Item>
-      </Descriptions>
-    </Drawer>
+    />
 
     <PayOrderForceDialog ref="forceRef" @success="loadData()" />
     <PayOrderChangeDialog ref="changeRef" @success="loadData()" />

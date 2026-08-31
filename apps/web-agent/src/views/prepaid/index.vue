@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
@@ -15,8 +15,6 @@ import {
   Modal,
   Row,
   Select,
-  Space,
-  Statistic,
   Table,
   Tag,
   message,
@@ -32,6 +30,10 @@ import type { PrepaidHistory } from '#/api/types/business';
 import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/history';
 import { useMchPrepaidHistoryExport } from '#/composables/use-async-export';
 import { formatDayEnd, formatDayStart } from '#/utils/date-range';
@@ -65,6 +67,16 @@ const list = ref<PrepaidHistory[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const summary = reactive({ totalAmount: 0 });
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '变更金额汇总',
+    value: Number(summary.totalAmount ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+]);
 
 const picPreviewOpen = ref(false);
 const picPreviewLoading = ref(false);
@@ -249,11 +261,7 @@ onMounted(async () => {
           </Row>
           <Row :gutter="[16, 16]" class="mt-1">
             <Col :span="24" class="ap-filter-actions">
-              <Space>
-                <Button html-type="submit" type="primary" :loading="loading">
-                  查询
-                </Button>
-                <Button @click="onReset">重置</Button>
+              <FilterActions :loading="loading" @reset="onReset">
                 <AsyncExportButtons
                   danger
                   :has-report-downloads="hasReportDownloads"
@@ -262,24 +270,13 @@ onMounted(async () => {
                   @export="onExport"
                   @open-report-list="openReportList"
                 />
-              </Space>
+              </FilterActions>
             </Col>
           </Row>
         </Form>
       </Card>
 
-      <Row :gutter="[16, 16]" class="ap-page-stats">
-        <Col :md="8" :span="24">
-          <Card>
-            <Statistic
-              title="变更金额汇总"
-              :precision="2"
-              :value="summary.totalAmount / 100"
-              prefix="¥"
-            />
-          </Card>
-        </Col>
-      </Row>
+      <ListStatCards :items="listStatItems" />
 
       <Card>
         <Table

@@ -7,7 +7,6 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Descriptions,
   Drawer,
   Form,
@@ -15,10 +14,8 @@ import {
   Modal,
   Radio,
   RangePicker,
-  Row,
   Select,
   Space,
-  Statistic,
   Table,
   Tag,
   message,
@@ -33,6 +30,9 @@ import {
   setMchDivisionConfigApi,
 } from '#/api';
 import type { DivisionRecord } from '#/api/modules/division';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import {
   DIVISION_STATE_OPTIONS,
   divisionStateColor,
@@ -73,6 +73,29 @@ const drawerVisible = ref(false);
 const detail = ref<DivisionRecord | null>(null);
 
 const canReview = computed(() => hasEnt('ENT_DIVISION_MCH'));
+
+const listStatItems = computed<ListStatCardItem[]>(() => [
+  {
+    title: '待审核申请（条）',
+    value: Number(countStat.count ?? 0),
+    icon: 'lucide:list-ordered',
+  },
+  {
+    title: '待审核总金额',
+    value: Number(countStat.totalAmount ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:wallet',
+  },
+  {
+    title: '最小结算',
+    value: Number(config.mchMinWithdraw ?? 0) / 100,
+    decimals: 2,
+    prefix: '¥',
+    icon: 'lucide:settings',
+    sub: `手续费 ${formatYuan(config.mchFee)} · 费率 ${((config.mchFeeRate || 0) * 100).toFixed(2)}% · ${config.mchVisible === 1 ? '申请启用' : '申请禁用'}`,
+  },
+]);
 
 const columns: TableColumnsType = [
   { dataIndex: 'recordId', fixed: 'left', title: '流水单号', width: 160 },
@@ -272,45 +295,12 @@ onMounted(async () => {
 <template>
   <Page auto-content-height title="商户结算管理">
     <div class="ap-page-stack">
-      <Row :gutter="[12, 12]" class="ap-page-stats">
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <Statistic title="待审核申请（条）" :value="countStat.count" />
-          </Card>
-        </Col>
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <Statistic
-              title="待审核总金额"
-              :value="formatYuan(countStat.totalAmount)"
-            />
-          </Card>
-        </Col>
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <div class="text-sm">
-              <p>
-                最小结算:
-                <b>{{ formatYuan(config.mchMinWithdraw) }}</b>
-              </p>
-              <p>
-                单笔手续费: <b>{{ formatYuan(config.mchFee) }}</b>
-              </p>
-              <p>
-                单笔费率:
-                <b>{{ ((config.mchFeeRate || 0) * 100).toFixed(2) }}%</b>
-              </p>
-              <p>
-                申请开关:
-                <b>{{ config.mchVisible === 1 ? '启用' : '禁用' }}</b>
-              </p>
-            </div>
-          </Card>
-        </Col>
-        <Col :md="6" :span="12" class="flex items-center">
+      <div class="division-stat-bar">
+        <ListStatCards :items="listStatItems" />
+        <div class="division-stat-bar__action">
           <Button type="primary" @click="openConfig">商户结算设置</Button>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
       <Card class="ap-page-filter">
         <Form layout="inline" @finish="onSearch">
@@ -508,3 +498,15 @@ onMounted(async () => {
     </Modal>
   </Page>
 </template>
+
+<style scoped>
+.division-stat-bar {
+  display: grid;
+  gap: 12px;
+}
+
+.division-stat-bar__action {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

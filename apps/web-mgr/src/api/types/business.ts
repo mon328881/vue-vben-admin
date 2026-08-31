@@ -112,6 +112,8 @@ export interface PayOrder {
   mchOrderNo: string;
   passageOrderNo?: string;
   agentNo?: string;
+  agentNoPassage?: string;
+  ifCode?: string;
   productId?: number;
   productName?: string;
   icon?: string;
@@ -121,16 +123,28 @@ export interface PayOrder {
   amount: number;
   mchFeeRate?: number;
   mchFeeAmount?: number;
+  agentRate?: number;
+  agentFeeAmount?: number;
   passageRate?: number;
   passageFeeAmount?: number;
+  agentPassageRate?: number;
+  agentPassageFee?: number;
   mchIncome?: number;
   state: number;
   notifyState?: number;
   forceChangeState?: number;
   forceChangeBeforeState?: number;
   forceChangeLoginName?: string;
+  notifyUrl?: string;
+  notifyParams?: string;
+  passageResp?: string;
+  clientIp?: string;
+  errMsg?: string;
+  returnUrl?: string;
+  extParamJson?: string;
   createdAt?: string;
   updatedAt?: string;
+  expiredTime?: string;
   successTime?: string;
 }
 

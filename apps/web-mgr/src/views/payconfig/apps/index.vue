@@ -7,14 +7,11 @@ import { Page } from '@vben/common-ui';
 import {
   Button,
   Card,
-  Col,
   Form,
   Input,
   Modal,
-  Row,
   Select,
   Space,
-  Statistic,
   Switch,
   Table,
   Tag,
@@ -34,6 +31,10 @@ import {
   type PayPassage,
 } from '#/api';
 import GoogleDangerConfirmDialog from '#/components/common/GoogleDangerConfirmDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
+import ListStatCards, {
+  type ListStatCardItem,
+} from '#/components/list/ListStatCards.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
@@ -110,6 +111,34 @@ const autoCleanRef = ref<InstanceType<typeof PassageAutoCleanDialog>>();
 
 const canAdd = computed(() => hasEnt('ENT_MCH_APP_ADD'));
 const canEdit = computed(() => hasEnt('ENT_MCH_APP_EDIT'));
+
+const listStatItems = computed<ListStatCardItem[]>(() => {
+  const s = stat.value;
+  return [
+    {
+      title: '通道数量',
+      value: Number(s.passageNum ?? 0),
+      icon: 'lucide:layers',
+    },
+    {
+      title: '总余额',
+      value: Number(s.totalBalance ?? 0) / 100,
+      decimals: 2,
+      prefix: '¥',
+      icon: 'lucide:wallet',
+    },
+    {
+      title: '已开启通道',
+      value: Number(s.openPassageNum ?? 0),
+      icon: 'lucide:circle-check',
+    },
+    {
+      title: '已关闭通道',
+      value: Number(s.closedPassageNum ?? 0),
+      icon: 'lucide:circle-x',
+    },
+  ];
+});
 const canConfig = computed(() => hasEnt('ENT_MCH_PAY_PASSAGE_CONFIG'));
 
 const autoCleanTagText = computed(() => {
@@ -389,10 +418,7 @@ onMounted(() => {
             />
           </Form.Item>
           <Form.Item class="ap-filter-actions">
-            <Space>
-              <Button html-type="submit" type="primary">查询</Button>
-              <Button @click="onReset">重置</Button>
-            </Space>
+            <FilterActions @reset="onReset" />
           </Form.Item>
         </Form>
         <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
@@ -451,28 +477,7 @@ onMounted(() => {
         </div>
       </Card>
 
-      <Row :gutter="[12, 12]" class="ap-page-stats">
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <Statistic title="通道数量" :value="stat.passageNum ?? 0" />
-          </Card>
-        </Col>
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <Statistic title="总余额" :value="formatYuan(stat.totalBalance)" />
-          </Card>
-        </Col>
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <Statistic title="已开启通道" :value="stat.openPassageNum ?? 0" />
-          </Card>
-        </Col>
-        <Col :md="6" :span="12">
-          <Card size="small">
-            <Statistic title="已关闭通道" :value="stat.closedPassageNum ?? 0" />
-          </Card>
-        </Col>
-      </Row>
+      <ListStatCards :items="listStatItems" />
 
       <Card>
         <Table
@@ -524,19 +529,22 @@ onMounted(() => {
               />
             </template>
             <template v-else-if="column.dataIndex === 'balance'">
-              <div class="flex items-center gap-2">
+              <div class="inline-action-cell">
                 <Button
                   v-if="canEdit"
                   size="small"
+                  type="primary"
+                  class="inline-action-cell__action"
                   @click="balanceRef?.show(record as PayPassage)"
                 >
                   调额
                 </Button>
                 <b
+                  class="inline-action-cell__value"
                   :class="
                     (record.balance ?? 0) > 0
-                      ? 'text-green-600'
-                      : 'text-red-500'
+                      ? 'amount-positive'
+                      : 'amount-negative'
                   "
                 >
                   {{ formatYuan(record.balance) }}
@@ -602,11 +610,12 @@ onMounted(() => {
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <Space wrap>
+              <div class="ap-table-ops">
                 <Button
                   v-if="canEdit"
                   size="small"
                   type="link"
+                  class="ap-table-ops__link"
                   @click="formRef?.show(record.payPassageId)"
                 >
                   修改
@@ -615,6 +624,7 @@ onMounted(() => {
                   v-if="canEdit"
                   size="small"
                   type="link"
+                  class="ap-table-ops__link"
                   @click="mchBindRef?.show(record as PayPassage)"
                 >
                   通道绑定
@@ -623,6 +633,7 @@ onMounted(() => {
                   v-if="canConfig && record.ifCode"
                   size="small"
                   type="link"
+                  class="ap-table-ops__link"
                   @click="payParamRef?.show(record as PayPassage)"
                 >
                   接口配置
@@ -631,6 +642,7 @@ onMounted(() => {
                   v-if="canEdit"
                   size="small"
                   type="link"
+                  class="ap-table-ops__link"
                   @click="copyRef?.show(record as PayPassage)"
                 >
                   一键复制
@@ -639,6 +651,7 @@ onMounted(() => {
                   v-if="canEdit"
                   size="small"
                   type="link"
+                  class="ap-table-ops__link"
                   @click="testRef?.show(record as PayPassage)"
                 >
                   通道测试
@@ -648,11 +661,12 @@ onMounted(() => {
                   danger
                   size="small"
                   type="link"
+                  class="ap-table-ops__link"
                   @click="confirmDelete(record as PayPassage)"
                 >
                   删除
                 </Button>
-              </Space>
+              </div>
             </template>
           </template>
         </Table>

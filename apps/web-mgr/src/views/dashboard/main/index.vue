@@ -1,12 +1,21 @@
 <script lang="ts" setup>
 /**
  * 对齐旧端 MainPage：
- * TopPanel（六卡 KPI）+ RankList（排名/并发 + 通道监控）+ 租赁到期提醒
+ * WorkbenchHeader + TopPanel（六卡 KPI）+ QuickNav + RankList + 租赁到期提醒
  */
-import { computed, onMounted, ref, watch } from 'vue';
+import type { WorkbenchQuickNavItem } from '@vben/common-ui';
 
-import { Page } from '@vben/common-ui';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+
+import {
+  Page,
+  WorkbenchHeader,
+  WorkbenchQuickNav,
+} from '@vben/common-ui';
+import { preferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
+import { openWindow } from '@vben/utils';
 import { Popover } from 'ant-design-vue';
 
 import { fetchSystemInfoApi, type SystemInfo } from '#/api';
@@ -21,8 +30,67 @@ const BALANCE_WARN = 500 * 100;
 const EXPIRE_WARN_MS = 3 * 24 * 60 * 60 * 1000;
 
 const userStore = useUserStore();
+const router = useRouter();
 const systemInfo = ref<SystemInfo | null>(null);
 const popupVisible = ref(false);
+
+const displayName = computed(
+  () =>
+    userStore.userInfo?.realName ||
+    userStore.userInfo?.username ||
+    '运营同学',
+);
+
+const quickNavItems: WorkbenchQuickNavItem[] = [
+  {
+    color: '#1fdaca',
+    icon: 'ant-design:ordered-list-outlined',
+    title: '支付订单',
+    url: '/pay',
+  },
+  {
+    color: '#3fb27f',
+    icon: 'ant-design:shop-outlined',
+    title: '商户列表',
+    url: '/mch',
+  },
+  {
+    color: '#e18525',
+    icon: 'ant-design:appstore-outlined',
+    title: '通道列表',
+    url: '/apps',
+  },
+  {
+    color: '#bf0c2c',
+    icon: 'ant-design:wallet-outlined',
+    title: '商户预付流水',
+    url: '/mchPrepaidHistory',
+  },
+  {
+    color: '#4daf1bc9',
+    icon: 'ant-design:account-book-outlined',
+    title: '供应商预付流水',
+    url: '/passageGroupPrepaidHistory',
+  },
+  {
+    color: '#00d8ff',
+    icon: 'ant-design:bar-chart-outlined',
+    title: '平台统计',
+    url: '/platStat',
+  },
+];
+
+function navTo(nav: WorkbenchQuickNavItem) {
+  if (nav.url?.startsWith('http')) {
+    openWindow(nav.url);
+    return;
+  }
+  if (nav.url?.startsWith('/')) {
+    router.push(nav.url).catch((error) => {
+      console.error('Navigation failed:', error);
+    });
+  }
+}
 
 const typeLabel = computed(() => {
   const type = systemInfo.value?.type;
@@ -162,7 +230,30 @@ onMounted(() => {
 <template>
   <Page>
     <div class="dashboard-base-page">
+      <WorkbenchHeader
+        class="row-container"
+        :avatar="userStore.userInfo?.avatar || preferences.app.defaultAvatar"
+      >
+        <template #title>
+          你好，{{ displayName }}，开始今天的运营工作吧
+        </template>
+        <template #description>
+          实时概览成交、通道与商户表现，快速进入常用业务页
+        </template>
+        <template #actions>
+          <span />
+        </template>
+      </WorkbenchHeader>
+
       <DashboardTopPanel class="row-container" />
+
+      <WorkbenchQuickNav
+        class="row-container"
+        title="快捷入口"
+        :items="quickNavItems"
+        @click="navTo"
+      />
+
       <DashboardRankList class="row-container" />
 
       <Popover
