@@ -63,6 +63,43 @@ export async function fetchPassageStatCountApi(params: StatListParams) {
   return requestClient.post<StatCount>('/passageStat/count', params);
 }
 
+export interface MchProductRateRow {
+  mchFeeRate?: number;
+  totalAmount?: number;
+  totalSuccessAmount?: number;
+  totalOrderCount?: number;
+  orderSuccessCount?: number;
+  platTotalIncome?: number;
+}
+
+export interface MchProductRateDetail {
+  icon?: string;
+  mchName?: string;
+  mchNo?: string;
+  productId?: number;
+  productName?: string;
+  statisticsDate?: string;
+  successRate?: number;
+  totalAmount?: number;
+  totalSuccessAmount?: number;
+  totalOrderCount?: number;
+  orderSuccessCount?: number;
+  totalCost?: number;
+  platTotalIncome?: number;
+  rates?: MchProductRateRow[];
+}
+
+export async function fetchMchProductRateDetailApi(params: {
+  statisticsDate: string;
+  mchNo: string;
+  productId: number;
+}) {
+  return requestClient.get<MchProductRateDetail>(
+    '/mchProductStat/rateDetail',
+    { params },
+  );
+}
+
 export async function fetchProductStatApi(params: StatListParams) {
   return requestClient.get<PageResult<Record<string, unknown>>>(
     '/productStat',

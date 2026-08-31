@@ -100,3 +100,14 @@ export function validateProductRate(value: unknown, label: string) {
   if (number < -100 || number > 100) return `${label}范围应在 -100~100 之间`;
   return '';
 }
+
+/** 对齐 mgr-web parseCommandRate — 命令粘贴费率解析 */
+export function parseCommandRate(value: unknown, label: string) {
+  const text = String(value ?? '').trim();
+  if (!text) return { error: `${label}不能为空` };
+  if (!/^-?\d+(?:\.\d+)?$/.test(text)) return { error: `${label}格式错误` };
+  const number = Number.parseFloat(text);
+  if (number < -100 || number > 100)
+    return { error: `${label}范围应在 -100~100 之间` };
+  return { value: number.toFixed(2) };
+}

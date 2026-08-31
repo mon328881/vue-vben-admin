@@ -44,6 +44,7 @@ import { formatRateDecimal, formatYuan } from '#/utils/format';
 import PassageAgentConfigDialog from './components/PassageAgentConfigDialog.vue';
 import PassageAutoCleanDialog from './components/PassageAutoCleanDialog.vue';
 import PassageBalanceAdjustDialog from './components/PassageBalanceAdjustDialog.vue';
+import PassageBatchCopyDialog from './components/PassageBatchCopyDialog.vue';
 import PassageBatchDrawer from './components/PassageBatchDrawer.vue';
 import PassageCopyDialog from './components/PassageCopyDialog.vue';
 import PassageDetailDrawer from './components/PassageDetailDrawer.vue';
@@ -99,6 +100,7 @@ const payParamRef = ref<InstanceType<typeof PassagePayParamConfigDrawer>>();
 const copyRef = ref<InstanceType<typeof PassageCopyDialog>>();
 const testRef = ref<InstanceType<typeof PassagePayTestDrawer>>();
 const batchRef = ref<InstanceType<typeof PassageBatchDrawer>>();
+const batchCopyRef = ref<InstanceType<typeof PassageBatchCopyDialog>>();
 const balanceRef = ref<InstanceType<typeof PassageBalanceAdjustDialog>>();
 const rateRef = ref<InstanceType<typeof PassageRateAdjustDialog>>();
 const agentRef = ref<InstanceType<typeof PassageAgentConfigDialog>>();
@@ -324,6 +326,18 @@ function openBatch() {
     ? rows.map((row) => `[${row.payPassageId}] ${row.payPassageName}`)
     : selectedIds.value.map((id) => String(id));
   batchRef.value?.show(selectedIds.value, names);
+}
+
+function onBatchCopy() {
+  const rows = dataSource.value.filter((r) =>
+    selectedIds.value.includes(r.payPassageId),
+  );
+  batchCopyRef.value?.open(rows);
+}
+
+function onBatchDeleted() {
+  selectedIds.value = [];
+  void loadData(true);
 }
 
 async function submitResetAll(googleCode: string) {
@@ -679,7 +693,13 @@ onMounted(() => {
     <PassagePayParamConfigDrawer ref="payParamRef" @success="onFormSuccess" />
     <PassageCopyDialog ref="copyRef" @success="onFormSuccess" />
     <PassagePayTestDrawer ref="testRef" />
-    <PassageBatchDrawer ref="batchRef" @success="onFormSuccess" />
+    <PassageBatchDrawer
+      ref="batchRef"
+      @success="onFormSuccess"
+      @batch-copy="onBatchCopy"
+      @deleted="onBatchDeleted"
+    />
+    <PassageBatchCopyDialog ref="batchCopyRef" @copied="onFormSuccess" />
     <PassageBalanceAdjustDialog ref="balanceRef" @success="onFormSuccess" />
     <PassageRateAdjustDialog ref="rateRef" @success="onFormSuccess" />
     <PassageAgentConfigDialog ref="agentRef" @success="onFormSuccess" />

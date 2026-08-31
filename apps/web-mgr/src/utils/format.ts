@@ -47,6 +47,15 @@ export function formatRateDecimal(value?: number | null): string {
   return `${(Number(value) * 100).toFixed(2)}%`;
 }
 
+/** 费率小数（0~1）展示为百分比，对齐旧端 formatFeeRate */
+export function formatFeeRate(value?: number | string | null): string {
+  const num =
+    typeof value === 'string' ? Number.parseFloat(value) : Number(value ?? 0);
+  if (!Number.isFinite(num)) return '--';
+  const text = (num * 100).toFixed(4).replace(/\.?0+$/, '');
+  return `${text || '0'}%`;
+}
+
 export function formatDateTime(value?: string | null): string {
   if (!value) return '-';
   return String(value).replace('T', ' ').slice(0, 19);

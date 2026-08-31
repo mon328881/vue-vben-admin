@@ -28,6 +28,8 @@ import { usePassageStatExport } from '#/composables/use-async-export';
 import { defaultWeekRange } from '#/utils/date-range';
 import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
 
+import PassageRateDetailDrawer from '../components/PassageRateDetailDrawer.vue';
+
 defineOptions({ name: 'PassageStatPage' });
 
 const {
@@ -58,6 +60,7 @@ const query = reactive({
   passageGroupName: '',
 });
 const stat = ref<Record<string, any>>({});
+const rateDetailRef = ref<InstanceType<typeof PassageRateDetailDrawer>>();
 
 const listStatItems = computed<ListStatCardItem[]>(() => [
   {
@@ -147,6 +150,17 @@ async function onExport() {
   await submitExport(buildParams());
 }
 
+function openRateDetail(row: Record<string, unknown>) {
+  const payPassageId = Number(row.payPassageId);
+  if (!Number.isFinite(payPassageId)) return;
+  const dateRaw = String(row.createdAt ?? row.statisticsDate ?? '');
+  rateDetailRef.value?.show({
+    payPassageId,
+    payPassageName: String(row.payPassageName ?? ''),
+    statisticsDate: dateRaw.slice(0, 10),
+  });
+}
+
 onMounted(async () => {
   await restoreRunningTask();
   await syncReportDownloadAvailability();
@@ -224,6 +238,17 @@ onMounted(async () => {
       >
         <template #bodyCell="{ column, record }">
           <template v-if="false" />
+          <template v-else-if="column.dataIndex === 'payPassageName'">
+            <button
+              type="button"
+              class="passage-rate-link"
+              title="查看通道费率明细"
+              @click="openRateDetail(record)"
+            >
+              <span class="passage-id">[{{ record.payPassageId ?? '--' }}]</span>
+              <span>{{ record.payPassageName ?? '--' }}</span>
+            </button>
+          </template>
           <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
             {{ formatYuan(record.totalSuccessAmount as number) }}
           </template>
@@ -236,10 +261,10 @@ onMounted(async () => {
           <template v-else-if="column.dataIndex === 'createdAt'">
             {{ formatDateTime(record.createdAt as string) }}
           </template>
-
         </template>
       </Table>
     </Card>
+    <PassageRateDetailDrawer ref="rateDetailRef" />
     <ExportReportListDialog
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
@@ -251,3 +276,25 @@ onMounted(async () => {
     </div>
   </Page>
 </template>
+
+<style scoped>
+.passage-rate-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  text-align: left;
+}
+
+.passage-rate-link:hover {
+  text-decoration: underline;
+}
+
+.passage-id {
+  font-weight: 500;
+}
+</style>

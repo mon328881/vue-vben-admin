@@ -26,6 +26,8 @@ import { useMchProductStatExport } from '#/composables/use-async-export';
 import { defaultWeekRange } from '#/utils/date-range';
 import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
 
+import MchProductRateDetailDrawer from '../components/MchProductRateDetailDrawer.vue';
+
 defineOptions({ name: 'MchProductStatPage' });
 
 const {
@@ -56,6 +58,7 @@ const query = reactive({
   productId: '',
 });
 const stat = ref<Record<string, any>>({});
+const rateDetailRef = ref<InstanceType<typeof MchProductRateDetailDrawer>>();
 
 const listStatItems = computed<ListStatCardItem[]>(() => [
   {
@@ -96,6 +99,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'totalOrderCount', title: '订单总笔数', width: 110 },
   { dataIndex: 'orderSuccessCount', title: '成交笔数', width: 100 },
   { dataIndex: 'successRate', title: '支付成功率', width: 110 },
+  { key: 'op', title: '操作', width: 100, fixed: 'right' },
 ];
 
 function buildParams() {
@@ -151,6 +155,20 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
 
 async function onExport() {
   await submitExport(buildParams());
+}
+
+function openRateDetail(row: Record<string, unknown>) {
+  const mchNo = String(row.mchNo ?? '');
+  const productId = Number(row.productId);
+  if (!mchNo || !Number.isFinite(productId)) return;
+  const dateRaw = String(row.createdAt ?? row.statisticsDate ?? '');
+  rateDetailRef.value?.show({
+    statisticsDate: dateRaw.slice(0, 10),
+    mchNo,
+    mchName: String(row.mchName ?? ''),
+    productId,
+    productName: String(row.productName ?? ''),
+  });
 }
 
 onMounted(async () => {
@@ -239,10 +257,13 @@ onMounted(async () => {
           <template v-else-if="column.dataIndex === 'createdAt'">
             {{ formatDateTime(record.createdAt as string) }}
           </template>
-
+          <template v-else-if="column.key === 'op'">
+            <a class="text-brand" @click="openRateDetail(record)">费率明细</a>
+          </template>
         </template>
       </Table>
     </Card>
+    <MchProductRateDetailDrawer ref="rateDetailRef" />
     <ExportReportListDialog
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
@@ -254,3 +275,10 @@ onMounted(async () => {
     </div>
   </Page>
 </template>
+
+<style scoped>
+.text-brand {
+  color: hsl(var(--primary));
+  cursor: pointer;
+}
+</style>

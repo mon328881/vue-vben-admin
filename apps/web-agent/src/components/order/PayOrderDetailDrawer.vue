@@ -14,6 +14,14 @@ import { formatDateTime, formatYuan } from '#/utils/format';
 
 defineOptions({ name: 'PayOrderDetailDrawer' });
 
+const props = withDefaults(
+  defineProps<{
+    /** pay: 商户费率；passage: 代理费率/分润 */
+    feeMode?: 'pay' | 'passage';
+  }>(),
+  { feeMode: 'pay' },
+);
+
 const open = ref(false);
 const detail = ref<PayOrder | null>(null);
 
@@ -108,12 +116,22 @@ defineExpose({ show });
 
       <section class="detail-section">
         <Descriptions bordered :column="2" size="small">
-          <Descriptions.Item label="商户费率">
-            {{ ratePct(detail.mchFeeRate) }}%
-          </Descriptions.Item>
-          <Descriptions.Item label="商户手续费">
-            <span class="font-semibold">{{ formatYuan(detail.mchFeeAmount) }}</span>
-          </Descriptions.Item>
+          <template v-if="props.feeMode === 'passage'">
+            <Descriptions.Item label="代理费率">
+              {{ ratePct(detail.agentPassageRate) }}%
+            </Descriptions.Item>
+            <Descriptions.Item label="代理分润">
+              <Tag color="error">{{ formatYuan(detail.agentPassageFee) }}</Tag>
+            </Descriptions.Item>
+          </template>
+          <template v-else>
+            <Descriptions.Item label="商户费率">
+              {{ ratePct(detail.mchFeeRate) }}%
+            </Descriptions.Item>
+            <Descriptions.Item label="商户手续费">
+              <span class="font-semibold">{{ formatYuan(detail.mchFeeAmount) }}</span>
+            </Descriptions.Item>
+          </template>
         </Descriptions>
       </section>
 

@@ -90,6 +90,13 @@ export interface PassageRateDetail {
   totalSuccessAmount?: number;
   totalOrderCount?: number;
   orderSuccessCount?: number;
+  totalCost?: number;
+  payPassageId?: number;
+  payPassageName?: string;
+  productId?: number;
+  productName?: string;
+  statisticsDate?: string;
+  successRate?: number;
   rates?: PassageRateRow[];
 }
 

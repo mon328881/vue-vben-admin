@@ -8,11 +8,46 @@ export function defaultCopyName(sourceName: string, at = new Date()) {
   return `${sourceName}-一键复制-${hh}:${mm}`;
 }
 
+export function uniqueCopyNames(sourceNames: string[], at = new Date()) {
+  const used = new Set<string>();
+  return sourceNames.map((name) => {
+    const base = defaultCopyName(String(name ?? ''), at);
+    let next = base;
+    let serial = 2;
+    while (used.has(next)) {
+      next = `${base}-${serial}`;
+      serial += 1;
+    }
+    used.add(next);
+    return next;
+  });
+}
+
 export function validateCopyName(newName: string, sourceName: string) {
   const name = stripCopyName(newName);
-  if (!name) return { message: '请输入通道名称', valid: false };
+  if (!name) return { valid: false, message: '请输入通道名称' };
   if (name === stripCopyName(sourceName)) {
-    return { message: '新通道名称不能与原通道相同', valid: false };
+    return { valid: false, message: '新通道名称不能与原通道相同' };
+  }
+  return { valid: true as const };
+}
+
+export function validateCopyBatch(
+  items: Array<{ newName: string; sourceName: string; label?: string }>,
+) {
+  const used = new Set<string>();
+  for (const item of items) {
+    const prefix = item.label ? `${item.label}：` : '';
+    const check = validateCopyName(item.newName, item.sourceName);
+    if (!check.valid) return { valid: false, message: `${prefix}${check.message}` };
+    const name = stripCopyName(item.newName);
+    if (used.has(name)) {
+      return {
+        valid: false,
+        message: `${prefix}新通道名称「${name}」在本批次中重复`,
+      };
+    }
+    used.add(name);
   }
   return { valid: true as const };
 }

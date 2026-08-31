@@ -150,6 +150,19 @@ export async function postMchAppsMultipleSetApi(
   return requestClient.post(`/mchAppsMultipleSet/${action}`, payload);
 }
 
+export async function batchCopyMchAppsApi(
+  items: { sourcePayPassageId: number; payPassageName: string }[],
+) {
+  return requestClient.post<{
+    successCount?: number;
+    failItems?: Array<{
+      sourcePayPassageId?: number;
+      sourcePayPassageName?: string;
+      reason?: string;
+    }>;
+  }>('/mchAppsCopy/batchCopy', { items });
+}
+
 export async function fetchPassageHourlyStatApi(params: {
   payPassageId: number | string;
   date?: string;

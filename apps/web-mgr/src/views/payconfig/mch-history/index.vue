@@ -22,8 +22,10 @@ import ListStatCards, {
 } from '#/components/list/ListStatCards.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS, MCH_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
-import { formatDateTime, formatYuan } from '#/utils/format';
+import { formatDateTime, formatYuan, signedYuan } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
+
+import MchHistoryDetailDrawer from './components/MchHistoryDetailDrawer.vue';
 
 defineOptions({ name: 'MchHistoryListPage' });
 
@@ -56,6 +58,7 @@ const query = reactive({
   bizType: '' as any,
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
+const detailRef = ref<InstanceType<typeof MchHistoryDetailDrawer>>();
 
 const listStatItems = computed<ListStatCardItem[]>(() => {
   const s = stat.value;
@@ -86,6 +89,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'bizType', title: '业务类型', width: 100 },
   { dataIndex: 'createdAt', title: '创建日期', width: 170 },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
+  { key: 'op', title: '操作', width: 100, fixed: 'right' },
 ];
 
 function buildParams() {
@@ -142,6 +146,10 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
 
 async function onExport() {
   await submitExport(buildParams());
+}
+
+function openDetail(row: Record<string, unknown>) {
+  detailRef.value?.show(row);
 }
 
 onMounted(async () => {
@@ -229,7 +237,14 @@ onMounted(async () => {
             {{ formatYuan(record.beforeBalance as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            {{ formatYuan(record.amount as number) }}
+            <b
+              :class="{
+                'amount-positive': Number(record.amount) > 0,
+                'amount-negative': Number(record.amount) < 0,
+              }"
+            >
+              {{ signedYuan(record.amount as number) }}
+            </b>
           </template>
           <template v-else-if="column.dataIndex === 'afterBalance'">
             {{ formatYuan(record.afterBalance as number) }}
@@ -243,9 +258,13 @@ onMounted(async () => {
           <template v-else-if="column.dataIndex === 'bizType'">
             {{ bizTypeLabel(record.bizType as any, MCH_BIZ_TYPE_OPTIONS) }}
           </template>
+          <template v-else-if="column.key === 'op'">
+            <a class="text-brand" @click="openDetail(record)">查看详细</a>
+          </template>
         </template>
       </Table>
     </Card>
+    <MchHistoryDetailDrawer ref="detailRef" />
     <ExportReportListDialog
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
@@ -257,3 +276,10 @@ onMounted(async () => {
     </div>
   </Page>
 </template>
+
+<style scoped>
+.text-brand {
+  color: hsl(var(--primary));
+  cursor: pointer;
+}
+</style>

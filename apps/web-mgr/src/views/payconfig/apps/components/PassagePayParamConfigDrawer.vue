@@ -37,9 +37,25 @@ const canConfig = () => hasEnt('ENT_MCH_PAY_PASSAGE_CONFIG');
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
+const formRef = ref();
 const passage = ref<PayPassage | null>(null);
 const defs = ref<ParamDef[]>([]);
 const values = reactive<Record<string, unknown>>({});
+
+function isRequired(item: ParamDef) {
+  return item.verify === 'required' && item.star !== '1';
+}
+
+function fieldRules(item: ParamDef) {
+  if (!isRequired(item)) return undefined;
+  return [
+    {
+      required: true,
+      message: `请输入${item.desc}`,
+      trigger: item.type === 'radio' ? 'change' : 'blur',
+    },
+  ];
+}
 
 function parseDefs(raw: string): ParamDef[] {
   try {
@@ -135,6 +151,11 @@ async function show(row: PayPassage) {
 }
 
 async function save() {
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
   if (Object.keys(values).length === 0) {
     message.error('参数不能为空！');
     return;
@@ -191,19 +212,18 @@ defineExpose({ show });
       </Divider>
       <Form
         v-if="!loading && defs.length"
+        ref="formRef"
         :model="values"
         layout="vertical"
+        :required-mark="true"
       >
         <Form.Item
           v-for="item in defs"
           :key="item.name"
           :label="item.desc"
           :name="item.name"
-          :rules="
-            item.verify === 'required' && item.star !== '1'
-              ? [{ required: true, message: `请输入${item.desc}` }]
-              : undefined
-          "
+          :required="isRequired(item)"
+          :rules="fieldRules(item)"
         >
           <Input
             v-if="item.type === 'text'"

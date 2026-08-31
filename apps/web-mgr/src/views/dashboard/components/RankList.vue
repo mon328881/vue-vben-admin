@@ -44,6 +44,7 @@ import {
   formatYuan,
   rateValue,
 } from '#/utils/format';
+import PassageRateDetailDrawer from '#/views/payconfig/components/PassageRateDetailDrawer.vue';
 
 defineOptions({ name: 'DashboardRankList' });
 
@@ -53,6 +54,7 @@ const boardTab = ref('1');
 const rankTab = ref('1');
 const monitorMinutes = ref('20');
 const concurrentMinutes = ref('20');
+const rateDetailRef = ref<InstanceType<typeof PassageRateDetailDrawer>>();
 
 const rankLoading = ref(false);
 const concurrentLoading = ref(false);
@@ -241,6 +243,14 @@ function displayName(row: DashboardRankRow) {
     return row.passageGroupName ?? '';
   }
   return `[${row.agentNo ?? ''}] ${row.agentName ?? ''}`;
+}
+
+function onPassageNameClick(row: DashboardRankRow) {
+  if (row.payPassageId == null) return;
+  rateDetailRef.value?.show({
+    payPassageId: Number(row.payPassageId),
+    payPassageName: row.payPassageName,
+  });
 }
 
 function onRankTableChange(pagination: TablePaginationConfig) {
@@ -487,7 +497,18 @@ onUnmounted(() => {
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'name'">
-                {{ displayName(record) }}
+                <button
+                  v-if="rankTab === '2' && record.payPassageId != null"
+                  type="button"
+                  class="passage-rate-link"
+                  title="查看通道费率明细"
+                  @click="onPassageNameClick(record)"
+                >
+                  {{ displayName(record) }}
+                </button>
+                <template v-else>
+                  {{ displayName(record) }}
+                </template>
               </template>
               <template v-else-if="column.key === 'balance'">
                 <b :class="amountSignedClass(record.balance)">
@@ -574,11 +595,25 @@ onUnmounted(() => {
       </AnalysisChartCard>
     </Col>
   </Row>
+  <PassageRateDetailDrawer ref="rateDetailRef" />
 </template>
 
 <style scoped>
 .rank-row {
   width: 100%;
+}
+
+.passage-rate-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  text-align: left;
+}
+
+.passage-rate-link:hover {
+  text-decoration: underline;
 }
 
 .dashboard-rank-card {

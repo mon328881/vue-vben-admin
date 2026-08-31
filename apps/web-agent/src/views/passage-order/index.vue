@@ -407,7 +407,7 @@ onMounted(async () => {
       </Card>
     </div>
 
-    <PayOrderDetailDrawer ref="detailDrawerRef" />
+    <PayOrderDetailDrawer ref="detailDrawerRef" fee-mode="passage" />
 
     <ExportReportListDialog
       v-model:visible="reportListVisible"
