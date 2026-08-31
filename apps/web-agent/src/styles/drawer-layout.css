@@ -133,6 +133,25 @@
   border-top: 1px solid hsl(var(--border) / 50%);
 }
 
+/* 表格 Card 内工具栏（新建/批量/导出），默认靠右 */
+.ap-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ap-table-toolbar--between {
+  justify-content: space-between;
+}
+
+/* Space wrap 的负边距会吃掉与表格的间距，这里抵消 */
+.ap-table-toolbar > .ant-space {
+  margin-bottom: 0 !important;
+}
+
 .ap-page-stats {
   margin-bottom: 0;
 }

@@ -261,16 +261,7 @@ onMounted(async () => {
           </Row>
           <Row :gutter="[16, 16]" class="mt-1">
             <Col :span="24" class="ap-filter-actions">
-              <FilterActions :loading="loading" @reset="onReset">
-                <AsyncExportButtons
-                  danger
-                  :has-report-downloads="hasReportDownloads"
-                  :loading="exportLoading"
-                  :progress="exportProgress"
-                  @export="onExport"
-                  @open-report-list="openReportList"
-                />
-              </FilterActions>
+              <FilterActions :loading="loading" @reset="onReset" />
             </Col>
           </Row>
         </Form>
@@ -279,6 +270,16 @@ onMounted(async () => {
       <ListStatCards :items="listStatItems" />
 
       <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :has-report-downloads="hasReportDownloads"
+            :loading="exportLoading"
+            :progress="exportProgress"
+            @export="onExport"
+            @open-report-list="openReportList"
+          />
+        </div>
         <Table
           :columns="columns"
           :data-source="list"

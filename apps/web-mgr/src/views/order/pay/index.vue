@@ -717,14 +717,22 @@ onUnmounted(() => {
                 />
               </Form.Item>
             </Col>
-            <Col :xs="24" :sm="12" :md="8" :lg="3" :xl="3">
-              <Form.Item>
+            <Col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+              <Form.Item class="ap-filter-actions">
                 <FilterActions @reset="onReset" />
               </Form.Item>
             </Col>
           </Row>
         </Form>
-        <div class="ap-page-toolbar">
+      </Card>
+
+      <ListStatCards
+        v-if="showStat && canCount"
+        :items="listStatItems"
+      />
+
+      <Card>
+        <div class="ap-table-toolbar">
           <span v-if="canCount" class="inline-flex items-center gap-2">
             <span>统计</span>
             <Switch :checked="showStat" @change="onStatToggle" />
@@ -753,14 +761,6 @@ onUnmounted(() => {
             @open-report-list="openReportList"
           />
         </div>
-      </Card>
-
-      <ListStatCards
-        v-if="showStat && canCount"
-        :items="listStatItems"
-      />
-
-      <Card>
         <Table
           :columns="columns"
           :data-source="dataSource"

@@ -32,6 +32,7 @@ import {
   verifyPayWayBatchRateAuthApi,
   type PayWay,
 } from '#/api';
+import FilterActions from '#/components/list/FilterActions.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import {
   BATCH_RATE_ACTIONS,
@@ -602,13 +603,13 @@ onMounted(() => {
             />
           </Form.Item>
           <Form.Item class="ap-filter-actions">
-            <Space>
-              <Button html-type="submit" type="primary">查询</Button>
-              <Button @click="onReset">重置</Button>
-            </Space>
+            <FilterActions @reset="onReset" />
           </Form.Item>
         </Form>
-        <div class="mt-3 flex flex-wrap items-center gap-2">
+      </Card>
+
+      <Card>
+        <div class="ap-table-toolbar">
           <Button v-if="canAdd" type="primary" @click="formRef?.show()">
             新建
           </Button>
@@ -625,9 +626,6 @@ onMounted(() => {
             当前已选择 {{ selectedIds.length }} 个产品
           </span>
         </div>
-      </Card>
-
-      <Card>
         <Table
           :columns="columns"
           :data-source="dataSource"

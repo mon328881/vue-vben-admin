@@ -191,21 +191,22 @@ onMounted(async () => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <FilterActions @reset="onReset">
-            <AsyncExportButtons
-              danger
-              :loading="exportLoading"
-              :progress="exportProgress"
-              :has-report-downloads="hasReportDownloads"
-              @export="onExport"
-              @open-report-list="openReportList"
-            />
-          </FilterActions>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>
     <ListStatCards :items="listStatItems" />
     <Card>
+      <div class="ap-table-toolbar">
+        <AsyncExportButtons
+          danger
+          :loading="exportLoading"
+          :progress="exportProgress"
+          :has-report-downloads="hasReportDownloads"
+          @export="onExport"
+          @open-report-list="openReportList"
+        />
+      </div>
       <Table
         :columns="columns"
         :data-source="dataSource"

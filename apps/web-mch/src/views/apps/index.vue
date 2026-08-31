@@ -24,6 +24,7 @@ import {
   payTestPayOrdersApi,
 } from '#/api';
 import type { MchAppItem } from '#/api/types/business';
+import FilterActions from '#/components/list/FilterActions.vue';
 import PayTestDrawer from '#/components/pay/PayTestDrawer.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import { formatDateTime, formatRateDecimal } from '#/utils/format';
@@ -143,12 +144,7 @@ onMounted(load);
             </Col>
             <Col :lg="4" :md="6" :sm="12" :span="24" :xl="4">
               <Form.Item class="ap-filter-actions">
-                <Space>
-                  <Button html-type="submit" type="primary" :loading="loading">
-                    查询
-                  </Button>
-                  <Button @click="onReset">重置</Button>
-                </Space>
+                <FilterActions :loading="loading" @reset="onReset" />
               </Form.Item>
             </Col>
           </Row>

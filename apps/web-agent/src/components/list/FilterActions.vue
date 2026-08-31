@@ -33,7 +33,6 @@ const emit = defineEmits<{
   <div class="ap-filter-actions-inner">
     <VbenButton
       v-if="nativeSubmit"
-      size="sm"
       type="submit"
       :loading="loading"
     >
@@ -41,19 +40,13 @@ const emit = defineEmits<{
     </VbenButton>
     <VbenButton
       v-else
-      size="sm"
       type="button"
       :loading="loading"
       @click="emit('search')"
     >
       {{ submitText }}
     </VbenButton>
-    <VbenButton
-      size="sm"
-      type="button"
-      variant="outline"
-      @click="emit('reset')"
-    >
+    <VbenButton type="button" variant="outline" @click="emit('reset')">
       {{ resetText }}
     </VbenButton>
     <slot />

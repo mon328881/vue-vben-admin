@@ -53,6 +53,7 @@ import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vu
 
 import PassageAutoCleanDialog from './components/PassageAutoCleanDialog.vue';
 import PassageGroupBatchDrawer from './components/PassageGroupBatchDrawer.vue';
+import PassageGroupFeatureFlagsCell from './components/PassageGroupFeatureFlagsCell.vue';
 import PassageGroupFormDrawer from './components/PassageGroupFormDrawer.vue';
 import PassageGroupPrepaidAdjustDialog from './components/PassageGroupPrepaidAdjustDialog.vue';
 import PassageGroupPrepaidHistoryDrawer from './components/PassageGroupPrepaidHistoryDrawer.vue';
@@ -62,13 +63,6 @@ defineOptions({ name: 'PassageGroupListPage' });
 
 const AUTO_CLEAN_MESSAGE =
   '开启后每天定时清空未绑定供应商的通道余额；设置为“跟随全局”的供应商也会在该时间自动结算（北京时间）。';
-
-const FEATURE_FLAGS = [
-  { short: '推', label: '启用推送', field: 'canPush' as const },
-  { short: '通', label: '启用通知', field: 'canNotify' as const },
-  { short: '催', label: '启用自动催单', field: 'canRemind' as const },
-  { short: '警', label: '启用异常警报', field: 'canWarn' as const },
-];
 
 const loading = ref(false);
 const dataSource = ref<PassageGroupInfo[]>([]);
@@ -146,7 +140,7 @@ const columns: TableColumnsType = [
     width: 160,
   },
   { dataIndex: 'state', title: '状态', width: 90 },
-  { dataIndex: 'featureFlags', title: '功能开关', width: 120 },
+  { dataIndex: 'featureFlags', title: '功能开关', width: 100 },
   { dataIndex: 'prepaid', title: '预付', width: 180 },
   { dataIndex: 'balance', title: '余额', width: 110 },
   { dataIndex: 'diff', title: '[预付-余额]差额', width: 180 },
@@ -411,9 +405,12 @@ onMounted(async () => {
           <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
-      <div
-        class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t pt-3"
-      >
+    </Card>
+
+    <ListStatCards :items="listStatItems" />
+
+    <Card>
+      <div class="ap-table-toolbar">
         <Space wrap>
           <Button v-if="canEdit" type="primary" @click="formRef?.show()">
             新建
@@ -456,11 +453,6 @@ onMounted(async () => {
           {{ autoCleanTagText() }}
         </Tag>
       </div>
-    </Card>
-
-    <ListStatCards :items="listStatItems" />
-
-    <Card>
       <Table
         :columns="columns"
         :data-source="dataSource"
@@ -490,23 +482,9 @@ onMounted(async () => {
             />
           </template>
           <template v-else-if="column.dataIndex === 'featureFlags'">
-            <Space :size="4">
-              <Tooltip
-                v-for="flag in FEATURE_FLAGS"
-                :key="flag.field"
-                :title="flag.label"
-              >
-                <Tag
-                  :color="
-                    Number((record as PassageGroupInfo)[flag.field]) === 1
-                      ? 'success'
-                      : 'default'
-                  "
-                >
-                  {{ flag.short }}
-                </Tag>
-              </Tooltip>
-            </Space>
+            <PassageGroupFeatureFlagsCell
+              :row="record as PassageGroupInfo"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'prepaid'">
             <div class="inline-action-cell">
@@ -574,10 +552,15 @@ onMounted(async () => {
                 v-if="canEdit"
                 size="small"
                 type="primary"
+                shape="square"
+                class="inline-action-cell__icon-btn"
                 @click="quotaRef?.show(record as PassageGroupInfo)"
               >
                 <template #icon>
-                  <IconifyIcon icon="ant-design:setting-outlined" />
+                  <IconifyIcon
+                    class="inline-action-cell__icon"
+                    icon="ant-design:setting-outlined"
+                  />
                 </template>
               </Button>
               <Tooltip

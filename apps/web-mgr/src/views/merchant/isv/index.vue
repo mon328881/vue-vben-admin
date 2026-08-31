@@ -11,7 +11,6 @@ import {
   Input,
   Popconfirm,
   Select,
-  Space,
   Table,
   Tag,
   message,
@@ -24,6 +23,7 @@ import {
   type AgentStatInfo,
 } from '#/api';
 import type { AgentInfo } from '#/api/types/business';
+import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
@@ -186,22 +186,19 @@ onMounted(() => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
-      <div class="mt-3">
-        <Button v-if="canAdd" type="primary" @click="formRef?.show()">
-          新建
-        </Button>
-      </div>
     </Card>
 
     <ListStatCards :items="listStatItems" />
 
     <Card>
+      <div class="ap-table-toolbar">
+        <Button v-if="canAdd" type="primary" @click="formRef?.show()">
+          新建
+        </Button>
+      </div>
       <Table
         :columns="columns"
         :data-source="dataSource"

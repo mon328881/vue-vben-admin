@@ -5,18 +5,17 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
-  Button,
   Card,
   Form,
   Input,
   RangePicker,
-  Space,
   Table,
 } from 'ant-design-vue';
 
 import { fetchAgentStatApi, fetchAgentStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
@@ -168,23 +167,22 @@ onMounted(async () => {
           <Input v-model:value="query.agentNo" allow-clear placeholder="代理商号" />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-            <AsyncExportButtons
-              danger
-              :loading="exportLoading"
-              :progress="exportProgress"
-              :has-report-downloads="hasReportDownloads"
-              @export="onExport"
-              @open-report-list="openReportList"
-            />
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>
     <ListStatCards :items="listStatItems" />
     <Card>
+      <div class="ap-table-toolbar">
+        <AsyncExportButtons
+          danger
+          :loading="exportLoading"
+          :progress="exportProgress"
+          :has-report-downloads="hasReportDownloads"
+          @export="onExport"
+          @open-report-list="openReportList"
+        />
+      </div>
       <Table
         :columns="columns"
         :data-source="dataSource"

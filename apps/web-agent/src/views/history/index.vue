@@ -210,22 +210,23 @@ onMounted(async () => {
                 submit-text="搜索"
                 :loading="loading"
                 @reset="onReset"
-              >
-                <AsyncExportButtons
-                  danger
-                  :has-report-downloads="hasReportDownloads"
-                  :loading="exportLoading"
-                  :progress="exportProgress"
-                  @export="onExport"
-                  @open-report-list="openReportList"
-                />
-              </FilterActions>
+              />
             </Col>
           </Row>
         </Form>
       </Card>
 
       <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :has-report-downloads="hasReportDownloads"
+            :loading="exportLoading"
+            :progress="exportProgress"
+            @export="onExport"
+            @open-report-list="openReportList"
+          />
+        </div>
         <Table
           :columns="columns"
           :data-source="list"

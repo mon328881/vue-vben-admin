@@ -21,7 +21,9 @@ const VIEW_MAP: Record<string, string> = {
   '/passageGroup': '/payconfig/passage-group/index',
   '/passageGroupPrepaidHistory': '/payconfig/passage-prepaid-history/index',
   '/passageHistory': '/payconfig/passage-history/index',
+  /** 生产菜单为 /isvHistory；旧路由 /agentHistory 一并兼容 */
   '/agentHistory': '/payconfig/agent-history/index',
+  '/isvHistory': '/payconfig/agent-history/index',
   '/mchHistory': '/payconfig/mch-history/index',
   '/platStat': '/payconfig/plat-stat/index',
   '/mchStat': '/payconfig/mch-stat/index',

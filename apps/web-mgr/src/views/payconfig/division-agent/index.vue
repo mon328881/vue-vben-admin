@@ -29,6 +29,7 @@ import {
   setAgentDivisionConfigApi,
 } from '#/api';
 import type { DivisionRecord } from '#/api/modules/division';
+import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
@@ -284,13 +285,6 @@ onMounted(async () => {
 <template>
   <Page auto-content-height title="代理结算管理">
     <div class="ap-page-stack">
-      <div class="division-stat-bar">
-        <ListStatCards :items="listStatItems" />
-        <div class="division-stat-bar__action">
-          <Button type="primary" @click="openConfig">代理结算设置</Button>
-        </div>
-      </div>
-
       <Card class="ap-page-filter">
         <Form layout="inline" @finish="onSearch">
           <Form.Item>
@@ -325,15 +319,17 @@ onMounted(async () => {
             />
           </Form.Item>
           <Form.Item class="ap-filter-actions">
-            <Space>
-              <Button html-type="submit" type="primary">查询</Button>
-              <Button @click="onReset">重置</Button>
-            </Space>
+            <FilterActions @reset="onReset" />
           </Form.Item>
         </Form>
       </Card>
 
+      <ListStatCards :items="listStatItems" />
+
       <Card>
+        <div class="ap-table-toolbar">
+          <Button type="primary" @click="openConfig">代理结算设置</Button>
+        </div>
         <Table
           :columns="columns"
           :data-source="dataSource"
@@ -477,15 +473,3 @@ onMounted(async () => {
     </Modal>
   </Page>
 </template>
-
-<style scoped>
-.division-stat-bar {
-  display: grid;
-  gap: 12px;
-}
-
-.division-stat-bar__action {
-  display: flex;
-  justify-content: flex-end;
-}
-</style>

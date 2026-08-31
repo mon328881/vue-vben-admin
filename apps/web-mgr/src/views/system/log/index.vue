@@ -13,13 +13,13 @@ import {
   Form,
   Input,
   RangePicker,
-  Space,
   Table,
   Tag,
   message,
 } from 'ant-design-vue';
 
 import { fetchSysLogDetailApi, fetchSysLogListApi } from '#/api';
+import FilterActions from '#/components/list/FilterActions.vue';
 import LogDisplayField from '#/components/system/LogDisplayField.vue';
 import type { SysLog } from '#/api/modules/system';
 import { defaultTodayRange } from '#/utils/date-range';
@@ -167,10 +167,7 @@ onMounted(() => {
             />
           </Form.Item>
           <Form.Item class="ap-filter-actions">
-            <Space>
-              <Button html-type="submit" type="primary">搜索</Button>
-              <Button @click="onReset">重置</Button>
-            </Space>
+            <FilterActions submit-text="搜索" @reset="onReset" />
           </Form.Item>
         </Form>
       </Card>

@@ -134,6 +134,25 @@
   border-top: 1px solid hsl(var(--border) / 50%);
 }
 
+/* 表格 Card 内工具栏（新建/批量/导出），默认靠右 */
+.ap-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ap-table-toolbar--between {
+  justify-content: space-between;
+}
+
+/* Space wrap 的负边距会吃掉与表格的间距，这里抵消 */
+.ap-table-toolbar > .ant-space {
+  margin-bottom: 0 !important;
+}
+
 .ap-page-stats {
   margin-bottom: 0;
 }
@@ -187,6 +206,29 @@
   padding: 0 8px;
   font-size: 12px;
   line-height: 22px;
+}
+
+/* 仅图标按钮：正方形并居中，避免被左右 padding 挤偏 */
+.inline-action-cell .ant-btn.ant-btn-icon-only,
+.inline-action-cell .ant-btn.inline-action-cell__icon-btn,
+.inline-action-cell .ant-btn.ant-btn-sm.ant-btn-icon-only,
+.inline-action-cell .ant-btn.ant-btn-sm.inline-action-cell__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+  line-height: 1;
+}
+
+.inline-action-cell .inline-action-cell__icon,
+.inline-action-cell .ant-btn .iconify {
+  display: block;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .inline-action-cell .ant-btn-link {

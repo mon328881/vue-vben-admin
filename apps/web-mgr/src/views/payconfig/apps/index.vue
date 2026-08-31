@@ -435,7 +435,12 @@ onMounted(() => {
             <FilterActions @reset="onReset" />
           </Form.Item>
         </Form>
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+      </Card>
+
+      <ListStatCards :items="listStatItems" />
+
+      <Card>
+        <div class="ap-table-toolbar">
           <Space wrap>
             <Button v-if="canAdd" type="primary" @click="formRef?.show()">
               新建
@@ -489,11 +494,6 @@ onMounted(() => {
             </Tag>
           </Space>
         </div>
-      </Card>
-
-      <ListStatCards :items="listStatItems" />
-
-      <Card>
         <Table
           :columns="columns"
           :data-source="dataSource"

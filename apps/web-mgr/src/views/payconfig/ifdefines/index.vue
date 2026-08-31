@@ -17,6 +17,7 @@ import {
 
 import { deletePayIfDefineApi, fetchPayIfDefinesApi } from '#/api';
 import type { PayIfDefine } from '#/api/modules/pay-if';
+import FilterActions from '#/components/list/FilterActions.vue';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime } from '#/utils/format';
 
@@ -94,15 +95,6 @@ onMounted(() => {
   <Page auto-content-height title="支付接口">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <Space>
-          <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
-            新建接口
-          </Button>
-          <Button :loading="loading" @click="() => loadData()">刷新</Button>
-        </Space>
-        <span class="text-sm text-muted-foreground">共 {{ total }} 个接口</span>
-      </div>
       <Form layout="inline" @finish="onSearch">
         <Form.Item>
           <Input
@@ -119,15 +111,19 @@ onMounted(() => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>
 
     <Card>
+      <div class="ap-table-toolbar">
+        <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
+          新建接口
+        </Button>
+        <Button :loading="loading" @click="() => loadData()">刷新</Button>
+        <span class="text-sm text-muted-foreground">共 {{ total }} 个接口</span>
+      </div>
       <Table
         :columns="columns"
         :data-source="dataSource"

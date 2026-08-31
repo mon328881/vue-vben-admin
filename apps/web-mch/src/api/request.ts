@@ -19,6 +19,9 @@ import { useAuthStore } from '#/store';
 
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 
+/** 防止 401 → logout → 401 死循环（后端重启后旧 token 失效时易触发） */
+let reAuthPromise: null | Promise<void> = null;
+
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({
     ...options,
@@ -26,21 +29,27 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   });
 
   /**
-   * 重新认证逻辑（mgr-api 无 refresh，直接登出）
+   * 重新认证逻辑（mch-api 无 refresh，直接登出）
    */
   async function doReAuthenticate() {
+    if (reAuthPromise) return reAuthPromise;
     console.warn('iToken is invalid or expired.');
-    const accessStore = useAccessStore();
-    const authStore = useAuthStore();
-    accessStore.setAccessToken(null);
-    if (
-      preferences.app.loginExpiredMode === 'modal' &&
-      accessStore.isAccessChecked
-    ) {
-      accessStore.setLoginExpired(true);
-    } else {
-      await authStore.logout();
-    }
+    reAuthPromise = (async () => {
+      const accessStore = useAccessStore();
+      const authStore = useAuthStore();
+      accessStore.setAccessToken(null);
+      if (
+        preferences.app.loginExpiredMode === 'modal' &&
+        accessStore.isAccessChecked
+      ) {
+        accessStore.setLoginExpired(true);
+      } else {
+        await authStore.logout();
+      }
+    })().finally(() => {
+      reAuthPromise = null;
+    });
+    return reAuthPromise;
   }
 
   async function doRefreshToken() {

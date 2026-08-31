@@ -346,7 +346,7 @@ onMounted(async () => {
                 />
               </Form.Item>
             </Col>
-            <Col :lg="4" :md="6" :sm="12" :span="24" :xl="3">
+            <Col :lg="24" :md="24" :sm="24" :span="24" :xl="24">
               <Form.Item class="ap-filter-actions">
                 <FilterActions
                   submit-text="搜索"
@@ -357,8 +357,10 @@ onMounted(async () => {
             </Col>
           </Row>
         </Form>
+      </Card>
 
-        <div class="ap-page-toolbar">
+      <Card>
+        <div class="ap-table-toolbar">
           <AsyncExportButtons
             danger
             :has-report-downloads="hasReportDownloads"
@@ -368,9 +370,6 @@ onMounted(async () => {
             @open-report-list="openReportList"
           />
         </div>
-      </Card>
-
-      <Card>
         <Table
           :columns="columns"
           :data-source="list"

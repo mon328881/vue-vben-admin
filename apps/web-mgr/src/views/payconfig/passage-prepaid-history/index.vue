@@ -5,13 +5,11 @@ import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
-  Button,
   Card,
   Form,
   Input,
   RangePicker,
   Select,
-  Space,
   Table,
 } from 'ant-design-vue';
 
@@ -23,6 +21,7 @@ import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
 import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
 import { usePassagePrepaidHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
 import { defaultTodayRange } from '#/utils/date-range';
@@ -169,23 +168,22 @@ onMounted(async () => {
             />
           </Form.Item>
           <Form.Item class="ap-filter-actions">
-            <Space>
-              <Button html-type="submit" type="primary">查询</Button>
-              <Button @click="onReset">重置</Button>
-              <AsyncExportButtons
-                danger
-                :loading="exportLoading"
-                :progress="exportProgress"
-                :has-report-downloads="hasReportDownloads"
-                @export="onExport"
-                @open-report-list="openReportList"
-              />
-            </Space>
+            <FilterActions @reset="onReset" />
           </Form.Item>
         </Form>
       </Card>
       <PrepaidHistoryStatCards :stat="stat" />
       <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :loading="exportLoading"
+            :progress="exportProgress"
+            :has-report-downloads="hasReportDownloads"
+            @export="onExport"
+            @open-report-list="openReportList"
+          />
+        </div>
         <Table
           :columns="columns"
           :data-source="dataSource"

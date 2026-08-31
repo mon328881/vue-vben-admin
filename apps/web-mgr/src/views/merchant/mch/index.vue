@@ -445,8 +445,12 @@ onMounted(async () => {
           <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
+    </Card>
 
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+    <ListStatCards :items="listStatItems" />
+
+    <Card>
+      <div class="ap-table-toolbar">
         <Space wrap>
           <Button v-if="canAdd" type="primary" @click="onCreate">新建</Button>
           <Popconfirm
@@ -499,11 +503,6 @@ onMounted(async () => {
           }}
         </Tag>
       </div>
-    </Card>
-
-    <ListStatCards :items="listStatItems" />
-
-    <Card>
       <Table
         :columns="columns"
         :data-source="dataSource"

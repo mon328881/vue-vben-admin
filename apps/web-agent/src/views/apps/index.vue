@@ -19,6 +19,7 @@ import {
 
 import { fetchAgentPassageListApi } from '#/api';
 import type { PassageRow } from '#/api/types/business';
+import FilterActions from '#/components/list/FilterActions.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import { formatDateTime, formatRateDecimal } from '#/utils/format';
 
@@ -100,12 +101,7 @@ onMounted(load);
               </Form.Item>
             </Col>
             <Col :lg="16" :md="8" :span="24" :xl="16" class="ap-filter-actions">
-              <Space>
-                <Button html-type="submit" type="primary" :loading="loading">
-                  查询
-                </Button>
-                <Button @click="onReset">重置</Button>
-              </Space>
+              <FilterActions :loading="loading" @reset="onReset" />
             </Col>
           </Row>
         </Form>

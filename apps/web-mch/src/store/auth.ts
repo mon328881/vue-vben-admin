@@ -79,8 +79,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(redirect: boolean = true) {
+    const token = accessStore.accessToken;
+    // 先清本地 token，避免并发请求继续带旧凭证
+    accessStore.setAccessToken(null);
     try {
-      await logoutApi();
+      await logoutApi(token);
     } catch {
       // 忽略退出接口失败
     }

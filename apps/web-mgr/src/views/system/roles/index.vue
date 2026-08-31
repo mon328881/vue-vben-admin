@@ -20,6 +20,7 @@ import {
   fetchSysRolesApi,
   type SysRole,
 } from '#/api';
+import FilterActions from '#/components/list/FilterActions.vue';
 import { hasEnt } from '#/utils/access';
 
 import RoleFormDrawer from './components/RoleFormDrawer.vue';
@@ -115,16 +116,13 @@ onMounted(() => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <Space>
-            <Button html-type="submit" type="primary">查询</Button>
-            <Button @click="onReset">重置</Button>
-          </Space>
+          <FilterActions @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>
 
     <Card>
-      <div class="mb-3">
+      <div class="ap-table-toolbar">
         <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
           新建
         </Button>

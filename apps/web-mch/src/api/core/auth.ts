@@ -50,10 +50,14 @@ export async function loginApi(data: AuthApi.LoginParams) {
 }
 
 /**
- * 退出登录
+ * 退出登录（走 baseRequestClient，避免 401 拦截器再次触发登出死循环）
  */
-export async function logoutApi() {
-  return requestClient.post('/current/logout');
+export async function logoutApi(token?: null | string) {
+  return baseRequestClient.post(
+    '/current/logout',
+    {},
+    token ? { headers: { iToken: token } } : undefined,
+  );
 }
 
 /**
