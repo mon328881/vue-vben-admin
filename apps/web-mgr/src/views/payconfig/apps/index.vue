@@ -115,6 +115,10 @@ const hourlyReportRef =
   ref<InstanceType<typeof PassageHourlyRateReportDialog>>();
 const autoCleanRef = ref<InstanceType<typeof PassageAutoCleanDialog>>();
 
+function openHourlyReport() {
+  hourlyReportRef.value?.open();
+}
+
 const canAdd = computed(() => hasEnt('ENT_MCH_APP_ADD'));
 const canEdit = computed(() => hasEnt('ENT_MCH_APP_EDIT'));
 
@@ -508,7 +512,7 @@ onMounted(() => {
             <Button v-if="canEdit" @click="openBatch">批量操作通道</Button>
           </Space>
           <Space wrap>
-            <Button size="small" @click="hourlyReportRef?.open()">
+            <Button size="small" @click="openHourlyReport">
               成率报表
             </Button>
             <Tooltip

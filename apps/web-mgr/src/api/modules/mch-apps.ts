@@ -172,10 +172,24 @@ export async function fetchPassageHourlyStatApi(params: {
 }
 
 export async function fetchPassageHourlyArchivesApi() {
-  const page = await requestClient.get<PageResult<PassageHourlyArchive>>(
-    '/passageHourlyStat/archives',
-  );
-  return page?.records ?? [];
+  const page = await requestClient.get<
+    PageResult<PassageHourlyArchive> | PassageHourlyArchive[]
+  >('/passageHourlyStat/archives');
+  // 兼容：直接数组 / PageResult.records / 偶发多包一层 data
+  if (Array.isArray(page)) return page;
+  if (page && typeof page === 'object') {
+    if (Array.isArray(page.records)) return page.records;
+    const nested = (page as { data?: unknown }).data;
+    if (Array.isArray(nested)) return nested as PassageHourlyArchive[];
+    if (
+      nested &&
+      typeof nested === 'object' &&
+      Array.isArray((nested as PageResult<PassageHourlyArchive>).records)
+    ) {
+      return (nested as PageResult<PassageHourlyArchive>).records;
+    }
+  }
+  return [];
 }
 
 export async function fetchPassageMchInfoApi(params: Record<string, unknown>) {
