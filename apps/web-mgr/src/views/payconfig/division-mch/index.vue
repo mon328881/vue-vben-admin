@@ -209,6 +209,8 @@ async function onReviewOk() {
     message.success('操作成功');
     closeDetail();
     void loadData();
+  } catch {
+    // request 拦截器已提示业务错误，这里仅避免未捕获的 [object Object]
   } finally {
     reviewLoading.value = false;
   }
@@ -222,6 +224,8 @@ async function onReviewRefuse() {
     message.success('操作成功');
     closeDetail();
     void loadData();
+  } catch {
+    // request 拦截器已提示业务错误，这里仅避免未捕获的 [object Object]
   } finally {
     reviewLoading.value = false;
   }
