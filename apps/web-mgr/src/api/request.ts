@@ -16,6 +16,7 @@ import { useAccessStore } from '@vben/stores';
 import { message } from 'ant-design-vue';
 
 import { useAuthStore } from '#/store';
+import { isJwtExpired } from '#/utils/jwt';
 
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 
@@ -62,7 +63,13 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addRequestInterceptor({
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
-      const token = accessStore.accessToken;
+      let token = accessStore.accessToken;
+      // 过期 JWT 发往 mgr-api 会变成 500，本地先拦截并登出
+      if (token && isJwtExpired(token)) {
+        accessStore.setAccessToken(null);
+        void doReAuthenticate();
+        token = null;
+      }
       if (token) {
         config.headers.iToken = token;
       }
@@ -80,7 +87,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     }),
   );
 
-  // token 过期（HTTP 401）
+  // token 过期（HTTP 401）；mgr-api 对 ExpiredJwt 也可能返回 500
   client.addResponseInterceptor(
     authenticateResponseInterceptor({
       client,
@@ -91,9 +98,32 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     }),
   );
 
+  client.addResponseInterceptor({
+    rejected: async (error) => {
+      const status = error?.response?.status;
+      const sentToken = error?.config?.headers?.iToken;
+      const token =
+        typeof sentToken === 'string'
+          ? sentToken
+          : useAccessStore().accessToken;
+      if (status === 500 && token && isJwtExpired(token)) {
+        (error as { __authExpired?: boolean }).__authExpired = true;
+        await doReAuthenticate();
+      }
+      throw error;
+    },
+  });
+
   // 通用错误处理：业务错误字段为 msg
   client.addResponseInterceptor(
     errorMessageResponseInterceptor((msg: string, error) => {
+      // 登录失效已跳转，避免再弹 Internal Server Error / 未授权
+      if (
+        error?.__authExpired ||
+        error?.response?.status === 401
+      ) {
+        return;
+      }
       const responseData = error?.response?.data ?? {};
       const errorMessage =
         responseData?.msg ?? responseData?.error ?? responseData?.message ?? '';

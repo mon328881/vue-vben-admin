@@ -247,6 +247,14 @@ export async function changeMchBalanceApi(
   return requestClient.put(`/mchBalance/${mchNo}`, payload);
 }
 
+/** 调整商户冻结金额：正数从余额冻结，负数解冻回余额 */
+export async function changeMchFreezeApi(
+  mchNo: string,
+  payload: { changeAmount: number; changeRemark: string },
+) {
+  return requestClient.put(`/mchBalance/${mchNo}/freeze`, payload);
+}
+
 export async function changeMchPrepaidApi(
   mchNo: string,
   payload: {

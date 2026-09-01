@@ -16,6 +16,7 @@ import { useAccessStore } from '@vben/stores';
 import { message } from 'ant-design-vue';
 
 import { useAuthStore } from '#/store';
+import { isJwtExpired } from '#/utils/jwt';
 
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 
@@ -53,7 +54,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   }
 
   async function doRefreshToken() {
-    // mgr-api 不支持 refresh
+    // agent-api 不支持 refresh
     await doReAuthenticate();
     return '';
   }
@@ -62,7 +63,13 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addRequestInterceptor({
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
-      const token = accessStore.accessToken;
+      let token = accessStore.accessToken;
+      // 过期 JWT 本地先拦截并登出，避免无意义请求
+      if (token && isJwtExpired(token)) {
+        accessStore.setAccessToken(null);
+        void doReAuthenticate();
+        token = null;
+      }
       if (token) {
         config.headers.iToken = token;
       }
@@ -91,9 +98,31 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     }),
   );
 
+  client.addResponseInterceptor({
+    rejected: async (error) => {
+      const status = error?.response?.status;
+      const sentToken = error?.config?.headers?.iToken;
+      const token =
+        typeof sentToken === 'string'
+          ? sentToken
+          : useAccessStore().accessToken;
+      if (status === 500 && token && isJwtExpired(token)) {
+        (error as { __authExpired?: boolean }).__authExpired = true;
+        await doReAuthenticate();
+      }
+      throw error;
+    },
+  });
+
   // 通用错误处理：业务错误字段为 msg
   client.addResponseInterceptor(
     errorMessageResponseInterceptor((msg: string, error) => {
+      if (
+        error?.__authExpired ||
+        error?.response?.status === 401
+      ) {
+        return;
+      }
       const responseData = error?.response?.data ?? {};
       const errorMessage =
         responseData?.msg ?? responseData?.error ?? responseData?.message ?? '';

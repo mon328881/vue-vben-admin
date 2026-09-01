@@ -55,6 +55,7 @@ import MchBatchDrawer from './components/MchBatchDrawer.vue';
 import MchConnectInfoDrawer from './components/MchConnectInfoDrawer.vue';
 import MchFeatureFlagsCell from './components/MchFeatureFlagsCell.vue';
 import MchFormDrawer from './components/MchFormDrawer.vue';
+import MchFreezeAdjustDialog from './components/MchFreezeAdjustDialog.vue';
 import MchPassageConfigDrawer from './components/MchPassageConfigDrawer.vue';
 import MchPassageTestDrawer from './components/MchPassageTestDrawer.vue';
 import MchPrepaidAdjustDialog from './components/MchPrepaidAdjustDialog.vue';
@@ -92,6 +93,7 @@ const historyRef = ref<InstanceType<typeof MchPrepaidHistoryDrawer>>();
 const testRef = ref<InstanceType<typeof MchPassageTestDrawer>>();
 const prepaidRef = ref<InstanceType<typeof MchPrepaidAdjustDialog>>();
 const balanceRef = ref<InstanceType<typeof MchBalanceAdjustDialog>>();
+const freezeRef = ref<InstanceType<typeof MchFreezeAdjustDialog>>();
 const autoSettleRef = ref<InstanceType<typeof MchAutoSettleDialog>>();
 
 const {
@@ -153,6 +155,7 @@ const columns: TableColumnsType<MchInfo> = [
   { dataIndex: 'mchNo', title: '商户号', width: 130 },
   { dataIndex: 'prepaid', title: '预付', width: 160 },
   { dataIndex: 'balance', title: '商户余额', width: 160 },
+  { dataIndex: 'freezeBalance', title: '冻结', width: 160 },
   { dataIndex: 'diff', title: '[预付-余额]差额', width: 170 },
   { dataIndex: 'successAmount', title: '今日跑量', width: 110 },
   { dataIndex: 'successRate', title: '今日成率', width: 100 },
@@ -516,7 +519,7 @@ onMounted(async () => {
         }"
         :row-selection="rowSelection"
         row-key="mchNo"
-        :scroll="{ x: 2100 }"
+        :scroll="{ x: 2260 }"
         size="middle"
         @change="onTableChange"
       >
@@ -557,6 +560,22 @@ onMounted(async () => {
                 "
               >
                 {{ formatYuan(record.balance) }}
+              </b>
+            </div>
+          </template>
+          <template v-else-if="column.dataIndex === 'freezeBalance'">
+            <div class="inline-action-cell">
+              <Button
+                v-if="canEdit"
+                size="small"
+                type="primary"
+                class="inline-action-cell__action"
+                @click="freezeRef?.show(record as MchInfo)"
+              >
+                调额
+              </Button>
+              <b class="inline-action-cell__value">
+                {{ formatYuan(record.freezeBalance) }}
               </b>
             </div>
           </template>
@@ -724,6 +743,7 @@ onMounted(async () => {
     <MchPassageTestDrawer ref="testRef" />
     <MchPrepaidAdjustDialog ref="prepaidRef" @success="reloadTable" />
     <MchBalanceAdjustDialog ref="balanceRef" @success="reloadTable" />
+    <MchFreezeAdjustDialog ref="freezeRef" @success="reloadTable" />
     <MchAutoSettleDialog ref="autoSettleRef" @success="applyAutoSettle" />
     <GoogleDangerConfirmDialog
       v-model:open="allPrepaidVisible"
