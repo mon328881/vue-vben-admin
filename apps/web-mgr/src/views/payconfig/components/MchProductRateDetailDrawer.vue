@@ -11,15 +11,20 @@ import {
   message,
 } from 'ant-design-vue';
 
+import AmountText from '@asiapay/shared/components/AmountText.vue';
+
 import {
   fetchMchProductRateDetailApi,
   type MchProductRateDetail,
   type MchProductRateRow,
 } from '#/api';
 import {
+  amountCostClass,
+  amountSignedClass,
   formatFeeRate,
   formatSuccessRate,
   formatYuan,
+  signedYuan,
 } from '#/utils/format';
 
 defineOptions({ name: 'MchProductRateDetailDrawer' });
@@ -66,11 +71,11 @@ const summaryItems = computed(() => {
       value: formatSuccessRate(d?.orderSuccessCount, d?.totalOrderCount),
       className: 'text-brand',
     },
-    { label: '手续费', value: formatYuan(d?.totalCost) },
+    { label: '手续费', value: formatYuan(d?.totalCost), className: amountCostClass() },
     {
       label: '平台收入',
-      value: formatYuan(d?.platTotalIncome),
-      className: 'amount-positive',
+      value: signedYuan(d?.platTotalIncome),
+      className: amountSignedClass(d?.platTotalIncome),
     },
   ];
 });
@@ -194,9 +199,10 @@ defineExpose({ show });
               }}
             </template>
             <template v-else-if="column.dataIndex === 'platTotalIncome'">
-              <strong class="amount-positive">
-                {{ formatYuan(record.platTotalIncome) }}
-              </strong>
+              <AmountText
+                :value="record.platTotalIncome"
+                kind="signed"
+              />
             </template>
           </template>
         </Table>
@@ -268,10 +274,6 @@ defineExpose({ show });
 
 .text-brand {
   color: hsl(var(--primary));
-}
-
-.amount-positive {
-  color: hsl(var(--success));
 }
 
 @media (max-width: 768px) {

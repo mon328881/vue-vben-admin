@@ -55,6 +55,7 @@ const {
   reportListVisible,
   reportListLoading,
   reportListTitle,
+  reportListEmptyHint,
   hasReportDownloads,
   completedExports,
   submitExport,
@@ -287,6 +288,7 @@ onMounted(async () => {
       :data="completedExports"
       :loading="reportListLoading"
       :title="reportListTitle"
+      :empty-hint="reportListEmptyHint"
       @download="downloadFile"
       @remove="deleteCompletedItem"
     />

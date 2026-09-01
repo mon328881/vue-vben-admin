@@ -130,6 +130,7 @@ const {
   reportListVisible,
   reportListLoading,
   reportListTitle,
+  reportListEmptyHint,
   hasReportDownloads,
   completedExports,
   submitExport,
@@ -925,6 +926,7 @@ onUnmounted(() => {
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
       :title="reportListTitle"
+      :empty-hint="reportListEmptyHint"
       :data="completedExports"
       @download="downloadFile"
       @remove="deleteCompletedItem"

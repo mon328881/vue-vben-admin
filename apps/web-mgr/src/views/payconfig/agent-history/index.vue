@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
@@ -18,11 +18,12 @@ import { fetchAgentHistoryApi, fetchAgentHistoryStatApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
-import HistoryAdjustBizTypeCell from '#/components/history/HistoryAdjustBizTypeCell.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
+import CellCopyStack from '#/components/table/CellCopyStack.vue';
+import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
+import AmountText from '@asiapay/shared/components/AmountText.vue';
 import { useAgentHistoryExport } from '#/composables/use-async-export';
+import { useListStat } from '#/composables/use-list-stat';
 import {
   FUND_DIRECTION_OPTIONS,
   AGENT_BIZ_TYPE_OPTIONS,
@@ -33,10 +34,9 @@ import {
   toDateTimeParam,
 } from '#/utils/date-range';
 import {
-  amountSignedClass,
+  fenToYuanNumber,
   formatDateTime,
   formatYuan,
-  signedYuan,
 } from '#/utils/format';
 
 defineOptions({ name: 'AgentHistoryListPage' });
@@ -47,6 +47,7 @@ const {
   reportListVisible,
   reportListLoading,
   reportListTitle,
+  reportListEmptyHint,
   hasReportDownloads,
   completedExports,
   submitExport,
@@ -70,13 +71,14 @@ const query = reactive({
   bizType: '' as any,
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
+const { loadStatSafely, buildStatItems } = useListStat();
 
-const listStatItems = computed<ListStatCardItem[]>(() => {
+const listStatItems = buildStatItems(() => {
   const s = stat.value;
   return [
     {
       title: '变更金额汇总',
-      value: Number(s.totalAmount ?? 0) / 100,
+      value: fenToYuanNumber(s.totalAmount),
       decimals: 2,
       prefix: '¥',
       icon: 'lucide:wallet',
@@ -95,7 +97,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 120 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'payOrderId', title: '订单号', width: 180 },
+  { dataIndex: 'orderNo', title: '订单号', width: 280 },
   { dataIndex: 'bizType', title: '业务类型', width: 220 },
   { dataIndex: 'createdAt', title: '创建日期', width: 170 },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
@@ -112,11 +114,9 @@ function buildParams() {
 }
 
 async function loadStat() {
-  try {
+  await loadStatSafely(async () => {
     stat.value = (await fetchAgentHistoryStatApi(buildParams())) ?? {};
-  } catch {
-    // ignore
-  }
+  });
 }
 
 async function loadData(resetPage = false) {
@@ -237,7 +237,7 @@ onMounted(async () => {
         }"
         :row-key="(r: any, i?: number) => String(r.agentAccountHistoryId ?? `agent-his-${i ?? 0}`)"
         size="middle"
-        :scroll="{ x: 1200 }"
+        :scroll="{ x: 1300 }"
         @change="onTableChange"
       >
         <template #bodyCell="{ column, record }">
@@ -246,12 +246,19 @@ onMounted(async () => {
             {{ formatYuan(record.beforeBalance as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            <b :class="amountSignedClass(record.amount)">
-              {{ signedYuan(record.amount as number) }}
-            </b>
+            <AmountText
+              :value="record.amount as number"
+              kind="signed"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'afterBalance'">
             {{ formatYuan(record.afterBalance as number) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'orderNo'">
+            <CellCopyStack
+              :pay-order-id="record.payOrderId as string"
+              :mch-order-no="record.mchOrderNo as string"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'createdAt'">
             {{ formatDateTime(record.createdAt as string) }}
@@ -271,6 +278,7 @@ onMounted(async () => {
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
       :title="reportListTitle"
+      :empty-hint="reportListEmptyHint"
       :data="completedExports"
       @download="downloadFile"
       @remove="deleteCompletedItem"
@@ -278,17 +286,3 @@ onMounted(async () => {
     </div>
   </Page>
 </template>
-
-<style scoped>
-.amount-positive {
-  color: #4bd884;
-}
-
-.amount-negative {
-  color: #db4b4b;
-}
-
-.amount-zero {
-  color: inherit;
-}
-</style>

@@ -4,14 +4,10 @@ import type { TableColumnsType } from 'ant-design-vue';
 import { reactive, ref } from 'vue';
 
 import {
-  Button,
   DatePicker,
   Drawer,
   Form,
-  Image,
-  Modal,
   Select,
-  Space,
   Table,
   Tag,
 } from 'ant-design-vue';
@@ -23,14 +19,19 @@ import {
 } from '#/api';
 import type { MchInfoDetail, MchPrepaidHistory } from '#/api/types/business';
 import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
+import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
+import FilterActions from '#/components/list/FilterActions.vue';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/history';
 import { useMchPrepaidHistoryExport } from '#/composables/use-async-export';
 import { defaultTodayRange, formatDayEnd, formatDayStart } from '#/utils/date-range';
 import {
   amountSignedClass,
   formatDateTime,
+  formatExchangeRate,
+  formatOptionalText,
+  formatPrepaidQuantity,
   formatYuan,
   signedYuan,
 } from '#/utils/format';
@@ -50,8 +51,19 @@ const pageSize = ref(20);
 const summary = reactive({ totalAmount: 0, totalCount: 0 });
 const createdRange = ref<[dayjs.Dayjs, dayjs.Dayjs] | undefined>();
 const fundDirection = ref<number | undefined>();
-const picPreviewOpen = ref(false);
-const picPreviewSrc = ref('');
+
+const columns: TableColumnsType<MchPrepaidHistory> = [
+  { dataIndex: 'beforeBalance', title: '变更前预付', width: 120 },
+  { dataIndex: 'amount', title: '变更金额', width: 120 },
+  { dataIndex: 'afterBalance', title: '变更后预付', width: 120 },
+  { dataIndex: 'currencyType', title: '货币类型', width: 100 },
+  { dataIndex: 'quantity', title: '数量', width: 110 },
+  { dataIndex: 'exchangeRate', title: '汇率', width: 100 },
+  { dataIndex: 'pic', title: '凭证', width: 80, align: 'center' },
+  { dataIndex: 'operator', title: '操作员', width: 200 },
+  { dataIndex: 'remark', title: '备注', ellipsis: true, width: 160 },
+  { dataIndex: 'createdAt', title: '操作时间', width: 170 },
+];
 
 const {
   exportLoading,
@@ -68,16 +80,6 @@ const {
   downloadFile,
   deleteCompletedItem,
 } = useMchPrepaidHistoryExport();
-
-const columns: TableColumnsType<MchPrepaidHistory> = [
-  { dataIndex: 'createdAt', title: '操作时间', width: 170 },
-  { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
-  { dataIndex: 'amount', title: '变更金额', width: 110 },
-  { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'operator', title: '操作员', width: 200 },
-  { dataIndex: 'pic', title: '凭证', width: 90, align: 'center' },
-  { dataIndex: 'remark', title: '备注', ellipsis: true },
-];
 
 function filters() {
   let createdStart: string | undefined;
@@ -156,12 +158,6 @@ async function onPageChange(current: number, size: number) {
   await load();
 }
 
-function previewPic(pic?: string) {
-  if (!pic) return;
-  picPreviewSrc.value = pic;
-  picPreviewOpen.value = true;
-}
-
 defineExpose({ show });
 </script>
 
@@ -169,7 +165,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     title="预付流水记录"
-    width="1100"
+    width="1200"
     destroy-on-close
     :footer="false"
   >
@@ -201,12 +197,12 @@ defineExpose({ show });
               :options="FUND_DIRECTION_OPTIONS"
             />
           </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button html-type="submit" type="primary" :loading="loading">
-                搜索
-              </Button>
-              <Button @click="onReset">重置</Button>
+          <Form.Item class="ap-drawer-filter-actions">
+            <FilterActions
+              submit-text="搜索"
+              :loading="loading"
+              @reset="onReset"
+            >
               <AsyncExportButtons
                 danger
                 :has-report-downloads="hasReportDownloads"
@@ -215,7 +211,7 @@ defineExpose({ show });
                 @export="onExport"
                 @open-report-list="openReportList"
               />
-            </Space>
+            </FilterActions>
           </Form.Item>
         </Form>
       </div>
@@ -239,16 +235,13 @@ defineExpose({ show });
             showSizeChanger: true,
             showTotal: (t) => `共 ${t} 条`,
           }"
-          row-key="id"
+          :row-key="(record) => record.mchPrepaidHistoryId ?? record.id ?? ''"
           size="middle"
-          :scroll="{ x: 900 }"
+          :scroll="{ x: 1200 }"
           @change="(p) => onPageChange(p.current ?? 1, p.pageSize ?? 20)"
         >
           <template #bodyCell="{ column, record }">
-            <template v-if="column.dataIndex === 'createdAt'">
-              {{ formatDateTime(record.createdAt) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'beforeBalance'">
+            <template v-if="column.dataIndex === 'beforeBalance'">
               <b>{{ formatYuan(record.beforeBalance) }}</b>
             </template>
             <template v-else-if="column.dataIndex === 'amount'">
@@ -259,25 +252,29 @@ defineExpose({ show });
             <template v-else-if="column.dataIndex === 'afterBalance'">
               <b>{{ formatYuan(record.afterBalance) }}</b>
             </template>
+            <template v-else-if="column.dataIndex === 'currencyType'">
+              {{ formatOptionalText(record.currencyType) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'quantity'">
+              {{ formatPrepaidQuantity(record.quantity) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'exchangeRate'">
+              {{ formatExchangeRate(record.exchangeRate) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'pic'">
+              <PicPreviewButton :pic="record.pic" />
+            </template>
             <template v-else-if="column.dataIndex === 'operator'">
               <HistoryPrepaidOperatorCell
                 :created-login-name="record.createdLoginName || record.operator"
                 :created-uid="record.createdUid"
               />
             </template>
-            <template v-else-if="column.dataIndex === 'pic'">
-              <Button
-                v-if="record.pic"
-                size="small"
-                type="link"
-                @click="previewPic(record.pic)"
-              >
-                查看
-              </Button>
-              <span v-else>—</span>
-            </template>
             <template v-else-if="column.dataIndex === 'remark'">
-              <b>{{ record.remark || '' }}</b>
+              {{ record.remark || '—' }}
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt) }}
             </template>
           </template>
         </Table>
@@ -293,15 +290,6 @@ defineExpose({ show });
       @remove="deleteCompletedItem"
     />
 
-    <Modal
-      v-model:open="picPreviewOpen"
-      title="凭证预览"
-      :footer="null"
-      destroy-on-close
-      width="640"
-    >
-      <Image v-if="picPreviewSrc" :src="picPreviewSrc" alt="凭证" />
-    </Modal>
   </Drawer>
 </template>
 

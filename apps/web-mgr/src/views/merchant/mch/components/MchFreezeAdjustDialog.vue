@@ -5,6 +5,7 @@ import { Form, InputNumber, Modal, Textarea, message } from 'ant-design-vue';
 
 import { changeMchFreezeApi } from '#/api';
 import type { MchInfo } from '#/api/types/business';
+import { formatYuan } from '#/utils/format';
 
 const emit = defineEmits<{ success: [] }>();
 
@@ -15,10 +16,6 @@ const form = reactive({
   changeAmount: undefined as number | undefined,
   changeRemark: '',
 });
-
-function formatYuan(cents?: number | null) {
-  return ((Number(cents) || 0) / 100).toFixed(2);
-}
 
 function show(target: MchInfo) {
   row.value = target;

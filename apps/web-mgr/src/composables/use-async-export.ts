@@ -1,5 +1,7 @@
 import {
   inject,
+  onActivated,
+  onDeactivated,
   onUnmounted,
   provide,
   ref,
@@ -30,6 +32,7 @@ import {
 
 export const EXPORT_POLL_MS = 2000;
 export const EXPORT_CANCEL_POLL_MS = 1000;
+export const EXPORT_POLL_MAX_FAILURES = 3;
 
 export const EXPORT_STATUS = {
   PENDING: 0,
@@ -44,7 +47,7 @@ export const EXPORT_MSG = {
   submit: '报表导出已开始，请等待完成后点击「报表下载列表」下载',
   reused: '已有报表正在导出，请等待完成后点击「报表下载列表」下载',
   done: '导出完成，请点击「报表下载列表」下载',
-  alreadyRunning: '已有导出任务进行中',
+  alreadyRunning: '已有导出任务进行中，请等待完成后再试',
   submitFailed: '提交导出失败',
   loadListFailed: '加载报表列表失败',
   downloadFailed: '下载失败',
@@ -53,9 +56,23 @@ export const EXPORT_MSG = {
   emptyFile: '文件为空',
   cancelRequested: '已提交中止请求，正在停止导出',
   cancelFailed: '中止导出失败，请稍后重试',
+  pollFailed: '轮询导出状态失败，请打开报表下载列表查看或重新导出',
 };
 
 export const DEFAULT_REPORT_LIST_TITLE = '报表下载列表（仅保留当日近10条）';
+
+/** 按 export API 类型全局互斥（同类型跨 Tab 仅一条） */
+const activeExportKeys = new Set<string>();
+
+function tryAcquireExportKey(key: string): boolean {
+  if (activeExportKeys.has(key)) return false;
+  activeExportKeys.add(key);
+  return true;
+}
+
+function releaseExportKey(key: string) {
+  activeExportKeys.delete(key);
+}
 
 export interface ExportControl {
   cancellable: Ref<boolean>;
@@ -73,13 +90,15 @@ export function useExportControl(): ExportControl | null {
 
 export interface UseAsyncExportTaskOptions {
   api: ExportTaskApi;
+  /** 同类型导出全局唯一，如 mch-history */
+  exportKey: string;
   pollMs?: number;
   messages?: Partial<typeof EXPORT_MSG>;
   reportListTitle?: string;
 }
 
 export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
-  const { api, pollMs = EXPORT_POLL_MS } = options;
+  const { api, exportKey, pollMs = EXPORT_POLL_MS } = options;
   const cancelPollMs = Math.min(pollMs, EXPORT_CANCEL_POLL_MS);
   const messages = { ...EXPORT_MSG, ...(options.messages ?? {}) };
   const reportListTitle = options.reportListTitle ?? DEFAULT_REPORT_LIST_TITLE;
@@ -88,6 +107,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   const exportProgress = ref(0);
   const reportListVisible = ref(false);
   const reportListLoading = ref(false);
+  const reportListEmptyHint = ref('');
   const hasReportDownloads = ref(false);
   const completedExports = ref<MchExportTask[]>([]);
   const exportCancellable = ref(false);
@@ -95,11 +115,20 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   const cancellationRequested = ref(false);
   const runningTaskId = ref<string | null>(null);
   let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let pollFailureCount = 0;
+  let exportKeyHeld = false;
 
   function stopPoll() {
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
+    }
+  }
+
+  function releaseHeldKey() {
+    if (exportKeyHeld) {
+      releaseExportKey(exportKey);
+      exportKeyHeld = false;
     }
   }
 
@@ -148,6 +177,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     const list = (await api.fetchCompleted()) ?? [];
     completedExports.value = mapCompleted(list);
     hasReportDownloads.value = list.length > 0;
+    return list;
   }
 
   async function syncReportDownloadAvailability() {
@@ -160,39 +190,79 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     }
   }
 
-  function finishExportTask(task: MchExportTask) {
+  async function openReportList(hint?: string) {
+    if (hint !== undefined) reportListEmptyHint.value = hint;
+    reportListVisible.value = true;
+    reportListLoading.value = true;
+    completedExports.value = [];
+    try {
+      await refreshCompleted();
+      if (completedExports.value.length === 0 && !reportListEmptyHint.value) {
+        reportListEmptyHint.value =
+          '暂无已完成报表。若导出刚提交，请稍候刷新列表；若导出失败，请重新导出。';
+      }
+    } catch (error) {
+      console.error('加载报表列表失败', error);
+      reportListEmptyHint.value =
+        reportListEmptyHint.value || messages.loadListFailed;
+      message.error(messages.loadListFailed);
+    } finally {
+      reportListLoading.value = false;
+    }
+  }
+
+  async function handleExportFailure(errMsg: string) {
     stopPoll();
+    pollFailureCount = 0;
     exportLoading.value = false;
     clearRunningTask();
+    releaseHeldKey();
+    message.error(errMsg);
+    await openReportList(errMsg);
+  }
+
+  async function finishExportTask(task: MchExportTask) {
+    stopPoll();
+    pollFailureCount = 0;
+    exportLoading.value = false;
+    clearRunningTask();
+    releaseHeldKey();
     exportProgress.value =
       task.status === EXPORT_STATUS.SUCCESS ? 100 : exportProgress.value;
     if (task.status === EXPORT_STATUS.SUCCESS) {
       message.success(messages.done);
-      void refreshCompleted();
+      reportListEmptyHint.value = '';
+      await refreshCompleted();
     } else if (task.status === EXPORT_STATUS.FAIL) {
-      message.error(task.errMsg || '导出失败');
+      await handleExportFailure(task.errMsg || '导出失败');
     } else if (task.status === EXPORT_STATUS.CANCELLED) {
       message.info('导出任务已中止');
+      reportListEmptyHint.value = '导出任务已中止，未生成报表文件。';
+      await openReportList(reportListEmptyHint.value);
     }
   }
 
   function startPoll(intervalMs = pollMs) {
     stopPoll();
+    pollFailureCount = 0;
     pollTimer = setInterval(() => {
       void (async () => {
         try {
           const task = await api.fetchRunning();
+          pollFailureCount = 0;
           if (!task) {
-            // 任务完成后 running 接口常直接返回空，需主动刷新已完成列表，否则「报表下载列表」按钮不会出现
             const wasLoading = exportLoading.value;
             if (wasLoading) exportLoading.value = false;
             clearRunningTask();
+            releaseHeldKey();
             stopPoll();
             if (wasLoading) {
               exportProgress.value = 100;
               try {
-                await refreshCompleted();
-                if (hasReportDownloads.value) message.success(messages.done);
+                const list = await refreshCompleted();
+                if (list.length > 0) {
+                  message.success(messages.done);
+                }
               } catch (error) {
                 console.error('刷新报表下载列表失败', error);
               }
@@ -201,14 +271,19 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
           }
           exportProgress.value = task.progress ?? 0;
           applyRunningTask(task);
-          if (isTerminal(task)) finishExportTask(task);
+          if (isTerminal(task)) await finishExportTask(task);
           else if (!isActive(task)) {
             exportLoading.value = false;
             clearRunningTask();
+            releaseHeldKey();
             stopPoll();
           }
         } catch (error) {
+          pollFailureCount += 1;
           console.error('轮询导出任务失败', error);
+          if (pollFailureCount >= EXPORT_POLL_MAX_FAILURES) {
+            await handleExportFailure(messages.pollFailed);
+          }
         }
       })();
     }, intervalMs);
@@ -217,7 +292,11 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   async function restoreRunningTask() {
     try {
       const task = await api.fetchRunning();
-      if (!task || isTerminal(task) || !isActive(task)) return;
+      if (!task || isTerminal(task)) {
+        await syncReportDownloadAvailability();
+        return;
+      }
+      if (!isActive(task)) return;
       exportLoading.value = true;
       exportProgress.value = task.progress ?? 0;
       applyRunningTask(task);
@@ -236,28 +315,37 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
       message.warning(messages.alreadyRunning);
       return;
     }
+    if (!tryAcquireExportKey(exportKey)) {
+      message.warning(messages.alreadyRunning);
+      return;
+    }
+    exportKeyHeld = true;
     try {
       exportLoading.value = true;
       exportProgress.value = 0;
+      reportListEmptyHint.value = '';
       const task = await api.submit(params);
       if (!task) {
         exportLoading.value = false;
-        message.error(messages.submitFailed);
+        releaseHeldKey();
+        await handleExportFailure(messages.submitFailed);
         return;
       }
       if (task.reused) message.info(messages.reused);
       else message.info(messages.submit);
-      // 提交后立刻露出「报表下载列表」，与提示文案一致（列表在完成后才有文件）
-      hasReportDownloads.value = true;
       exportProgress.value = task.progress ?? 0;
       applyRunningTask(task);
-      if (isTerminal(task)) finishExportTask(task);
+      if (isTerminal(task)) await finishExportTask(task);
       else if (isActive(task)) startPoll();
-      else exportLoading.value = false;
+      else {
+        exportLoading.value = false;
+        releaseHeldKey();
+      }
     } catch (error) {
       exportLoading.value = false;
+      releaseHeldKey();
       console.error('提交导出失败', error);
-      message.error(messages.submitFailed);
+      await handleExportFailure(messages.submitFailed);
     }
   }
 
@@ -303,20 +391,6 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     confirmCancel: confirmCancelExport,
   });
 
-  async function openReportList() {
-    reportListVisible.value = true;
-    reportListLoading.value = true;
-    completedExports.value = [];
-    try {
-      await refreshCompleted();
-    } catch (error) {
-      console.error('加载报表列表失败', error);
-      message.error(messages.loadListFailed);
-    } finally {
-      reportListLoading.value = false;
-    }
-  }
-
   async function downloadFile(row: MchExportTask) {
     if (!row?.objectKey) {
       message.error(messages.missingFile);
@@ -350,6 +424,15 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     }
   }
 
+  onActivated(() => {
+    void restoreRunningTask();
+    void syncReportDownloadAvailability();
+  });
+
+  onDeactivated(() => {
+    stopPoll();
+  });
+
   onUnmounted(() => {
     stopPoll();
   });
@@ -359,6 +442,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     exportProgress,
     reportListVisible,
     reportListLoading,
+    reportListEmptyHint,
     reportListTitle,
     hasReportDownloads,
     completedExports,
@@ -376,25 +460,48 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   };
 }
 
-function createHook(api: ExportTaskApi) {
-  return () => useAsyncExportTask({ api });
+function createHook(api: ExportTaskApi, exportKey: string) {
+  return () => useAsyncExportTask({ api, exportKey });
 }
 
-export const usePayOrderExport = createHook(payOrderExportApi);
-export const useMchListExport = createHook(mchListExportApi);
-export const useMchHistoryExport = createHook(mchHistoryExportApi);
+export const usePayOrderExport = createHook(payOrderExportApi, 'pay-order');
+export const useMchListExport = createHook(mchListExportApi, 'mch-list');
+export const useMchHistoryExport = createHook(
+  mchHistoryExportApi,
+  'mch-history',
+);
 export const useMchPrepaidHistoryExport = createHook(
   mchPrepaidHistoryExportApi,
+  'mch-prepaid-history',
 );
-export const usePassageHistoryExport = createHook(passageHistoryExportApi);
-export const useAgentHistoryExport = createHook(agentHistoryExportApi);
+export const usePassageHistoryExport = createHook(
+  passageHistoryExportApi,
+  'passage-history',
+);
+export const useAgentHistoryExport = createHook(
+  agentHistoryExportApi,
+  'agent-history',
+);
 export const usePassagePrepaidHistoryExport = createHook(
   passagePrepaidHistoryExportApi,
+  'passage-prepaid-history',
 );
-export const usePassageGroupExport = createHook(passageGroupExportApi);
-export const useMchStatExport = createHook(mchStatExportApi);
-export const useMchProductStatExport = createHook(mchProductStatExportApi);
-export const useProductStatExport = createHook(productStatExportApi);
-export const usePlatStatExport = createHook(platStatExportApi);
-export const useAgentStatExport = createHook(agentStatExportApi);
-export const usePassageStatExport = createHook(passageStatExportApi);
+export const usePassageGroupExport = createHook(
+  passageGroupExportApi,
+  'passage-group',
+);
+export const useMchStatExport = createHook(mchStatExportApi, 'mch-stat');
+export const useMchProductStatExport = createHook(
+  mchProductStatExportApi,
+  'mch-product-stat',
+);
+export const useProductStatExport = createHook(
+  productStatExportApi,
+  'product-stat',
+);
+export const usePlatStatExport = createHook(platStatExportApi, 'plat-stat');
+export const useAgentStatExport = createHook(agentStatExportApi, 'agent-stat');
+export const usePassageStatExport = createHook(
+  passageStatExportApi,
+  'passage-stat',
+);

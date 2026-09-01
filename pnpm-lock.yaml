@@ -656,6 +656,9 @@ importers:
 
   apps/web-agent:
     dependencies:
+      '@asiapay/shared':
+        specifier: workspace:*
+        version: link:../../packages/asiapay-shared
       '@vben/access':
         specifier: workspace:*
         version: link:../../packages/effects/access
@@ -915,6 +918,9 @@ importers:
 
   apps/web-mch:
     dependencies:
+      '@asiapay/shared':
+        specifier: workspace:*
+        version: link:../../packages/asiapay-shared
       '@vben/access':
         specifier: workspace:*
         version: link:../../packages/effects/access
@@ -978,6 +984,9 @@ importers:
 
   apps/web-mgr:
     dependencies:
+      '@asiapay/shared':
+        specifier: workspace:*
+        version: link:../../packages/asiapay-shared
       '@vben/access':
         specifier: workspace:*
         version: link:../../packages/effects/access
@@ -1795,6 +1804,15 @@ importers:
       unplugin-vue:
         specifier: 'catalog:'
         version: 7.2.0(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(rolldown@1.2.5)(rollup@4.62.5)(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.50.0)(vue@3.5.41(typescript@6.0.3))(yaml@2.9.0)
+
+  packages/asiapay-shared:
+    dependencies:
+      ant-design-vue:
+        specifier: 'catalog:'
+        version: 4.2.6(vue@3.5.41(typescript@6.0.3))
+      vue:
+        specifier: ^3.5.40
+        version: 3.5.41(typescript@6.0.3)
 
   packages/constants:
     dependencies:

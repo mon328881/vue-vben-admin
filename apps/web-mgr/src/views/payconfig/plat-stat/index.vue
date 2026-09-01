@@ -1,15 +1,13 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
   Card,
-  Col,
   Form,
   RangePicker,
-  Row,
   Table,
 } from 'ant-design-vue';
 
@@ -17,13 +15,17 @@ import { fetchPlatStatApi, fetchPlatStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
+import AmountText from '@asiapay/shared/components/AmountText.vue';
 import { usePlatStatExport } from '#/composables/use-async-export';
+import { useListStat } from '#/composables/use-list-stat';
 
 import { defaultWeekRange } from '#/utils/date-range';
-import { formatDateTime, formatSuccessRate, formatYuan } from '#/utils/format';
+import {
+  fenToYuanNumber,
+  formatDateTime,
+  formatSuccessRate,
+} from '#/utils/format';
 
 defineOptions({ name: 'PlatStatPage' });
 
@@ -33,6 +35,7 @@ const {
   reportListVisible,
   reportListLoading,
   reportListTitle,
+  reportListEmptyHint,
   hasReportDownloads,
   completedExports,
   submitExport,
@@ -52,11 +55,12 @@ const query = reactive({
 
 });
 const stat = ref<Record<string, any>>({});
+const { loadStatSafely, buildStatItems } = useListStat();
 
-const listStatItems = computed<ListStatCardItem[]>(() => [
+const listStatItems = buildStatItems(() => [
   {
     title: '成交订单金额',
-    value: Number(stat.value.totalSuccessAmount ?? 0) / 100,
+    value: fenToYuanNumber(stat.value.totalSuccessAmount),
     decimals: 2,
     prefix: '¥',
     icon: 'lucide:wallet',
@@ -68,9 +72,10 @@ const listStatItems = computed<ListStatCardItem[]>(() => [
   },
   {
     title: '平台利润',
-    value: Number(stat.value.totalIncome ?? 0) / 100,
+    value: fenToYuanNumber(stat.value.totalIncome),
     decimals: 2,
     prefix: '¥',
+    tone: 'positive',
     icon: 'lucide:trending-up',
   },
 ]);
@@ -96,11 +101,9 @@ function buildParams() {
 }
 
 async function loadStat() {
-  try {
+  await loadStatSafely(async () => {
     stat.value = (await fetchPlatStatCountApi(buildParams())) ?? {};
-  } catch {
-    // ignore
-  }
+  });
 }
 
 async function loadData(resetPage = false) {
@@ -192,12 +195,16 @@ onMounted(async () => {
         <template #bodyCell="{ column, record }">
           <template v-if="false" />
           <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
-            <b>{{ formatYuan(record.totalSuccessAmount as number) }}</b>
+            <AmountText
+              :value="record.totalSuccessAmount as number"
+              kind="plain"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'platTotalIncome'">
-            <b class="amount-positive">{{
-              formatYuan(record.platTotalIncome as number)
-            }}</b>
+            <AmountText
+              :value="record.platTotalIncome as number"
+              kind="signed"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'successRate'">
             {{
@@ -218,6 +225,7 @@ onMounted(async () => {
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
       :title="reportListTitle"
+      :empty-hint="reportListEmptyHint"
       :data="completedExports"
       @download="downloadFile"
       @remove="deleteCompletedItem"

@@ -12,12 +12,11 @@ import {
   MCH_BIZ_TYPE_OPTIONS,
   fundDirectionLabel,
 } from '#/constants/merchant';
-import HistoryAdjustBizTypeCell from '#/components/history/HistoryAdjustBizTypeCell.vue';
+import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
+import AmountText from '@asiapay/shared/components/AmountText.vue';
 import {
-  amountSignedClass,
   formatDateTime,
   formatYuan,
-  signedYuan,
 } from '#/utils/format';
 
 defineOptions({ name: 'MchHistoryDetailDrawer' });
@@ -89,9 +88,10 @@ defineExpose({ show });
           {{ formatYuan(detail.afterBalance as number) }}
         </Descriptions.Item>
         <Descriptions.Item label="变更金额">
-          <b :class="amountSignedClass(detail.amount as number)">
-            {{ signedYuan(detail.amount as number) }}
-          </b>
+          <AmountText
+            :value="detail.amount as number"
+            kind="signed"
+          />
         </Descriptions.Item>
         <Descriptions.Item label="代理商商户号">
           {{ detail.agentNo || '-' }}
@@ -137,13 +137,5 @@ defineExpose({ show });
   margin-bottom: 8px;
   color: hsl(var(--muted-foreground));
   font-size: 13px;
-}
-
-.amount-positive {
-  color: #4bd884;
-}
-
-.amount-negative {
-  color: #db4b4b;
 }
 </style>

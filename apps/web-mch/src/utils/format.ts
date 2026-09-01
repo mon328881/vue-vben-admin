@@ -1,13 +1,14 @@
-/** 金额：后端存分，展示元 */
-export function formatYuan(value?: number | null): string {
-  if (value == null) return '0.00';
-  const num = typeof value === 'string' ? Number.parseFloat(value) : value;
-  if (!Number.isFinite(num)) return '0.00';
-  return (num / 100).toLocaleString('zh-CN', {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  });
-}
+import { formatYuan } from '@asiapay/shared/format';
+
+export {
+  amountCostClass,
+  amountSignedClass,
+  fenToYuanNumber,
+  formatYuan,
+  formatYuanAmount,
+  formatYuanWithSymbol,
+  signedYuan,
+} from '@asiapay/shared/format';
 
 function toNum(value: unknown, fallback = 0): number {
   if (value == null) return fallback;
@@ -50,19 +51,28 @@ export function formatDateTime(value?: string | null): string {
   return String(value).replace('T', ' ').slice(0, 19);
 }
 
-export function amountSignedClass(value?: number | string | null): string {
-  const num = toNum(value);
-  return num > 0
-    ? 'amount-positive'
-    : num < 0
-      ? 'amount-negative'
-      : 'amount-zero';
+export function formatOptionalText(value?: unknown): string {
+  if (value == null || value === '') return '—';
+  return String(value);
 }
 
-export function signedYuan(value?: number | null): string {
-  const amount = toNum(value);
-  const text = (amount / 100).toFixed(2);
-  return amount > 0 ? `+${text}` : text;
+/** 预付流水汇率展示 */
+export function formatExchangeRate(value?: number | string | null): string {
+  if (value == null || value === '') return '—';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  return num.toLocaleString('zh-CN', {
+    maximumFractionDigits: 6,
+    minimumFractionDigits: 0,
+  });
+}
+
+/** 预付流水数量（后端存分则按元展示） */
+export function formatPrepaidQuantity(value?: number | string | null): string {
+  if (value == null || value === '') return '—';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  return formatYuan(num);
 }
 
 export function yuanToCent(value: string | number): number {

@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 import { Tag } from 'ant-design-vue';
 
-import { bizTypeLabel } from '#/constants/merchant';
+import HistoryBizTypeText from './HistoryBizTypeText.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -23,11 +23,9 @@ const isAdjust = computed(
   () => Number(props.bizType) === Number(props.adjustBizType),
 );
 
-const plainLabel = computed(() => bizTypeLabel(props.bizType, props.options));
-
 const loginName = computed(() => String(props.createdLoginName ?? '').trim());
 
-/** 与预付流水操作员 Tag 配色一致：uid=0 蓝，否则橙 */
+/** uid=0 蓝（飞机），否则橙（系统） */
 const tagColor = computed(() =>
   Number(props.createdUid) === 0 ? 'blue' : 'orange',
 );
@@ -38,7 +36,7 @@ const tagColor = computed(() =>
     <span>调账</span>
     <Tag v-if="loginName" :color="tagColor" class="m-0">{{ loginName }}</Tag>
   </span>
-  <span v-else>{{ plainLabel }}</span>
+  <HistoryBizTypeText v-else :biz-type="bizType" :options="options" />
 </template>
 
 <style scoped>

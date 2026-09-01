@@ -1,0 +1,26 @@
+{
+  "name": "@asiapay/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.vue"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./format": "./src/format/amount.ts",
+    "./constants/amount-display": "./src/constants/amount-display.ts",
+    "./constants/biz-type": "./src/constants/biz-type.ts",
+    "./styles/amount.css": {
+      "default": "./src/styles/amount.css"
+    },
+    "./components/HistoryBizTypeText.vue": "./src/components/history/HistoryBizTypeText.vue",
+    "./components/HistoryAdjustBizTypeCell.vue": "./src/components/history/HistoryAdjustBizTypeCell.vue",
+    "./components/AmountText.vue": "./src/components/amount/AmountText.vue"
+  },
+  "peerDependencies": {
+    "ant-design-vue": "catalog:",
+    "vue": "catalog:"
+  }
+}

@@ -27,3 +27,9 @@ export async function fetchMchPrepaidHistoryStatApi(params: {
     params,
   );
 }
+
+export async function fetchPicBase64Api(pic?: string) {
+  return requestClient.post<string>('/file/getPicBase64', null, {
+    params: { pic },
+  });
+}

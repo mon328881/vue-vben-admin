@@ -19,6 +19,7 @@ import { openWindow } from '@vben/utils';
 import { Popover } from 'ant-design-vue';
 
 import { fetchSystemInfoApi, type SystemInfo } from '#/api';
+import { formatYuan } from '#/utils/format';
 
 import DashboardRankList from '../components/RankList.vue';
 import DashboardTopPanel from '../components/TopPanel.vue';
@@ -117,7 +118,7 @@ const leaseCorner = computed(() => {
       prefix: '用户类型：',
       typeLabel: typeLabel.value,
       balanceLabel: ' 当前余额 ',
-      balanceValue: ((info.balance ?? 0) / 100).toFixed(2),
+      balanceValue: formatYuan(info.balance),
       expireLabel: ' 到期时间 ',
       expireValue: String(info.expireDate ?? '--').slice(0, 10),
     };
@@ -150,7 +151,7 @@ const leaseFlags = computed(() => {
 const leaseMessage = computed(() => {
   const info = systemInfo.value;
   if (!info) return '';
-  const balanceText = `当前余额 ${(info.balance ?? 0) / 100} 元`;
+  const balanceText = `当前余额 ${formatYuan(info.balance)}`;
   const expireText = `到期时间 ${String(info.expireDate ?? '--').slice(0, 10)}`;
   if (leaseFlags.value.insufficientBalance && leaseFlags.value.expiringSoon) {
     return `系统余额不足，且有效期不足 3 天。${balanceText}，${expireText}，请尽快处理。`;

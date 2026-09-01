@@ -7,6 +7,7 @@ import { initStores } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/antd';
 import '#/styles/drawer-layout.css';
+import '@asiapay/shared';
 
 import { useTitle } from '@vueuse/core';
 

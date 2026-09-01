@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
@@ -18,12 +18,12 @@ import { fetchMchHistoryApi, fetchMchHistoryStatApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
-import HistoryAdjustBizTypeCell from '#/components/history/HistoryAdjustBizTypeCell.vue';
+import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
+import AmountText from '@asiapay/shared/components/AmountText.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
+import { useListStat } from '#/composables/use-list-stat';
 import {
   FUND_DIRECTION_OPTIONS,
   MCH_BIZ_TYPE_OPTIONS,
@@ -34,10 +34,9 @@ import {
   toDateTimeParam,
 } from '#/utils/date-range';
 import {
-  amountSignedClass,
+  fenToYuanNumber,
   formatDateTime,
   formatYuan,
-  signedYuan,
 } from '#/utils/format';
 
 import MchHistoryDetailDrawer from './components/MchHistoryDetailDrawer.vue';
@@ -50,6 +49,7 @@ const {
   reportListVisible,
   reportListLoading,
   reportListTitle,
+  reportListEmptyHint,
   hasReportDownloads,
   completedExports,
   submitExport,
@@ -74,13 +74,14 @@ const query = reactive({
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
 const detailRef = ref<InstanceType<typeof MchHistoryDetailDrawer>>();
+const { loadStatSafely, buildStatItems } = useListStat();
 
-const listStatItems = computed<ListStatCardItem[]>(() => {
+const listStatItems = buildStatItems(() => {
   const s = stat.value;
   return [
     {
       title: '变更金额汇总',
-      value: Number(s.totalAmount ?? 0) / 100,
+      value: fenToYuanNumber(s.totalAmount),
       decimals: 2,
       prefix: '¥',
       icon: 'lucide:wallet',
@@ -118,11 +119,9 @@ function buildParams() {
 }
 
 async function loadStat() {
-  try {
+  await loadStatSafely(async () => {
     stat.value = (await fetchMchHistoryStatApi(buildParams())) ?? {};
-  } catch {
-    // ignore
-  }
+  });
 }
 
 async function loadData(resetPage = false) {
@@ -255,9 +254,10 @@ onMounted(async () => {
             {{ formatYuan(record.beforeBalance as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            <b :class="amountSignedClass(record.amount)">
-              {{ signedYuan(record.amount as number) }}
-            </b>
+            <AmountText
+              :value="record.amount as number"
+              kind="signed"
+            />
           </template>
           <template v-else-if="column.dataIndex === 'afterBalance'">
             {{ formatYuan(record.afterBalance as number) }}
@@ -293,6 +293,7 @@ onMounted(async () => {
       v-model:visible="reportListVisible"
       :loading="reportListLoading"
       :title="reportListTitle"
+      :empty-hint="reportListEmptyHint"
       :data="completedExports"
       @download="downloadFile"
       @remove="deleteCompletedItem"
@@ -305,17 +306,5 @@ onMounted(async () => {
 .text-brand {
   color: hsl(var(--primary));
   cursor: pointer;
-}
-
-.amount-positive {
-  color: #4bd884;
-}
-
-.amount-negative {
-  color: #db4b4b;
-}
-
-.amount-zero {
-  color: inherit;
 }
 </style>

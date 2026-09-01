@@ -53,7 +53,7 @@ function resolveTone(item: ListStatCardItem): string {
     const n = Number(item.value ?? 0);
     if (n > 0) return 'positive';
     if (n < 0) return 'negative';
-    return 'default';
+    return 'positive';
   }
   return tone;
 }
@@ -150,17 +150,17 @@ function resolveTone(item: ListStatCardItem): string {
 }
 
 .ap-list-stat-card__icon.is-positive {
-  color: #4bd884;
+  color: hsl(142 71% 40%);
   opacity: 0.75;
 }
 
 .ap-list-stat-card__icon.is-negative {
-  color: #db4b4b;
+  color: hsl(var(--destructive));
   opacity: 0.75;
 }
 
 .ap-list-stat-card__icon.is-warning {
-  color: #fa9d2a;
+  color: hsl(38 92% 50%);
   opacity: 0.8;
 }
 
@@ -192,15 +192,15 @@ function resolveTone(item: ListStatCardItem): string {
 }
 
 .ap-list-stat-card__value.is-positive {
-  color: #4bd884;
+  color: hsl(142 71% 40%);
 }
 
 .ap-list-stat-card__value.is-negative {
-  color: #db4b4b;
+  color: hsl(var(--destructive));
 }
 
 .ap-list-stat-card__value.is-warning {
-  color: #fa9d2a;
+  color: hsl(38 92% 50%);
 }
 
 .ap-list-stat-card__value :deep(.count-to) {

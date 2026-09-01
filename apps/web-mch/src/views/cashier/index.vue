@@ -22,7 +22,7 @@ import {
   placeCashierOrderApi,
 } from '#/api';
 import type { CashierOrder, CashierProduct } from '#/api/modules/cashier';
-import { formatYuan } from '#/utils/format';
+import { formatYuanAmount } from '#/utils/format';
 
 defineOptions({ name: 'CashierPage' });
 
@@ -219,7 +219,7 @@ onMounted(() => {
         <span class="sub">收银台</span>
       </div>
 
-      <Spin v-if="loading" size="large" tip="加载中..." />
+      <Spin v-if="loading" size="large" :tip="payOrderId ? '加载订单中...' : '加载支付产品中...'" />
 
       <template v-else-if="payOrderId">
         <div v-if="order" class="content">
@@ -232,7 +232,7 @@ onMounted(() => {
             <span class="value">{{ order.productName }}</span>
           </div>
           <div class="amount">
-            <span class="amount-num">{{ formatYuan(order.amount) }}</span>
+            <span class="amount-num">{{ formatYuanAmount(order.amount) }}</span>
             <span class="amount-unit">元</span>
           </div>
           <div class="row">

@@ -117,6 +117,9 @@ export interface MchPrepaidHistory {
   beforeBalance?: number;
   amount?: number;
   afterBalance?: number;
+  currencyType?: string;
+  quantity?: number;
+  exchangeRate?: number | string;
   fundDirection?: number;
   createdUid?: number | string;
   operator?: string;

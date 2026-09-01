@@ -286,8 +286,8 @@ async function renderChart(rows: MonitorRow[]) {
             `<div style="font-weight:500;margin-bottom:8px;">${row.name}</div>`,
             `<div style="display:flex;justify-content:space-between;gap:20px;"><span>成功率</span><span style="font-weight:600;">${row.rate.toFixed(2)}%</span></div>`,
             `<div style="display:flex;justify-content:space-between;gap:20px;"><span>成功/总数</span><span>${row.successCount} / ${row.allCount}</span></div>`,
-            `<div style="display:flex;justify-content:space-between;gap:20px;"><span>成功金额</span><span>¥${formatYuan(row.successAmount)}</span></div>`,
-            `<div style="display:flex;justify-content:space-between;gap:20px;"><span>总金额</span><span>¥${formatYuan(row.totalAmount)}</span></div>`,
+            `<div style="display:flex;justify-content:space-between;gap:20px;"><span>成功金额</span><span>${formatYuan(row.successAmount)}</span></div>`,
+            `<div style="display:flex;justify-content:space-between;gap:20px;"><span>总金额</span><span>${formatYuan(row.totalAmount)}</span></div>`,
           ].join('');
         },
       },

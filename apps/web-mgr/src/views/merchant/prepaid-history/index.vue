@@ -24,6 +24,7 @@ import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
 import { useMchPrepaidHistoryExport } from '#/composables/use-async-export';
+import { useListStat } from '#/composables/use-list-stat';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
 import {
   cleanListParams,
@@ -48,6 +49,7 @@ const {
   reportListVisible,
   reportListLoading,
   reportListTitle,
+  reportListEmptyHint,
   hasReportDownloads,
   completedExports,
   submitExport,
@@ -69,6 +71,7 @@ const query = reactive({
   fundDirection: '' as any,
 });
 const stat = ref<PrepaidHistoryStat>({});
+const { loadStatSafely } = useListStat();
 
 const columns: TableColumnsType<MchPrepaidHistory> = [
   { dataIndex: 'mchNo', title: '商户号', width: 130 },
@@ -96,11 +99,9 @@ function buildParams() {
 }
 
 async function loadStat() {
-  try {
+  await loadStatSafely(async () => {
     stat.value = (await fetchMchPrepaidHistoryStatApi(buildParams())) ?? {};
-  } catch {
-    // ignore
-  }
+  });
 }
 
 async function loadData(resetPage = false) {
@@ -250,6 +251,7 @@ onMounted(async () => {
         v-model:visible="reportListVisible"
         :loading="reportListLoading"
         :title="reportListTitle"
+        :empty-hint="reportListEmptyHint"
         :data="completedExports"
         @download="downloadFile"
         @remove="deleteCompletedItem"
@@ -257,17 +259,3 @@ onMounted(async () => {
     </div>
   </Page>
 </template>
-
-<style scoped>
-.amount-positive {
-  color: hsl(142 71% 40%);
-}
-
-.amount-negative {
-  color: hsl(var(--destructive));
-}
-
-.amount-zero {
-  color: inherit;
-}
-</style>

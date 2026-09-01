@@ -67,6 +67,7 @@ function onClick() {
     >
       <Button
         :danger="showAbort || danger"
+        :disabled="loading && !showAbort"
         :loading="buttonLoading"
         @click="onClick"
       >

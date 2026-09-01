@@ -115,13 +115,12 @@ export function passageGroupSettleModeTagColor(mode?: number | null) {
   return 'default';
 }
 
-export function bizTypeLabel(
-  value: number | string | null | undefined,
-  options: { label: string; value: string }[],
-) {
-  if (value == null || value === '') return '-';
-  return options.find((o) => o.value === String(value))?.label ?? String(value);
-}
+export { bizTypeLabel } from '@asiapay/shared/constants/biz-type';
+export {
+  AMOUNT_FIELD_KIND,
+  type AmountDisplayKind,
+  amountKindForField,
+} from '@asiapay/shared/constants/amount-display';
 
 export function fundDirectionLabel(value?: number | string | null) {
   if (value == null || value === '') return '-';

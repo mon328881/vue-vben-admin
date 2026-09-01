@@ -1,0 +1,16 @@
+/* 金额语义色：业务侧只用 class 名，颜色在此单点维护 */
+.amount-positive {
+  color: hsl(142 71% 40%);
+}
+
+.amount-negative {
+  color: hsl(var(--destructive));
+}
+
+.amount-zero {
+  color: hsl(142 71% 40%);
+}
+
+.amount-warning {
+  color: hsl(38 92% 50%);
+}

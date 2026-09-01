@@ -10,7 +10,7 @@ import {
   payOrderStateColor,
   payOrderStateLabel,
 } from '#/constants/order';
-import { formatDateTime } from '#/utils/format';
+import { formatDateTime, formatYuan } from '#/utils/format';
 
 const open = defineModel<boolean>('open', { default: false });
 
@@ -18,12 +18,6 @@ const props = defineProps<{
   detail: PayOrder | null;
   loading?: boolean;
 }>();
-
-/** 对齐旧端 formatCent：分→元，固定两位 */
-function formatCent(cent?: number | null) {
-  if (cent == null) return '0.00';
-  return (Number(cent) / 100).toFixed(2);
-}
 
 /** 对齐旧端 ratePct：费率小数 ×100 */
 function ratePct(rate?: number | string | null) {
@@ -72,7 +66,7 @@ const forceYesNo = computed(() => {
             {{ detail.mchName || '--' }}
           </Descriptions.Item>
           <Descriptions.Item label="支付金额">
-            <b>{{ formatCent(detail.amount) }}</b>
+            <b>{{ formatYuan(detail.amount) }}</b>
           </Descriptions.Item>
           <Descriptions.Item label="支付产品">
             [{{ detail.productId ?? '--' }}] {{ detail.productName || '' }}
@@ -146,16 +140,16 @@ const forceYesNo = computed(() => {
             {{ ratePct(detail.agentPassageRate) }}%
           </Descriptions.Item>
           <Descriptions.Item label="商户手续费">
-            {{ formatCent(detail.mchFeeAmount) }}
+            {{ formatYuan(detail.mchFeeAmount) }}
           </Descriptions.Item>
           <Descriptions.Item label="商户代理手续费">
-            {{ formatCent(detail.agentFeeAmount) }}
+            {{ formatYuan(detail.agentFeeAmount) }}
           </Descriptions.Item>
           <Descriptions.Item label="通道手续费">
-            {{ formatCent(detail.passageFeeAmount) }}
+            {{ formatYuan(detail.passageFeeAmount) }}
           </Descriptions.Item>
           <Descriptions.Item label="通道代理手续费">
-            {{ formatCent(detail.agentPassageFee) }}
+            {{ formatYuan(detail.agentPassageFee) }}
           </Descriptions.Item>
           <Descriptions.Item label="平台利润" :span="4">
             <b
@@ -167,7 +161,7 @@ const forceYesNo = computed(() => {
                     : ''
               "
             >
-              {{ formatCent(platformProfit) }}
+              {{ formatYuan(platformProfit) }}
             </b>
           </Descriptions.Item>
         </Descriptions>

@@ -8,7 +8,7 @@ import '@vben/styles';
 import '@vben/styles/antd';
 
 import '#/styles/drawer-layout.css';
-import '#/styles/amount.css';
+import '@asiapay/shared';
 import { useTitle } from '@vueuse/core';
 
 import { $t, setupI18n } from '#/locales';

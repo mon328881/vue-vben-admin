@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { Modal, Popconfirm, Space, Table } from 'ant-design-vue';
+import { Empty, Modal, Popconfirm, Space, Table } from 'ant-design-vue';
 
 import type { MchExportTask } from '#/api/modules/export-task';
 
@@ -10,6 +10,7 @@ defineProps<{
   loading?: boolean;
   title?: string;
   data: MchExportTask[];
+  emptyHint?: string;
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +39,7 @@ const columns: TableColumnsType<MchExportTask> = [
     @update:open="emit('update:visible', $event)"
   >
     <Table
+      v-if="loading || data.length > 0"
       :columns="columns"
       :data-source="data"
       :loading="loading"
@@ -62,5 +64,12 @@ const columns: TableColumnsType<MchExportTask> = [
         </template>
       </template>
     </Table>
+    <Empty
+      v-else
+      :description="
+        emptyHint ||
+        '暂无已完成报表。若导出刚提交，请稍候关闭后重新打开；若导出失败，请重新导出。'
+      "
+    />
   </Modal>
 </template>

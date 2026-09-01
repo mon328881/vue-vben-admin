@@ -10,8 +10,10 @@ import {
   Divider,
   Form,
   Input,
+  InputNumber,
   Modal,
   Row,
+  Switch,
   Tabs,
   Textarea,
   message,
@@ -25,6 +27,17 @@ defineOptions({ name: 'RobotsConfigPage' });
 const ADDRESS_DESC_KEY = 'addressDesc';
 const ADDRESS_DESC_MAX = 300;
 const MIN_SAVE_DELAY = 2000;
+const PASSAGE_WARN_KEY = 'passageConfig';
+const THRESHOLD_WARN_KEYS = new Set([
+  'forceOrderWarnConfig',
+  'errorOrderWarnConfig',
+]);
+const SWITCH_WARN_KEYS = new Set([
+  PASSAGE_WARN_KEY,
+  ...THRESHOLD_WARN_KEYS,
+]);
+/** 关闭后再次打开时恢复的默认阈值 */
+const DEFAULT_WARN_THRESHOLD = 1;
 
 interface DocRow {
   dt: string;
@@ -154,9 +167,56 @@ const loading = ref(false);
 const saving = ref(false);
 const loadError = ref(false);
 const formModel = ref<Record<string, string>>({});
+/** 阈值预警关闭前暂存，便于再次打开时恢复 */
+const warnThresholdCache = ref<Record<string, number>>({});
 
 function isAddressDesc(item: SysConfigItem) {
   return item.configKey === ADDRESS_DESC_KEY;
+}
+
+function isSwitchWarn(item: SysConfigItem) {
+  return SWITCH_WARN_KEYS.has(item.configKey);
+}
+
+function isThresholdWarnKey(key: string) {
+  return THRESHOLD_WARN_KEYS.has(key);
+}
+
+function isWarnEnabled(key: string) {
+  return Number(formModel.value[key] ?? 0) > 0;
+}
+
+function warnThreshold(key: string) {
+  const num = Number(formModel.value[key] ?? 0);
+  return num > 0 ? num : DEFAULT_WARN_THRESHOLD;
+}
+
+function onPassageWarnSwitch(checked: boolean | string | number, key: string) {
+  formModel.value[key] = checked ? '1' : '0';
+}
+
+function onThresholdWarnSwitch(
+  checked: boolean | string | number,
+  key: string,
+) {
+  if (checked) {
+    const cached = warnThresholdCache.value[key];
+    const restored =
+      cached && cached > 0 ? cached : DEFAULT_WARN_THRESHOLD;
+    formModel.value[key] = String(restored);
+    return;
+  }
+  const current = Number(formModel.value[key] ?? 0);
+  if (current > 0) {
+    warnThresholdCache.value[key] = current;
+  }
+  formModel.value[key] = '0';
+}
+
+function onThresholdWarnChange(value: null | number, key: string) {
+  if (value == null || value < 1) return;
+  formModel.value[key] = String(Math.floor(value));
+  warnThresholdCache.value[key] = Math.floor(value);
 }
 
 async function load() {
@@ -170,6 +230,12 @@ async function load() {
     for (const item of list) {
       model[item.configKey] =
         item.configVal != null ? String(item.configVal) : '';
+      if (isThresholdWarnKey(item.configKey)) {
+        const num = Number(item.configVal ?? 0);
+        if (num > 0) {
+          warnThresholdCache.value[item.configKey] = num;
+        }
+      }
     }
     formModel.value = model;
     if (list[0]?.groupKey) {
@@ -302,9 +368,48 @@ function confirmSubmit() {
                   :key="`${item.configKey}-${idx}`"
                   :span="item.type === 'textarea' || isAddressDesc(item) ? 24 : 12"
                 >
-                  <Form.Item :label="item.configName">
+                  <Form.Item :label="item.configName" :help="item.configDesc">
+                    <div
+                      v-if="isSwitchWarn(item)"
+                      class="warn-switch-field"
+                    >
+                      <Switch
+                        v-if="item.configKey === PASSAGE_WARN_KEY"
+                        :checked="formModel[item.configKey] === '1'"
+                        checked-children="开"
+                        un-checked-children="关"
+                        @change="
+                          (checked) =>
+                            onPassageWarnSwitch(checked, item.configKey)
+                        "
+                      />
+                      <template v-else>
+                        <Switch
+                          :checked="isWarnEnabled(item.configKey)"
+                          checked-children="开"
+                          un-checked-children="关"
+                          @change="
+                            (checked) =>
+                              onThresholdWarnSwitch(checked, item.configKey)
+                          "
+                        />
+                        <InputNumber
+                          v-if="isWarnEnabled(item.configKey)"
+                          :value="warnThreshold(item.configKey)"
+                          :min="1"
+                          :max="999999"
+                          :precision="0"
+                          addon-after="笔"
+                          class="warn-switch-field__threshold"
+                          @change="
+                            (value) =>
+                              onThresholdWarnChange(value, item.configKey)
+                          "
+                        />
+                      </template>
+                    </div>
                     <Input
-                      v-if="item.type !== 'textarea' && !isAddressDesc(item)"
+                      v-else-if="item.type !== 'textarea' && !isAddressDesc(item)"
                       v-model:value="formModel[item.configKey]"
                       allow-clear
                       autocomplete="off"
@@ -361,6 +466,17 @@ function confirmSubmit() {
 
 .config-error {
   padding: 24px 0;
+}
+
+.warn-switch-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.warn-switch-field__threshold {
+  width: 140px;
 }
 
 .robots-doc__heading {
