@@ -71,7 +71,7 @@ defineExpose({ show });
       <Form.Item label="代理商名称">
         <span class="text-strong">{{ row?.agentName ?? '-' }}</span>
       </Form.Item>
-      <Form.Item label="调整余额金额">
+      <Form.Item label="调整余额金额" required>
         <InputNumber
           v-model:value="form.changeAmount"
           :precision="2"
@@ -82,7 +82,7 @@ defineExpose({ show });
           placeholder="如需扣余额，则输入负数"
         />
       </Form.Item>
-      <Form.Item label="备注">
+      <Form.Item label="备注" required>
         <Textarea
           v-model:value="form.changeRemark"
           :rows="3"

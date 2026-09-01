@@ -4,8 +4,9 @@ export function decodeJwtPayload(
 ): null | Record<string, unknown> {
   try {
     const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payloadPart = parts[1];
+    if (!payloadPart) return null;
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
     const json = decodeURIComponent(
       Array.from(atob(base64), (c) =>
         `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`,

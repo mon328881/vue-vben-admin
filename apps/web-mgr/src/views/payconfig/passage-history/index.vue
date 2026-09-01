@@ -11,6 +11,7 @@ import {
   RangePicker,
   Select,
   Table,
+  message,
 } from 'ant-design-vue';
 
 import { fetchPassageHistoryApi, fetchPassageHistoryStatApi } from '#/api';
@@ -22,8 +23,12 @@ import ListStatCards, {
 } from '#/components/list/ListStatCards.vue';
 import { usePassageHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS, PASSAGE_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
+import {
+  cleanListParams,
+  defaultTodayRange,
+  toDateTimeParam,
+} from '#/utils/date-range';
 import { formatDateTime, formatYuan } from '#/utils/format';
-import { defaultTodayRange } from '#/utils/date-range';
 
 defineOptions({ name: 'PassageHistoryListPage' });
 
@@ -88,14 +93,13 @@ const columns: TableColumnsType = [
 ];
 
 function buildParams() {
-  const [createdStart, createdEnd] = dateRange.value ?? [];
-  return {
+  return cleanListParams({
     ...query,
-    createdStart,
-    createdEnd,
+    createdStart: toDateTimeParam(dateRange.value?.[0]),
+    createdEnd: toDateTimeParam(dateRange.value?.[1]),
     pageNumber: pagination.current,
     pageSize: pagination.pageSize,
-  };
+  });
 }
 
 async function loadStat() {
@@ -114,6 +118,10 @@ async function loadData(resetPage = false) {
     const page = await fetchPassageHistoryApi(buildParams());
     dataSource.value = (page?.records as Record<string, unknown>[]) ?? [];
     total.value = page?.total ?? 0;
+  } catch (error) {
+    dataSource.value = [];
+    total.value = 0;
+    message.error(error instanceof Error ? error.message : '加载通道资金流水失败');
   } finally {
     loading.value = false;
   }
@@ -218,7 +226,7 @@ onMounted(async () => {
           showTotal: (t: number) => `共 ${t} 条`,
           total,
         }"
-        :row-key="(r: any, i?: number) => String(r.payPassageId ?? i ?? 0)"
+        :row-key="(r: any, i?: number) => String(r.passageTransactionHistoryId ?? `passage-his-${i ?? 0}`)"
         size="middle"
         :scroll="{ x: 1200 }"
         @change="onTableChange"

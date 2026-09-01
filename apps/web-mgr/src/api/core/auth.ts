@@ -68,7 +68,7 @@ export async function getAccessCodesApi(): Promise<string[]> {
   return [];
 }
 
-/** @deprecated mgr-api 无 refresh，勿调用 */
-export async function refreshTokenApi() {
-  return baseRequestClient.post('/auth/refresh');
+/** @deprecated 后端无 refresh；保留空实现避免误请求 */
+export async function refreshTokenApi(): Promise<{ data: string; status: number }> {
+  return { data: '', status: 501 };
 }

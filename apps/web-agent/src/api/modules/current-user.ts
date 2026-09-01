@@ -25,3 +25,15 @@ export async function modifyPasswordApi(
     confirmPwd: encodeCredential(confirmPwd),
   });
 }
+
+/**
+ * 更新当前用户资料（谷歌等）。代理端绑定谷歌优先用 bindGoogleApi；
+ * 保留本接口以覆盖 PUT /current/user。
+ */
+export async function updateCurrentUserApi(payload: {
+  googleAuth?: number;
+  googleCode?: string;
+  googleKey?: string;
+}) {
+  return requestClient.put('/current/user', payload);
+}

@@ -167,13 +167,13 @@ defineExpose({ show });
         </div>
         <Table
           v-if="rates.length"
+          class="rate-detail-table"
           row-key="mchFeeRate"
           size="small"
           bordered
           :pagination="false"
           :columns="columns"
           :data-source="rates"
-          :scroll="{ y: 520 }"
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.dataIndex === 'mchFeeRate'">
@@ -226,6 +226,20 @@ defineExpose({ show });
   flex-direction: column;
   gap: 16px;
   min-height: 200px;
+  overflow: hidden;
+}
+
+.rate-detail-table {
+  width: 100%;
+}
+
+.rate-detail-table :deep(.ant-table) {
+  overflow: hidden;
+}
+
+.rate-detail-table :deep(.ant-table-thead > tr > th),
+.rate-detail-table :deep(.ant-table-tbody > tr > td) {
+  white-space: nowrap;
 }
 
 .summary-grid {

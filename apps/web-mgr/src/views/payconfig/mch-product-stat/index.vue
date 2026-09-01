@@ -23,7 +23,7 @@ import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import { useMchProductStatExport } from '#/composables/use-async-export';
 
 import { defaultWeekRange } from '#/utils/date-range';
-import { formatDateTime, formatSuccessRate, formatYuan } from '#/utils/format';
+import { formatSuccessRate, formatYuan } from '#/utils/format';
 
 import MchProductRateDetailDrawer from '../components/MchProductRateDetailDrawer.vue';
 
@@ -258,7 +258,12 @@ onMounted(async () => {
             }}
           </template>
           <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
+            <b>{{
+              String(record.createdAt ?? record.statisticsDate ?? '').slice(
+                0,
+                10,
+              ) || '—'
+            }}</b>
           </template>
           <template v-else-if="column.key === 'op'">
             <a class="text-brand" @click="openRateDetail(record)">费率明细</a>

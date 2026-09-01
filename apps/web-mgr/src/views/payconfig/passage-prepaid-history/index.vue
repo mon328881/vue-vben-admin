@@ -11,6 +11,7 @@ import {
   RangePicker,
   Select,
   Table,
+  message,
 } from 'ant-design-vue';
 
 import { fetchPassagePrepaidHistoryApi, fetchPassagePrepaidHistoryStatApi } from '#/api';
@@ -24,7 +25,11 @@ import ExportReportListDialog from '#/components/export/ExportReportListDialog.v
 import FilterActions from '#/components/list/FilterActions.vue';
 import { usePassagePrepaidHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
-import { defaultTodayRange } from '#/utils/date-range';
+import {
+  cleanListParams,
+  defaultTodayRange,
+  toDateTimeParam,
+} from '#/utils/date-range';
 import {
   amountSignedClass,
   formatDateTime,
@@ -79,14 +84,13 @@ const columns: TableColumnsType<PassagePrepaidHistory> = [
 ];
 
 function buildParams() {
-  const [createdStart, createdEnd] = dateRange.value ?? [];
-  return {
+  return cleanListParams({
     ...query,
-    createdStart,
-    createdEnd,
+    createdStart: toDateTimeParam(dateRange.value?.[0]),
+    createdEnd: toDateTimeParam(dateRange.value?.[1]),
     pageNumber: pagination.current,
     pageSize: pagination.pageSize,
-  };
+  });
 }
 
 async function loadStat() {
@@ -105,6 +109,12 @@ async function loadData(resetPage = false) {
     const page = await fetchPassagePrepaidHistoryApi(buildParams());
     dataSource.value = page?.records ?? [];
     total.value = page?.total ?? 0;
+  } catch (error) {
+    dataSource.value = [];
+    total.value = 0;
+    message.error(
+      error instanceof Error ? error.message : '加载供应商预付流水失败',
+    );
   } finally {
     loading.value = false;
   }

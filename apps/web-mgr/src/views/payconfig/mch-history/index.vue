@@ -11,6 +11,7 @@ import {
   RangePicker,
   Select,
   Table,
+  message,
 } from 'ant-design-vue';
 
 import { fetchMchHistoryApi, fetchMchHistoryStatApi } from '#/api';
@@ -23,8 +24,12 @@ import ListStatCards, {
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
 import { FUND_DIRECTION_OPTIONS, MCH_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
+import {
+  cleanListParams,
+  defaultTodayRange,
+  toDateTimeParam,
+} from '#/utils/date-range';
 import { formatDateTime, formatYuan, signedYuan } from '#/utils/format';
-import { defaultTodayRange } from '#/utils/date-range';
 
 import MchHistoryDetailDrawer from './components/MchHistoryDetailDrawer.vue';
 
@@ -94,14 +99,13 @@ const columns: TableColumnsType = [
 ];
 
 function buildParams() {
-  const [createdStart, createdEnd] = dateRange.value ?? [];
-  return {
+  return cleanListParams({
     ...query,
-    createdStart,
-    createdEnd,
+    createdStart: toDateTimeParam(dateRange.value?.[0]),
+    createdEnd: toDateTimeParam(dateRange.value?.[1]),
     pageNumber: pagination.current,
     pageSize: pagination.pageSize,
-  };
+  });
 }
 
 async function loadStat() {
@@ -120,6 +124,10 @@ async function loadData(resetPage = false) {
     const page = await fetchMchHistoryApi(buildParams());
     dataSource.value = (page?.records as Record<string, unknown>[]) ?? [];
     total.value = page?.total ?? 0;
+  } catch (error) {
+    dataSource.value = [];
+    total.value = 0;
+    message.error(error instanceof Error ? error.message : '加载商户资金流水失败');
   } finally {
     loading.value = false;
   }
@@ -228,7 +236,7 @@ onMounted(async () => {
           showTotal: (t: number) => `共 ${t} 条`,
           total,
         }"
-        :row-key="(r: any, i?: number) => String(r.mchNo ?? i ?? 0)"
+        :row-key="(r: any, i?: number) => String(r.mchHistoryId ?? `mch-his-${i ?? 0}`)"
         size="middle"
         :scroll="{ x: 1200 }"
         @change="onTableChange"

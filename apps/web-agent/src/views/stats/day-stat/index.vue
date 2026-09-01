@@ -17,10 +17,13 @@ import dayjs from 'dayjs';
 
 import { fetchDayStatCountApi, fetchDayStatListApi } from '#/api';
 import type { AgentDayStat } from '#/api/types/business';
+import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
+import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
+import { useAgentDayStatExport } from '#/composables/use-async-export';
 import {
   defaultWeekRange,
   formatDateOnly,
@@ -45,6 +48,22 @@ const summary = reactive({
   totalSuccessCount: 0,
   totalAgentIncome: 0,
 });
+
+const {
+  exportLoading,
+  exportProgress,
+  reportListVisible,
+  reportListLoading,
+  reportListTitle,
+  hasReportDownloads,
+  completedExports,
+  submitExport,
+  restoreRunningTask,
+  syncReportDownloadAvailability,
+  openReportList,
+  downloadFile,
+  deleteCompletedItem,
+} = useAgentDayStatExport();
 
 const listStatItems = computed<ListStatCardItem[]>(() => [
   {
@@ -150,11 +169,17 @@ function onReset() {
   void load();
 }
 
+function onExport() {
+  submitExport(filters());
+}
+
 onMounted(async () => {
   applyDefaultRange();
   searchLoading.value = true;
   await loadSummary();
   await load();
+  await restoreRunningTask();
+  await syncReportDownloadAvailability();
 });
 </script>
 
@@ -188,6 +213,16 @@ onMounted(async () => {
       <ListStatCards :items="listStatItems" />
 
       <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :has-report-downloads="hasReportDownloads"
+            :loading="exportLoading"
+            :progress="exportProgress"
+            @export="onExport"
+            @open-report-list="openReportList"
+          />
+        </div>
         <Table
           :columns="columns"
           :data-source="list"
@@ -246,6 +281,14 @@ onMounted(async () => {
         </Table>
       </Card>
     </div>
+
+    <ExportReportListDialog
+      v-model:visible="reportListVisible"
+      :data="completedExports"
+      :loading="reportListLoading"
+      :title="reportListTitle"
+      @download="downloadFile"
+      @remove="deleteCompletedItem"
+    />
   </Page>
 </template>
-

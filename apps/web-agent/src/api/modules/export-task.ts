@@ -89,3 +89,6 @@ export const agentHistoryExportApi = createExportApi('/agentHistoryExport/task')
 export const mchPrepaidHistoryExportApi = createExportApi(
   '/mchPrepaidHistoryExport/task',
 );
+export const agentDayStatExportApi = createExportApi(
+  '/agentDayStatExport/task',
+);

@@ -12,6 +12,7 @@ import { Modal, message } from 'ant-design-vue';
 import {
   type ExportTaskApi,
   type AgentExportTask,
+  agentDayStatExportApi,
   agentHistoryExportApi,
   mchPrepaidHistoryExportApi,
   passagePayOrderExportApi,
@@ -363,3 +364,4 @@ export const useAgentHistoryExport = createHook(agentHistoryExportApi);
 export const useMchPrepaidHistoryExport = createHook(
   mchPrepaidHistoryExportApi,
 );
+export const useAgentDayStatExport = createHook(agentDayStatExportApi);

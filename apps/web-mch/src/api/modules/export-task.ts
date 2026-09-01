@@ -67,7 +67,6 @@ export function createExportApi(basePath: string): ExportTaskApi {
       return requestClient.post<MchExportTask>(`${path}/cancel`, { taskId });
     },
     async downloadFile(objectKey, fileName) {
-      // responseReturn: 'body' bypasses { code, data } unwrap so ArrayBuffer is kept
       const buf = await requestClient.get<ArrayBuffer>(`${path}/download`, {
         params: { objectKey, fileName },
         responseReturn: 'body',
@@ -82,46 +81,15 @@ export function createExportApi(basePath: string): ExportTaskApi {
   };
 }
 
+/** 商户端实际使用的异步导出（不含运营端路径） */
 export const EXPORT_PATHS = {
   PAY_ORDER: '/payOrderExport/task',
-  MCH_LIST: '/mchListExport/task',
   MCH_HISTORY: '/mchHistoryExport/task',
   MCH_PREPAID_HISTORY: '/mchPrepaidHistoryExport/task',
-  PASSAGE_HISTORY: '/passageHistoryExport/task',
-  AGENT_HISTORY: '/agentHistoryExport/task',
-  PASSAGE_PREPAID_HISTORY: '/passagePrepaidHistoryExport/task',
-  PASSAGE_GROUP: '/passageGroupExport/task',
-  MCH_STAT: '/mchStatExport/task',
-  MCH_PRODUCT_STAT: '/mchProductStatExport/task',
-  PRODUCT_STAT: '/productStatExport/task',
-  PLAT_STAT: '/platStatExport/task',
-  AGENT_STAT: '/agentStatExport/task',
-  PASSAGE_STAT: '/passageStatExport/task',
 } as const;
 
 export const payOrderExportApi = createExportApi(EXPORT_PATHS.PAY_ORDER);
-export const mchListExportApi = createExportApi(EXPORT_PATHS.MCH_LIST);
 export const mchHistoryExportApi = createExportApi(EXPORT_PATHS.MCH_HISTORY);
 export const mchPrepaidHistoryExportApi = createExportApi(
   EXPORT_PATHS.MCH_PREPAID_HISTORY,
 );
-export const passageHistoryExportApi = createExportApi(
-  EXPORT_PATHS.PASSAGE_HISTORY,
-);
-export const agentHistoryExportApi = createExportApi(
-  EXPORT_PATHS.AGENT_HISTORY,
-);
-export const passagePrepaidHistoryExportApi = createExportApi(
-  EXPORT_PATHS.PASSAGE_PREPAID_HISTORY,
-);
-export const passageGroupExportApi = createExportApi(
-  EXPORT_PATHS.PASSAGE_GROUP,
-);
-export const mchStatExportApi = createExportApi(EXPORT_PATHS.MCH_STAT);
-export const mchProductStatExportApi = createExportApi(
-  EXPORT_PATHS.MCH_PRODUCT_STAT,
-);
-export const productStatExportApi = createExportApi(EXPORT_PATHS.PRODUCT_STAT);
-export const platStatExportApi = createExportApi(EXPORT_PATHS.PLAT_STAT);
-export const agentStatExportApi = createExportApi(EXPORT_PATHS.AGENT_STAT);
-export const passageStatExportApi = createExportApi(EXPORT_PATHS.PASSAGE_STAT);
