@@ -1,13 +1,12 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import {
   Alert,
   Button,
-  Card,
   Col,
-  Divider,
+  Collapse,
   Form,
   Input,
   InputNumber,
@@ -21,6 +20,7 @@ import {
 
 import { fetchSysConfigsApi, updateSysConfigsApi } from '#/api';
 import type { SysConfigItem } from '#/api/modules/system';
+import RobotsChatBindingsTab from './components/RobotsChatBindingsTab.vue';
 
 defineOptions({ name: 'RobotsConfigPage' });
 
@@ -28,13 +28,23 @@ const ADDRESS_DESC_KEY = 'addressDesc';
 const ADDRESS_DESC_MAX = 300;
 const MIN_SAVE_DELAY = 2000;
 const PASSAGE_WARN_KEY = 'passageConfig';
+const ROBOTS_USER_NAME_KEY = 'robotsUserName';
+const ROBOTS_ADMIN_KEY = 'robotsAdmin';
+const ROBOTS_TOKEN_KEY = 'robotsToken';
+const WARN_KEYS = [
+  'forceOrderWarnConfig',
+  'errorOrderWarnConfig',
+  PASSAGE_WARN_KEY,
+];
+const WALLET_KEYS = [
+  'usdtOffset',
+  'usdtAddress',
+  'channelUserName',
+  ADDRESS_DESC_KEY,
+];
 const THRESHOLD_WARN_KEYS = new Set([
   'forceOrderWarnConfig',
   'errorOrderWarnConfig',
-]);
-const SWITCH_WARN_KEYS = new Set([
-  PASSAGE_WARN_KEY,
-  ...THRESHOLD_WARN_KEYS,
 ]);
 /** 关闭后再次打开时恢复的默认阈值 */
 const DEFAULT_WARN_THRESHOLD = 1;
@@ -160,22 +170,59 @@ const docSections: DocSection[] = [
   },
 ];
 
-const activeTab = ref('help');
+const DEFAULT_DOC_KEYS = ['基础', '管理群与操作员'];
+
+const activeTab = ref('config');
 const groupKey = ref('robotsConfigGroup');
 const items = ref<SysConfigItem[]>([]);
 const loading = ref(false);
 const saving = ref(false);
 const loadError = ref(false);
 const formModel = ref<Record<string, string>>({});
+const accountModalVisible = ref(false);
+const accountForm = ref({
+  robotsAdmin: '',
+  robotsToken: '',
+  robotsUserName: '',
+});
+const docCollapseKeys = ref<string[]>([...DEFAULT_DOC_KEYS]);
 /** 阈值预警关闭前暂存，便于再次打开时恢复 */
 const warnThresholdCache = ref<Record<string, number>>({});
 
+const warnItems = computed(() =>
+  WARN_KEYS.map((key) => items.value.find((item) => item.configKey === key))
+    .filter((item): item is SysConfigItem => item != null),
+);
+
+const walletItems = computed(() =>
+  WALLET_KEYS.map((key) => items.value.find((item) => item.configKey === key))
+    .filter((item): item is SysConfigItem => item != null),
+);
+
+const botUserName = computed(
+  () => String(formModel.value[ROBOTS_USER_NAME_KEY] ?? '').trim(),
+);
+
+const botAdmin = computed(
+  () => String(formModel.value[ROBOTS_ADMIN_KEY] ?? '').trim(),
+);
+
+const hasBotConfigured = computed(
+  () => Boolean(botUserName.value || formModel.value[ROBOTS_TOKEN_KEY]),
+);
+
+const botTelegramHandle = computed(() => {
+  const raw = botUserName.value.replace(/^@/, '');
+  return raw ? `@${raw}` : '';
+});
+
+const botTelegramUrl = computed(() => {
+  const raw = botUserName.value.replace(/^@/, '');
+  return raw ? `https://t.me/${raw}` : '';
+});
+
 function isAddressDesc(item: SysConfigItem) {
   return item.configKey === ADDRESS_DESC_KEY;
-}
-
-function isSwitchWarn(item: SysConfigItem) {
-  return SWITCH_WARN_KEYS.has(item.configKey);
 }
 
 function isThresholdWarnKey(key: string) {
@@ -219,6 +266,23 @@ function onThresholdWarnChange(value: null | number, key: string) {
   warnThresholdCache.value[key] = Math.floor(value);
 }
 
+function openAccountModal() {
+  accountForm.value = {
+    robotsAdmin: formModel.value[ROBOTS_ADMIN_KEY] ?? '',
+    robotsToken: formModel.value[ROBOTS_TOKEN_KEY] ?? '',
+    robotsUserName: formModel.value[ROBOTS_USER_NAME_KEY] ?? '',
+  };
+  accountModalVisible.value = true;
+}
+
+function applyAccountModal() {
+  formModel.value[ROBOTS_ADMIN_KEY] = accountForm.value.robotsAdmin.trim();
+  formModel.value[ROBOTS_TOKEN_KEY] = accountForm.value.robotsToken.trim();
+  formModel.value[ROBOTS_USER_NAME_KEY] =
+    accountForm.value.robotsUserName.trim();
+  accountModalVisible.value = false;
+}
+
 async function load() {
   loadError.value = false;
   loading.value = true;
@@ -246,13 +310,6 @@ async function load() {
     message.error('加载配置失败');
   } finally {
     loading.value = false;
-  }
-}
-
-function onTabChange(key: string | number) {
-  activeTab.value = String(key);
-  if (activeTab.value === 'config') {
-    void load();
   }
 }
 
@@ -306,152 +363,474 @@ function confirmSubmit() {
     },
   });
 }
+
+onMounted(() => {
+  void load();
+});
 </script>
 
 <template>
   <Page auto-content-height title="机器人配置">
-    <Card :loading="loading && activeTab === 'config'">
-      <Tabs :active-key="activeTab" @change="onTabChange">
-        <Tabs.TabPane key="help" tab="机器人帮助说明" :force-render="true">
-          <div class="robots-doc">
-            <div class="robots-doc__head">
-              <h3 class="robots-doc__heading">机器人帮助说明</h3>
-              <Alert type="info" show-icon class="robots-doc__alert">
-                <template #message>
-                  <div class="robots-doc__alert-content">
-                    <p>
-                      优先绑定<strong>管理群</strong>，用于接收预警、提示等。管理群、商户群、通道群每个群只能同时绑定一种类型，<strong>管理群唯一</strong>。
-                    </p>
-                    <p>
-                      本页包含四方工作人员命令及<strong>记账、结算</strong>说明；群内用户常用查询命令请发送
-                      <span class="robots-doc__help-tag">/help</span>
-                      查看。
-                    </p>
-                  </div>
-                </template>
-              </Alert>
-              <Divider orientation="left" class="robots-doc__divider">
-                机器人使用说明
-              </Divider>
+    <div v-if="loadError" class="robots-page__error">
+      <Button type="primary" ghost @click="load">重新加载</Button>
+    </div>
+
+    <div v-else class="robots-page">
+      <Row :gutter="[16, 16]">
+        <!-- 左栏：Bot 名片 + 预警快捷区 -->
+        <Col :xs="24" :lg="7" :xl="6">
+          <div class="robots-sidebar">
+            <div class="bot-profile-card">
+              <div class="bot-profile-card__avatar" aria-hidden="true">
+                <svg
+                  class="bot-profile-card__icon"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
+                  />
+                </svg>
+              </div>
+
+              <template v-if="hasBotConfigured">
+                <h3 class="bot-profile-card__title">
+                  {{ botUserName || '机器人' }}
+                </h3>
+                <a
+                  v-if="botTelegramUrl"
+                  :href="botTelegramUrl"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="bot-profile-card__link"
+                >
+                  {{ botTelegramHandle }}
+                </a>
+                <p v-if="botAdmin" class="bot-profile-card__meta">
+                  管理员 {{ botAdmin }}
+                </p>
+              </template>
+              <template v-else>
+                <h3 class="bot-profile-card__title bot-profile-card__title--muted">
+                  未配置机器人
+                </h3>
+                <p class="bot-profile-card__hint">
+                  配置 Token 与用户名后，机器人即可在群内响应命令
+                </p>
+              </template>
+
+              <Button
+                type="primary"
+                ghost
+                block
+                class="bot-profile-card__btn"
+                @click="openAccountModal"
+              >
+                配置机器人账号
+              </Button>
             </div>
 
-            <section
-              v-for="sec in docSections"
-              :key="sec.heading"
-              class="robots-doc__section"
-            >
-              <h4 class="robots-doc__subheading">{{ sec.heading }}</h4>
-              <p v-if="sec.note" class="robots-doc__note">{{ sec.note }}</p>
-              <dl class="robots-doc__dl">
-                <div
-                  v-for="row in sec.rows"
-                  :key="row.dt"
-                  class="robots-doc__dl-row"
-                >
-                  <dt>{{ row.dt }}</dt>
-                  <dd>{{ row.dd }}</dd>
-                </div>
-              </dl>
-            </section>
-          </div>
-        </Tabs.TabPane>
+            <div v-if="warnItems.length" class="quick-warn-card">
+              <h4 class="quick-warn-card__title">管理群预警</h4>
+              <p class="quick-warn-card__desc">
+                开启后，相关事件将推送到已绑定的管理群
+              </p>
 
-        <Tabs.TabPane key="config" tab="机器人配置" :force-render="true">
-          <div class="config-form-wrap">
-            <div v-if="loadError" class="config-error">
-              <Button type="primary" ghost @click="load">重新加载</Button>
-            </div>
-            <Form v-else layout="vertical" class="config-form max-w-4xl">
-              <Row :gutter="[24, 8]">
-                <Col
-                  v-for="(item, idx) in items"
-                  :key="`${item.configKey}-${idx}`"
-                  :span="item.type === 'textarea' || isAddressDesc(item) ? 24 : 12"
-                >
-                  <Form.Item :label="item.configName" :help="item.configDesc">
-                    <div
-                      v-if="isSwitchWarn(item)"
-                      class="warn-switch-field"
-                    >
-                      <Switch
-                        v-if="item.configKey === PASSAGE_WARN_KEY"
-                        :checked="formModel[item.configKey] === '1'"
-                        checked-children="开"
-                        un-checked-children="关"
-                        @change="
-                          (checked) =>
-                            onPassageWarnSwitch(checked, item.configKey)
-                        "
-                      />
-                      <template v-else>
-                        <Switch
-                          :checked="isWarnEnabled(item.configKey)"
-                          checked-children="开"
-                          un-checked-children="关"
-                          @change="
-                            (checked) =>
-                              onThresholdWarnSwitch(checked, item.configKey)
-                          "
-                        />
-                        <InputNumber
-                          v-if="isWarnEnabled(item.configKey)"
-                          :value="warnThreshold(item.configKey)"
-                          :min="1"
-                          :max="999999"
-                          :precision="0"
-                          addon-after="笔"
-                          class="warn-switch-field__threshold"
-                          @change="
-                            (value) =>
-                              onThresholdWarnChange(value, item.configKey)
-                          "
-                        />
-                      </template>
-                    </div>
-                    <Input
-                      v-else-if="item.type !== 'textarea' && !isAddressDesc(item)"
-                      v-model:value="formModel[item.configKey]"
-                      allow-clear
-                      autocomplete="off"
+              <div
+                v-for="item in warnItems"
+                :key="item.configKey"
+                class="quick-warn-row"
+              >
+                <div class="quick-warn-row__head">
+                  <span class="quick-warn-row__label">
+                    {{ item.configName }}
+                  </span>
+                  <div class="quick-warn-row__controls">
+                    <Switch
+                      v-if="item.configKey === PASSAGE_WARN_KEY"
+                      :checked="formModel[item.configKey] === '1'"
+                      checked-children="开"
+                      un-checked-children="关"
+                      size="small"
+                      @change="
+                        (checked) =>
+                          onPassageWarnSwitch(checked, item.configKey)
+                      "
                     />
                     <template v-else>
-                      <Textarea
-                        v-model:value="formModel[item.configKey]"
-                        :maxlength="
-                          isAddressDesc(item) ? ADDRESS_DESC_MAX : undefined
-                        "
-                        :show-count="isAddressDesc(item)"
-                        :auto-size="{ minRows: 3, maxRows: 24 }"
-                        :placeholder="
-                          isAddressDesc(item)
-                            ? `请输入钱包自定义描述，最多 ${ADDRESS_DESC_MAX} 个字符；留空时使用默认内容`
-                            : undefined
+                      <Switch
+                        :checked="isWarnEnabled(item.configKey)"
+                        checked-children="开"
+                        un-checked-children="关"
+                        size="small"
+                        @change="
+                          (checked) =>
+                            onThresholdWarnSwitch(checked, item.configKey)
                         "
                       />
-                      <div v-if="isAddressDesc(item)" class="config-description">
-                        用于 udz（地址）命令的钱包说明，最多
-                        {{ ADDRESS_DESC_MAX }} 个字符；留空时使用默认内容。
+                      <InputNumber
+                        v-if="isWarnEnabled(item.configKey)"
+                        :value="warnThreshold(item.configKey)"
+                        :min="1"
+                        :max="999999"
+                        :precision="0"
+                        size="small"
+                        addon-after="笔"
+                        class="quick-warn-row__threshold"
+                        @change="
+                          (value) =>
+                            onThresholdWarnChange(value, item.configKey)
+                        "
+                      />
+                    </template>
+                  </div>
+                </div>
+                <p v-if="item.configDesc" class="quick-warn-row__help">
+                  {{ item.configDesc }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Col>
+
+        <!-- 右栏：配置详情 + 使用说明 -->
+        <Col :xs="24" :lg="17" :xl="18">
+          <div class="robots-main-panel">
+            <Tabs v-model:active-key="activeTab">
+              <Tabs.TabPane key="config" tab="配置详情">
+                <div v-if="loading" class="robots-main-panel__loading">
+                  加载中…
+                </div>
+                <Form
+                  v-else
+                  layout="vertical"
+                  class="config-form"
+                >
+                  <div class="config-section-head">
+                    <h4 class="config-section-head__title">USDT 与钱包</h4>
+                    <p class="config-section-head__desc">
+                      汇率浮动、收款地址及 udz 命令展示文案
+                    </p>
+                  </div>
+
+                  <Row :gutter="[24, 8]">
+                    <Col
+                      v-for="item in walletItems"
+                      :key="item.configKey"
+                      :span="isAddressDesc(item) ? 24 : 12"
+                    >
+                      <Form.Item
+                        :label="item.configName"
+                        :help="isAddressDesc(item) ? undefined : item.configDesc"
+                      >
+                        <Input
+                          v-if="!isAddressDesc(item)"
+                          v-model:value="formModel[item.configKey]"
+                          allow-clear
+                          autocomplete="off"
+                        />
+                        <template v-else>
+                          <Textarea
+                            v-model:value="formModel[item.configKey]"
+                            :maxlength="ADDRESS_DESC_MAX"
+                            show-count
+                            :auto-size="{ minRows: 3, maxRows: 24 }"
+                            :placeholder="`请输入钱包自定义描述，最多 ${ADDRESS_DESC_MAX} 个字符；留空时使用默认内容`"
+                          />
+                          <div class="config-description">
+                            用于 udz（地址）命令的钱包说明，最多
+                            {{ ADDRESS_DESC_MAX }} 个字符；留空时使用默认内容。
+                          </div>
+                        </template>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Form>
+              </Tabs.TabPane>
+
+              <Tabs.TabPane key="bindings" tab="绑定群聊">
+                <RobotsChatBindingsTab />
+              </Tabs.TabPane>
+
+              <Tabs.TabPane key="help" tab="使用说明">
+                <div class="robots-doc">
+                  <Alert type="info" show-icon class="robots-doc__alert">
+                    <template #message>
+                      <div class="robots-doc__alert-content">
+                        <p>
+                          优先绑定<strong>管理群</strong>，用于接收预警、提示等。管理群、商户群、通道群每个群只能同时绑定一种类型，<strong>管理群唯一</strong>。
+                        </p>
+                        <p>
+                          本页包含四方工作人员命令及<strong>记账、结算</strong>说明；群内用户常用查询命令请发送
+                          <span class="robots-doc__help-tag">/help</span>
+                          查看。
+                        </p>
                       </div>
                     </template>
-                  </Form.Item>
-                </Col>
-              </Row>
-              <div class="config-actions">
-                <Button type="primary" :loading="saving" @click="confirmSubmit">
-                  确认更新
-                </Button>
-              </div>
-            </Form>
+                  </Alert>
+
+                  <Collapse
+                    v-model:active-key="docCollapseKeys"
+                    class="robots-doc__collapse"
+                    :bordered="false"
+                  >
+                    <Collapse.Panel
+                      v-for="sec in docSections"
+                      :key="sec.heading"
+                      :header="sec.heading"
+                    >
+                      <p v-if="sec.note" class="robots-doc__note">
+                        {{ sec.note }}
+                      </p>
+                      <ul class="robots-doc__cmd-list">
+                        <li
+                          v-for="row in sec.rows"
+                          :key="row.dt"
+                          class="robots-doc__cmd-item"
+                        >
+                          <span class="robots-doc__cmd-name">{{ row.dt }}</span>
+                          <span class="robots-doc__cmd-desc">{{ row.dd }}</span>
+                        </li>
+                      </ul>
+                    </Collapse.Panel>
+                  </Collapse>
+                </div>
+              </Tabs.TabPane>
+            </Tabs>
+
+            <div class="robots-main-panel__footer">
+              <Button
+                type="primary"
+                :loading="saving"
+                :disabled="loading"
+                @click="confirmSubmit"
+              >
+                确认更新
+              </Button>
+            </div>
           </div>
-        </Tabs.TabPane>
-      </Tabs>
-    </Card>
+        </Col>
+      </Row>
+    </div>
+
+    <Modal
+      v-model:open="accountModalVisible"
+      title="配置机器人账号"
+      ok-text="确定"
+      cancel-text="取消"
+      :width="520"
+      destroy-on-close
+      @ok="applyAccountModal"
+    >
+      <Form layout="vertical" class="account-modal-form">
+        <Form.Item label="机器人管理员">
+          <Input
+            v-model:value="accountForm.robotsAdmin"
+            allow-clear
+            placeholder="飞机用户名，不要 @"
+            autocomplete="off"
+          />
+        </Form.Item>
+        <Form.Item label="机器人 Token">
+          <Input.Password
+            v-model:value="accountForm.robotsToken"
+            placeholder="由 @BotFather 颁发的 Bot Token"
+            autocomplete="new-password"
+          />
+        </Form.Item>
+        <Form.Item label="机器人用户名">
+          <Input
+            v-model:value="accountForm.robotsUserName"
+            allow-clear
+            placeholder="不要 @，勿乱动"
+            autocomplete="off"
+          />
+        </Form.Item>
+        <Alert
+          type="warning"
+          show-icon
+          message="修改 Token 或用户名可能导致机器人失效，请谨慎操作。"
+        />
+      </Form>
+    </Modal>
   </Page>
 </template>
 
 <style scoped>
-.config-form-wrap {
-  margin-top: 12px;
+.robots-page__error {
+  padding: 48px 0;
+  text-align: center;
+}
+
+.robots-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bot-profile-card,
+.quick-warn-card,
+.robots-main-panel {
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 2%);
+}
+
+.bot-profile-card {
+  padding: 24px;
+  text-align: center;
+}
+
+.bot-profile-card__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #2aabee 0%, #229ed9 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgb(34 158 217 / 25%);
+}
+
+.bot-profile-card__icon {
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  transform: rotate(-30deg) translate(2px, -2px);
+}
+
+.bot-profile-card__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bot-profile-card__title--muted {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+}
+
+.bot-profile-card__link {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #229ed9;
+}
+
+.bot-profile-card__meta,
+.bot-profile-card__hint {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+}
+
+.bot-profile-card__btn {
+  border-radius: 6px;
+}
+
+.quick-warn-card {
+  padding: 20px;
+}
+
+.quick-warn-card__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.quick-warn-card__desc {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+}
+
+.quick-warn-row + .quick-warn-row {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.quick-warn-row__head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.quick-warn-row__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--ant-color-text, #595959);
+}
+
+.quick-warn-row__controls {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.quick-warn-row__threshold {
+  width: 96px;
+}
+
+.quick-warn-row__help {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+}
+
+.robots-main-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  padding: 24px;
+}
+
+.robots-main-panel :deep(.ant-tabs) {
+  flex: 1;
+}
+
+.robots-main-panel__loading {
+  padding: 32px 0;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+  text-align: center;
+}
+
+.robots-main-panel__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding-top: 16px;
+  margin-top: 16px;
+  background: var(--ant-color-bg-container, #fff);
+  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.config-section-head {
+  margin-bottom: 16px;
+}
+
+.config-section-head__title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.config-section-head__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ant-color-text-secondary, #8c8c8c);
 }
 
 .config-description {
@@ -460,27 +839,8 @@ function confirmSubmit() {
   color: var(--ant-color-text-secondary, #8c8c8c);
 }
 
-.config-actions {
+.account-modal-form {
   margin-top: 8px;
-}
-
-.config-error {
-  padding: 24px 0;
-}
-
-.warn-switch-field {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.warn-switch-field__threshold {
-  width: 140px;
-}
-
-.robots-doc__heading {
-  margin: 0 0 12px;
 }
 
 .robots-doc__alert {
@@ -488,8 +848,12 @@ function confirmSubmit() {
 }
 
 .robots-doc__alert-content p {
-  line-height: 1.8;
   margin: 0;
+  line-height: 1.8;
+}
+
+.robots-doc__alert-content p + p {
+  margin-top: 4px;
 }
 
 .robots-doc__help-tag {
@@ -504,44 +868,54 @@ function confirmSubmit() {
   border-radius: 4px;
 }
 
-.robots-doc__divider {
-  margin: 16px 0;
+.robots-doc__collapse :deep(.ant-collapse-item) {
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: var(--ant-color-fill-quaternary, #fafafa);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0) !important;
+  border-radius: 8px !important;
 }
 
-.robots-doc__section {
-  margin-bottom: 20px;
-}
-
-.robots-doc__subheading {
-  margin: 0 0 8px;
-  font-size: 15px;
+.robots-doc__collapse :deep(.ant-collapse-header) {
   font-weight: 600;
 }
 
 .robots-doc__note {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
   line-height: 1.8;
   color: var(--ant-color-text-secondary, #6b7280);
 }
 
-.robots-doc__dl {
+.robots-doc__cmd-list {
+  padding: 0;
   margin: 0;
+  list-style: none;
 }
 
-.robots-doc__dl-row {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 6px;
-  line-height: 1.8;
+.robots-doc__cmd-item {
+  padding: 10px 12px;
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
 }
 
-.robots-doc__dl-row dt {
-  flex: 0 0 140px;
+.robots-doc__cmd-item + .robots-doc__cmd-item {
+  margin-top: 8px;
+}
+
+.robots-doc__cmd-name {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
   font-weight: 600;
+  color: #229ed9;
 }
 
-.robots-doc__dl-row dd {
-  margin: 0;
-  flex: 1;
+.robots-doc__cmd-desc {
+  display: block;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ant-color-text-secondary, #8c8c8c);
 }
 </style>
