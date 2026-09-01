@@ -149,7 +149,7 @@ onMounted(() => {
   <Page auto-content-height title="操作员">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @finish="onSearch">
+      <Form layout="inline" @submit="onSearch">
         <Form.Item>
           <Input
             v-model:value="query.sysUserId"
@@ -165,7 +165,7 @@ onMounted(() => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <FilterActions @reset="onReset" />
+          <FilterActions @search="onSearch" @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>

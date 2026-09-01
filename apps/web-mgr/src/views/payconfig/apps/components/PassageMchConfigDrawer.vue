@@ -195,7 +195,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section ap-drawer-filter">
-        <Form layout="inline" @finish="onSearch">
+        <Form layout="inline" @submit="onSearch">
           <Form.Item>
             <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
           </Form.Item>

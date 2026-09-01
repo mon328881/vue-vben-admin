@@ -1,17 +1,19 @@
 <script lang="ts" setup>
 /**
- * 列表筛选区查询 / 重置（Vben 按钮）
- * 放在 Form 内时查询按钮 type=submit；额外操作放默认插槽。
+ * 列表筛选区查询 / 重置。
+ *
+ * ant-design-vue Form 未绑 :model 时 @finish 不会触发，筛选 Form 需用 @submit="onSearch"。
+ * 查询按钮 html-type=submit：点击与输入框回车都会触发表单 submit。
  */
-import { VbenButton } from '@vben/common-ui';
+import { Button } from 'ant-design-vue';
 
 defineOptions({ name: 'FilterActions' });
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     submitText?: string;
     resetText?: string;
-    /** false 时查询按钮不作为 submit（自行 @search） */
+    /** false 时改为 emit('search')，不提交表单 */
     nativeSubmit?: boolean;
     loading?: boolean;
   }>(),
@@ -27,28 +29,28 @@ const emit = defineEmits<{
   search: [];
   reset: [];
 }>();
+
+function onSearchClick(event: MouseEvent) {
+  if (!props.nativeSubmit) {
+    event.preventDefault();
+    emit('search');
+  }
+}
 </script>
 
 <template>
   <div class="ap-filter-actions-inner">
-    <VbenButton
-      v-if="nativeSubmit"
-      type="submit"
+    <Button
+      :html-type="nativeSubmit ? 'submit' : 'button'"
+      type="primary"
       :loading="loading"
+      @click="onSearchClick"
     >
       {{ submitText }}
-    </VbenButton>
-    <VbenButton
-      v-else
-      type="button"
-      :loading="loading"
-      @click="emit('search')"
-    >
-      {{ submitText }}
-    </VbenButton>
-    <VbenButton type="button" variant="outline" @click="emit('reset')">
+    </Button>
+    <Button html-type="button" @click="emit('reset')">
       {{ resetText }}
-    </VbenButton>
+    </Button>
     <slot />
   </div>
 </template>

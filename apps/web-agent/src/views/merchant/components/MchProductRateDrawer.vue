@@ -102,7 +102,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section">
-        <Form layout="inline" class="ap-drawer-filter" @finish="onSearch">
+        <Form layout="inline" class="ap-drawer-filter" @submit="onSearch">
           <Form.Item>
             <InputNumber
               v-model:value="query.productId"

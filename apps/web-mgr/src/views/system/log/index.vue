@@ -143,7 +143,7 @@ onMounted(() => {
   <Page auto-content-height title="系统日志">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-        <Form layout="inline" @finish="onSearch">
+        <Form layout="inline" @submit="onSearch">
           <Form.Item>
             <RangePicker
               v-model:value="dateRange"
@@ -167,7 +167,7 @@ onMounted(() => {
             />
           </Form.Item>
           <Form.Item class="ap-filter-actions">
-            <FilterActions submit-text="搜索" @reset="onReset" />
+            <FilterActions submit-text="搜索" @search="onSearch" @reset="onReset" />
           </Form.Item>
         </Form>
       </Card>

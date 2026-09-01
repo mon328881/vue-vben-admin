@@ -175,7 +175,7 @@ onMounted(async () => {
   <Page auto-content-height title="通道统计">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @finish="onSearch">
+      <Form layout="inline" @submit="onSearch">
         <Form.Item>
           <RangePicker
             v-model:value="dateRange"
@@ -206,7 +206,7 @@ onMounted(async () => {
           />
         </Form.Item>
         <Form.Item class="ap-filter-actions">
-          <FilterActions @reset="onReset" />
+          <FilterActions @search="onSearch" @reset="onReset" />
         </Form.Item>
       </Form>
     </Card>

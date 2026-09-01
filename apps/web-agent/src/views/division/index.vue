@@ -241,7 +241,7 @@ onMounted(async () => {
   <Page auto-content-height title="结算管理">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-        <Form class="ap-pay-order-filter" @finish="onSearch">
+        <Form class="ap-pay-order-filter" @submit="onSearch">
           <Row :gutter="[16, 16]">
             <Col :lg="8" :md="12" :span="24">
               <Form.Item>
@@ -277,6 +277,7 @@ onMounted(async () => {
               <FilterActions
                 submit-text="搜索"
                 :loading="searchLoading"
+                @search="onSearch"
                 @reset="onReset"
               />
             </Col>

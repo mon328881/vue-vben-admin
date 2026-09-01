@@ -138,7 +138,7 @@ defineExpose({ show });
         </span>
       </div>
       <div class="ap-drawer-section">
-        <Form layout="inline" class="ap-drawer-filter" @finish="onSearch">
+        <Form layout="inline" class="ap-drawer-filter" @submit="onSearch">
           <Form.Item>
             <RangePicker
               v-model:value="dateRange"

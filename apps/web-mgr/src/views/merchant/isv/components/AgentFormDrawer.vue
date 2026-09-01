@@ -39,10 +39,12 @@ const emptyForm = {
 };
 
 const form = reactive({ ...emptyForm });
+const formRef = ref();
 
 async function show(agentNo?: string) {
   creating.value = !agentNo;
   saving.value = false;
+  formRef.value?.clearValidate?.();
   Object.assign(form, { ...emptyForm });
   if (agentNo) {
     editingNo.value = agentNo;
@@ -62,12 +64,9 @@ function closeDrawer() {
 }
 
 async function save() {
-  if (!form.agentName.trim()) {
-    message.error('请输入代理商名称');
-    return;
-  }
-  if (!/^[a-z][a-z0-9]{5,17}$/i.test(form.loginUserName.trim())) {
-    message.error('请输入字母开头，长度为6-18位的登录名');
+  try {
+    await formRef.value?.validate?.();
+  } catch {
     return;
   }
   saving.value = true;
@@ -119,24 +118,42 @@ defineExpose({ show });
     @close="closeDrawer"
   >
     <div class="ap-drawer-body">
-      <Form :model="form" layout="vertical">
+      <Form ref="formRef" :model="form" layout="vertical" class="ap-drawer-form">
         <Divider orientation="left">
           <Tag color="processing">基础信息</Tag>
         </Divider>
-        <Form.Item label="代理商名称" name="agentName">
+        <Form.Item
+          label="代理商名称"
+          name="agentName"
+          :rules="[{ required: true, message: '请输入代理商名称' }]"
+        >
           <Input
             v-model:value="form.agentName"
             placeholder="请输入代理商名称"
           />
         </Form.Item>
-        <Form.Item label="登录名" name="loginUserName">
+        <Form.Item
+          label="登录名"
+          name="loginUserName"
+          :rules="[
+            { required: true, message: '请输入登录名' },
+            {
+              pattern: /^[a-z][a-z0-9]{5,17}$/i,
+              message: '字母开头，长度为6-18位',
+            },
+          ]"
+        >
           <Input
             v-model:value="form.loginUserName"
             placeholder="请输入代理商登录名（字母开头，6-18位）"
             :disabled="!creating"
           />
         </Form.Item>
-        <Form.Item label="状态" name="state">
+        <Form.Item
+          label="状态"
+          name="state"
+          :rules="[{ required: true, message: '请选择状态' }]"
+        >
           <Radio.Group v-model:value="form.state">
             <Radio :value="1">启用</Radio>
             <Radio :value="0">禁用</Radio>

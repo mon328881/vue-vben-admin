@@ -179,7 +179,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section">
-        <Form layout="inline" class="ap-drawer-filter" @finish="onSearch">
+        <Form layout="inline" class="ap-drawer-filter" @submit="onSearch">
           <Form.Item>
             <DatePicker.RangePicker
               v-model:value="createdRange"
@@ -201,6 +201,7 @@ defineExpose({ show });
             <FilterActions
               submit-text="搜索"
               :loading="loading"
+              @search="onSearch"
               @reset="onReset"
             >
               <AsyncExportButtons

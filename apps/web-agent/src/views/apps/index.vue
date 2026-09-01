@@ -79,7 +79,7 @@ onMounted(load);
   <Page auto-content-height title="支付通道">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-        <Form class="ap-pay-order-filter" @finish="onSearch">
+        <Form class="ap-pay-order-filter" @submit="onSearch">
           <Row :gutter="[16, 16]">
             <Col :lg="4" :md="8" :span="24" :xl="4">
               <Form.Item>
@@ -100,7 +100,7 @@ onMounted(load);
               </Form.Item>
             </Col>
             <Col :lg="16" :md="8" :span="24" :xl="16" class="ap-filter-actions">
-              <FilterActions :loading="loading" @reset="onReset" />
+              <FilterActions :loading="loading" @search="onSearch" @reset="onReset" />
             </Col>
           </Row>
         </Form>

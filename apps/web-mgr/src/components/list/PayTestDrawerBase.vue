@@ -286,7 +286,8 @@ defineExpose({ resetState });
 }
 
 .pay-test-drawer__selector {
-  max-width: 360px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .pay-test-drawer__help {

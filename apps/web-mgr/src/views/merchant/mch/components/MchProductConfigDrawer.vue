@@ -214,6 +214,94 @@ function openAll() {
   batchVisible.value = true;
 }
 
+/** 固定设置与增量调整按商户/代理维度互斥（对齐旧端） */
+function onSetEnableChange(values: Array<number | string>) {
+  const next = values.map(String);
+  batchForm.setEnableItem = next;
+  if (next.includes('1')) {
+    batchForm.adjustEnableItem = batchForm.adjustEnableItem.filter(
+      (item) => item !== '3',
+    );
+    batchForm.setAllRateAdjust = '';
+  }
+  if (next.includes('2')) {
+    batchForm.adjustEnableItem = batchForm.adjustEnableItem.filter(
+      (item) => item !== '4',
+    );
+    batchForm.setAllAgentRateAdjust = '';
+  }
+}
+
+function onAdjustEnableChange(values: Array<number | string>) {
+  const next = values.map(String);
+  batchForm.adjustEnableItem = next;
+  if (next.includes('3')) {
+    batchForm.setEnableItem = batchForm.setEnableItem.filter(
+      (item) => item !== '1',
+    );
+    batchForm.setAllRate = '';
+  }
+  if (next.includes('4')) {
+    batchForm.setEnableItem = batchForm.setEnableItem.filter(
+      (item) => item !== '2',
+    );
+    batchForm.setAllAgentRate = '';
+  }
+}
+
+/**
+ * 多行重复前缀（如每行都写「修改费率」）时，后端会把第二行前缀当成非法 token。
+ * 发送前归一为：单一前缀 + 全部 产品/费率。
+ */
+function normalizeRateCommand(raw: string): string {
+  const text = raw.trim();
+  if (!text) return text;
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return text;
+
+  let mode: 'set' | 'edit' | null = null;
+  const tokens: string[] = [];
+
+  for (const line of lines) {
+    let rest = line;
+    if (rest.startsWith('设置费率')) {
+      if (mode === 'edit') {
+        throw new Error('同一批命令不能混用「设置费率」和「修改费率」');
+      }
+      mode = 'set';
+      rest = rest.slice('设置费率'.length).trim();
+    } else if (rest.startsWith('修改费率')) {
+      if (mode === 'set') {
+        throw new Error('同一批命令不能混用「设置费率」和「修改费率」');
+      }
+      mode = 'edit';
+      rest = rest.slice('修改费率'.length).trim();
+    } else if (mode == null) {
+      throw new Error(
+        '命令须以「设置费率」或「修改费率」开头，如：修改费率 1000/5.3',
+      );
+    }
+    if (rest) {
+      for (const token of rest.split(/\s+/)) {
+        if (!token) continue;
+        if (token === '设置费率' || token === '修改费率') continue;
+        tokens.push(token);
+      }
+    }
+  }
+
+  if (!mode || !tokens.length) {
+    throw new Error(
+      '未解析到有效的产品编码/费率，格式如：修改费率 1000/5.3 1001/8.3',
+    );
+  }
+  return `${mode === 'set' ? '设置费率' : '修改费率'} ${tokens.join(' ')}`;
+}
+
 function validateRateField(raw: string, label: string) {
   const text = String(raw ?? '').trim();
   if (!text) return `${label}不能为空`;
@@ -234,6 +322,14 @@ async function saveBatch() {
   const hasAdjust = batchForm.adjustEnableItem.length > 0;
   if (!hasState && !hasSet && !hasAdjust) {
     message.error('请至少选择一项操作');
+    return;
+  }
+  const setMch = batchForm.setEnableItem.includes('1');
+  const setAgent = batchForm.setEnableItem.includes('2');
+  const adjMch = batchForm.adjustEnableItem.includes('3');
+  const adjAgent = batchForm.adjustEnableItem.includes('4');
+  if ((setMch && adjMch) || (setAgent && adjAgent)) {
+    message.error('费率固定设置与增量调整不能同时选择同一维度');
     return;
   }
   const errors = [
@@ -286,9 +382,17 @@ async function saveBatch() {
 
 async function execCommand() {
   if (!mch.value?.mchNo) return;
-  const command = cmdText.value.trim();
-  if (!command) {
+  const raw = cmdText.value.trim();
+  if (!raw) {
     message.warning('请输入命令');
+    return;
+  }
+  let command: string;
+  try {
+    command = normalizeRateCommand(raw);
+  } catch (error) {
+    cmdResult.value =
+      error instanceof Error ? error.message : '命令格式错误';
     return;
   }
   if (MCH_NO_RE.test(command)) {
@@ -354,7 +458,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section">
-        <Form class="ap-drawer-filter" layout="inline" @finish="onSearch">
+        <Form class="ap-drawer-filter" layout="inline" @submit="onSearch">
           <Form.Item>
             <Input
               v-model:value="query.productId"
@@ -517,12 +621,15 @@ defineExpose({ show });
         </Radio.Group>
       </Form.Item>
       <Form.Item label="费率固定设置">
-        <Checkbox.Group v-model:value="batchForm.setEnableItem">
+        <Checkbox.Group
+          :value="batchForm.setEnableItem"
+          @change="onSetEnableChange"
+        >
           <Checkbox value="1">商户费率</Checkbox>
           <Checkbox value="2">代理费率</Checkbox>
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
-          将选中产品的费率覆盖为固定值，范围 -100~100，最多两位小数
+          将选中产品的费率覆盖为固定值，范围 -100~100，最多两位小数。与下方增量调整互斥。
         </p>
       </Form.Item>
       <Form.Item
@@ -546,12 +653,15 @@ defineExpose({ show });
         />
       </Form.Item>
       <Form.Item label="费率增量调整">
-        <Checkbox.Group v-model:value="batchForm.adjustEnableItem">
+        <Checkbox.Group
+          :value="batchForm.adjustEnableItem"
+          @change="onAdjustEnableChange"
+        >
           <Checkbox value="3">商户费率</Checkbox>
           <Checkbox value="4">代理费率</Checkbox>
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
-          在现有费率基础上加减，正数上调，负数下调，范围 -100~100，最多两位小数
+          在现有费率基础上加减，正数上调，负数下调，范围 -100~100，最多两位小数。与上方固定设置互斥。
         </p>
       </Form.Item>
       <Form.Item
@@ -592,7 +702,7 @@ defineExpose({ show });
         <strong>修改费率</strong>：仅修改<strong>已绑定</strong>的产品费率；无记录或已解绑会跳过，需改用「设置费率」。
       </p>
       <p>
-        格式示例：<code>修改费率 1000/5.3</code>、<code>设置费率 1000/5.3 1001/8.3</code>（费率如 5.3 表示 5.3%）。
+        格式示例：<code>修改费率 1000/5.3 1001/5.3</code>、<code>设置费率 1000/5.3 1001/8.3</code>（费率如 5.3 表示 5.3%）。多行重复写前缀也可，会自动合并。
       </p>
     </div>
     <Textarea

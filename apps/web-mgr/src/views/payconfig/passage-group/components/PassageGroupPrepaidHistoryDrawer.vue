@@ -129,7 +129,7 @@ defineExpose({ show });
     destroy-on-close
   >
     <div class="ap-drawer-stack">
-      <Form class="ap-drawer-filter" layout="inline" @finish="onSearch">
+      <Form class="ap-drawer-filter" layout="inline" @submit="onSearch">
         <Form.Item>
           <RangePicker
             v-model:value="dateRange"

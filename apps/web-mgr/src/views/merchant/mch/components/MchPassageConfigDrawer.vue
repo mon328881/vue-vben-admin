@@ -195,7 +195,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section">
-        <Form class="ap-drawer-filter" layout="inline" @finish="onSearch">
+        <Form class="ap-drawer-filter" layout="inline" @submit="onSearch">
           <Form.Item>
             <Input
               v-model:value="query.payPassageId"
@@ -298,23 +298,23 @@ defineExpose({ show });
               {{ formatRateDecimal(record.rate) }}
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <Space>
-                <Button
-                  size="small"
-                  type="link"
-                  @click="bindRow(record as MchPassageInfo, 1)"
-                >
-                  绑定
-                </Button>
-                <Button
-                  size="small"
-                  type="link"
-                  danger
-                  @click="bindRow(record as MchPassageInfo, 0)"
-                >
-                  解绑
-                </Button>
-              </Space>
+              <Button
+                v-if="record.state !== 1"
+                size="small"
+                type="link"
+                @click="bindRow(record as MchPassageInfo, 1)"
+              >
+                绑定
+              </Button>
+              <Button
+                v-else
+                size="small"
+                type="link"
+                danger
+                @click="bindRow(record as MchPassageInfo, 0)"
+              >
+                解绑
+              </Button>
             </template>
           </template>
         </Table>

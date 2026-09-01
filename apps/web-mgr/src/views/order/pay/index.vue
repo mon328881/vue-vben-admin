@@ -559,7 +559,7 @@ onUnmounted(() => {
   <Page auto-content-height title="支付订单">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-        <Form class="ap-pay-order-filter" @finish="onSearch">
+        <Form class="ap-pay-order-filter" @submit="onSearch">
           <Row :gutter="[16, 16]">
             <Col :xs="24" :sm="12" :md="10" :lg="6" :xl="6">
               <Form.Item>
@@ -750,7 +750,7 @@ onUnmounted(() => {
             </Col>
             <Col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
               <Form.Item class="ap-filter-actions">
-                <FilterActions @reset="onReset" />
+                <FilterActions @search="onSearch" @reset="onReset" />
               </Form.Item>
             </Col>
           </Row>
