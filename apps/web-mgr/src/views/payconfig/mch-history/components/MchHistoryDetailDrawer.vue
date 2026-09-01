@@ -10,28 +10,24 @@ import {
 
 import {
   MCH_BIZ_TYPE_OPTIONS,
-  bizTypeLabel,
   fundDirectionLabel,
 } from '#/constants/merchant';
-import { formatDateTime, formatYuan, signedYuan } from '#/utils/format';
+import HistoryAdjustBizTypeCell from '#/components/history/HistoryAdjustBizTypeCell.vue';
+import {
+  amountSignedClass,
+  formatDateTime,
+  formatYuan,
+  signedYuan,
+} from '#/utils/format';
 
 defineOptions({ name: 'MchHistoryDetailDrawer' });
 
 const open = ref(false);
 const detail = ref<Record<string, unknown>>({});
 
-const bizText = computed(() =>
-  bizTypeLabel(detail.value.bizType as any, MCH_BIZ_TYPE_OPTIONS),
-);
 const fundText = computed(() =>
   fundDirectionLabel(detail.value.fundDirection as any),
 );
-const amountClass = computed(() => {
-  const n = Number(detail.value.amount ?? 0);
-  if (n > 0) return 'amount-positive';
-  if (n < 0) return 'amount-negative';
-  return '';
-});
 
 function show(row: Record<string, unknown>) {
   detail.value = { ...row };
@@ -67,8 +63,12 @@ defineExpose({ show });
           {{ formatYuan(detail.mchRateAmount as number) }}
         </Descriptions.Item>
         <Descriptions.Item label="业务类型">
-          <Tag v-if="bizText !== '-'" color="processing">{{ bizText }}</Tag>
-          <span v-else>-</span>
+          <HistoryAdjustBizTypeCell
+            :biz-type="detail.bizType as number | string"
+            :created-login-name="detail.createdLoginName as string"
+            :created-uid="detail.createdUid as number | string"
+            :options="MCH_BIZ_TYPE_OPTIONS"
+          />
         </Descriptions.Item>
         <Descriptions.Item label="资金变更方向">
           <Tag
@@ -89,7 +89,9 @@ defineExpose({ show });
           {{ formatYuan(detail.afterBalance as number) }}
         </Descriptions.Item>
         <Descriptions.Item label="变更金额">
-          <b :class="amountClass">{{ signedYuan(detail.amount as number) }}</b>
+          <b :class="amountSignedClass(detail.amount as number)">
+            {{ signedYuan(detail.amount as number) }}
+          </b>
         </Descriptions.Item>
         <Descriptions.Item label="代理商商户号">
           {{ detail.agentNo || '-' }}
@@ -138,10 +140,10 @@ defineExpose({ show });
 }
 
 .amount-positive {
-  color: hsl(var(--success));
+  color: #4bd884;
 }
 
 .amount-negative {
-  color: hsl(var(--destructive));
+  color: #db4b4b;
 }
 </style>

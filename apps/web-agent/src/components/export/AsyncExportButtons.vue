@@ -81,7 +81,7 @@ function onClick() {
       </Button>
     </span>
     <Button
-      v-if="hasReportDownloads"
+      v-if="hasReportDownloads || loading"
       @click="emit('open-report-list')"
     >
       报表下载列表

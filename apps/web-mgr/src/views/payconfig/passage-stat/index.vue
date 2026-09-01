@@ -248,10 +248,12 @@ onMounted(async () => {
             </button>
           </template>
           <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
-            {{ formatYuan(record.totalSuccessAmount as number) }}
+            <b>{{ formatYuan(record.totalSuccessAmount as number) }}</b>
           </template>
           <template v-else-if="column.dataIndex === 'totalPassageCost'">
-            {{ formatYuan(record.totalPassageCost as number) }}
+            <b class="amount-positive">{{
+              formatYuan(record.totalPassageCost as number)
+            }}</b>
           </template>
           <template v-else-if="column.dataIndex === 'successRate'">
             {{

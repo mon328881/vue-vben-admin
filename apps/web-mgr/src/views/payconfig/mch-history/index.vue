@@ -22,14 +22,23 @@ import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
+import HistoryAdjustBizTypeCell from '#/components/history/HistoryAdjustBizTypeCell.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
-import { FUND_DIRECTION_OPTIONS, MCH_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
+import {
+  FUND_DIRECTION_OPTIONS,
+  MCH_BIZ_TYPE_OPTIONS,
+} from '#/constants/merchant';
 import {
   cleanListParams,
   defaultTodayRange,
   toDateTimeParam,
 } from '#/utils/date-range';
-import { formatDateTime, formatYuan, signedYuan } from '#/utils/format';
+import {
+  amountSignedClass,
+  formatDateTime,
+  formatYuan,
+  signedYuan,
+} from '#/utils/format';
 
 import MchHistoryDetailDrawer from './components/MchHistoryDetailDrawer.vue';
 
@@ -92,7 +101,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
   { dataIndex: 'orderNo', title: '订单号', width: 280 },
   { dataIndex: 'payOrderAmount', title: '订单金额', width: 110 },
-  { dataIndex: 'bizType', title: '业务类型', width: 100 },
+  { dataIndex: 'bizType', title: '业务类型', width: 220 },
   { dataIndex: 'createdAt', title: '创建日期', width: 170 },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
   { key: 'op', title: '操作', width: 100, fixed: 'right' },
@@ -246,12 +255,7 @@ onMounted(async () => {
             {{ formatYuan(record.beforeBalance as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            <b
-              :class="{
-                'amount-positive': Number(record.amount) > 0,
-                'amount-negative': Number(record.amount) < 0,
-              }"
-            >
+            <b :class="amountSignedClass(record.amount)">
               {{ signedYuan(record.amount as number) }}
             </b>
           </template>
@@ -271,7 +275,12 @@ onMounted(async () => {
             {{ formatDateTime(record.createdAt as string) }}
           </template>
           <template v-else-if="column.dataIndex === 'bizType'">
-            {{ bizTypeLabel(record.bizType as any, MCH_BIZ_TYPE_OPTIONS) }}
+            <HistoryAdjustBizTypeCell
+              :biz-type="record.bizType as number | string"
+              :created-login-name="record.createdLoginName as string"
+              :created-uid="record.createdUid as number | string"
+              :options="MCH_BIZ_TYPE_OPTIONS"
+            />
           </template>
           <template v-else-if="column.key === 'op'">
             <a class="text-brand" @click="openDetail(record)">查看详细</a>
@@ -296,5 +305,17 @@ onMounted(async () => {
 .text-brand {
   color: hsl(var(--primary));
   cursor: pointer;
+}
+
+.amount-positive {
+  color: #4bd884;
+}
+
+.amount-negative {
+  color: #db4b4b;
+}
+
+.amount-zero {
+  color: inherit;
 }
 </style>

@@ -1,0 +1,12 @@
+/* 金额正负色，对齐旧端 global.css */
+.amount-positive {
+  color: #4bd884;
+}
+
+.amount-negative {
+  color: #db4b4b;
+}
+
+.amount-zero {
+  color: inherit;
+}

@@ -174,9 +174,20 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
         try {
           const task = await api.fetchRunning();
           if (!task) {
-            if (exportLoading.value) exportLoading.value = false;
+            // 任务完成后 running 接口常直接返回空，需主动刷新已完成列表，否则「报表下载列表」按钮不会出现
+            const wasLoading = exportLoading.value;
+            if (wasLoading) exportLoading.value = false;
             clearRunningTask();
             stopPoll();
+            if (wasLoading) {
+              exportProgress.value = 100;
+              try {
+                await refreshCompleted();
+                if (hasReportDownloads.value) message.success(messages.done);
+              } catch (error) {
+                console.error('刷新报表下载列表失败', error);
+              }
+            }
             return;
           }
           exportProgress.value = task.progress ?? 0;
@@ -227,6 +238,8 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
       }
       if (task.reused) message.info(messages.reused);
       else message.info(messages.submit);
+      // 提交后立刻露出「报表下载列表」，与提示文案一致（列表在完成后才有文件）
+      hasReportDownloads.value = true;
       exportProgress.value = task.progress ?? 0;
       applyRunningTask(task);
       if (isTerminal(task)) finishExportTask(task);

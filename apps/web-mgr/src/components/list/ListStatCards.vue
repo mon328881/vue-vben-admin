@@ -38,10 +38,11 @@ const cols = computed(() => Math.min(Math.max(props.items.length || 1, 1), 6));
 
 function inferTone(title: string): ListStatTone {
   if (/冻结|失败|异常|亏损/.test(title)) return 'negative';
+  if (/成交.*金额|订单金额|变更金额|汇总金额/.test(title)) return 'negative';
   if (/成本|手续费|服务费/.test(title)) return 'warning';
-  if (/利润|收入|分润|成交|金额|余额|跑量|预付|提现/.test(title)) {
-    return 'brand';
-  }
+  if (/利润|收入|分润/.test(title)) return 'positive';
+  if (/订单数|笔数|条数|记录/.test(title)) return 'warning';
+  if (/金额|余额|跑量|预付|提现/.test(title)) return 'brand';
   if (/成功/.test(title)) return 'positive';
   return 'default';
 }

@@ -21,14 +21,23 @@ import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
+import HistoryAdjustBizTypeCell from '#/components/history/HistoryAdjustBizTypeCell.vue';
 import { usePassageHistoryExport } from '#/composables/use-async-export';
-import { FUND_DIRECTION_OPTIONS, PASSAGE_BIZ_TYPE_OPTIONS, bizTypeLabel } from '#/constants/merchant';
+import {
+  FUND_DIRECTION_OPTIONS,
+  PASSAGE_BIZ_TYPE_OPTIONS,
+} from '#/constants/merchant';
 import {
   cleanListParams,
   defaultTodayRange,
   toDateTimeParam,
 } from '#/utils/date-range';
-import { formatDateTime, formatYuan } from '#/utils/format';
+import {
+  amountSignedClass,
+  formatDateTime,
+  formatYuan,
+  signedYuan,
+} from '#/utils/format';
 
 defineOptions({ name: 'PassageHistoryListPage' });
 
@@ -87,7 +96,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 120 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
-  { dataIndex: 'bizType', title: '业务类型', width: 100 },
+  { dataIndex: 'bizType', title: '业务类型', width: 220 },
   { dataIndex: 'createdAt', title: '创建日期', width: 170 },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
 ];
@@ -237,7 +246,9 @@ onMounted(async () => {
             {{ formatYuan(record.beforeBalance as number) }}
           </template>
           <template v-else-if="column.dataIndex === 'amount'">
-            {{ formatYuan(record.amount as number) }}
+            <b :class="amountSignedClass(record.amount)">
+              {{ signedYuan(record.amount as number) }}
+            </b>
           </template>
           <template v-else-if="column.dataIndex === 'afterBalance'">
             {{ formatYuan(record.afterBalance as number) }}
@@ -246,7 +257,13 @@ onMounted(async () => {
             {{ formatDateTime(record.createdAt as string) }}
           </template>
           <template v-else-if="column.dataIndex === 'bizType'">
-            {{ bizTypeLabel(record.bizType as any, PASSAGE_BIZ_TYPE_OPTIONS) }}
+            <HistoryAdjustBizTypeCell
+              :adjust-biz-type="5"
+              :biz-type="record.bizType as number | string"
+              :created-login-name="record.createdLoginName as string"
+              :created-uid="record.createdUid as number | string"
+              :options="PASSAGE_BIZ_TYPE_OPTIONS"
+            />
           </template>
         </template>
       </Table>
@@ -262,3 +279,17 @@ onMounted(async () => {
     </div>
   </Page>
 </template>
+
+<style scoped>
+.amount-positive {
+  color: #4bd884;
+}
+
+.amount-negative {
+  color: #db4b4b;
+}
+
+.amount-zero {
+  color: inherit;
+}
+</style>
