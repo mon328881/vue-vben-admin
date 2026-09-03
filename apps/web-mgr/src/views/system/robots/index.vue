@@ -20,7 +20,6 @@ import {
 
 import { fetchSysConfigsApi, updateSysConfigsApi } from '#/api';
 import type { SysConfigItem } from '#/api/modules/system';
-import RobotsChatBindingsTab from './components/RobotsChatBindingsTab.vue';
 
 defineOptions({ name: 'RobotsConfigPage' });
 
@@ -546,10 +545,6 @@ onMounted(() => {
                     </Col>
                   </Row>
                 </Form>
-              </Tabs.TabPane>
-
-              <Tabs.TabPane key="bindings" tab="绑定群聊">
-                <RobotsChatBindingsTab />
               </Tabs.TabPane>
 
               <Tabs.TabPane key="help" tab="使用说明">

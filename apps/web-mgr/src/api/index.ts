@@ -14,4 +14,3 @@ export * from './modules/pay-order';
 export * from './modules/pay-ways';
 export * from './modules/stats';
 export * from './modules/system';
-export * from './modules/bot';
