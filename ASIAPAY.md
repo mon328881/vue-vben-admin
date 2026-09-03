@@ -1,10 +1,24 @@
 # AsiaPay Admin — Vben 多门户前端（位于 Diamond 仓库内）
 
-基于 [Vben Admin 完整版](https://doc.vben.pro/guide/introduction/quick-start.html)（非精简版）搭建，目录：
+基于 [Vben Admin 完整版](https://doc.vben.pro/guide/introduction/quick-start.html)（非精简版）搭建。
 
-`d:/Code/Diamond/asiapay-admin`
+| 项 | 值 |
+|----|----|
+| 本地目录 | `<Diamond>/asiapay-admin` |
+| Git 远程 | `https://github.com/mon328881/vue-vben-admin.git` |
+| 本地文件夹名 | `asiapay-admin`（与远程仓库名不同，按双根工作区约定） |
 
 与现有 `mgr-web` / `mch-web` / `agent-web` 并存；后续业务以本多门户为准对接 `mgr-api` / `mch-api` / `agent-api`。
+
+## 首次拉取
+
+在 Diamond 仓库根目录：
+
+```bash
+git clone https://github.com/mon328881/vue-vben-admin.git asiapay-admin
+```
+
+该目录已写入 Diamond 根 `.gitignore`（`/asiapay-admin/`），作为独立 Git 仓库嵌套使用，勿提交进 Diamond。
 
 ## 门户一览
 
@@ -17,7 +31,7 @@
 同时启动三个门户：
 
 ```bash
-cd d:/Code/Diamond/asiapay-admin
+cd asiapay-admin
 pnpm dev:portals
 ```
 
@@ -31,7 +45,7 @@ pnpm dev:portals
 ## 安装与启动
 
 ```bash
-cd d:/Code/Diamond/asiapay-admin
+cd asiapay-admin
 
 corepack enable
 pnpm install
@@ -57,11 +71,16 @@ pnpm dev:agent  # 代理端
    - `accessMode: backend`，首页 `/main`；未迁移业务页走 coming-soon 占位
 4. 业务页面按模块从旧版前端逐步迁移（P0 已对接：主页 KPI、商户列表、代理列表、支付订单、操作员）。
 
-## Cursor 工作区
+## Cursor 工作区（双根）
 
-可单独打开 `asiapay-admin` 子目录，或打开其中的 `asiapay-admin.code-workspace`，减少误改后端模块。
+推荐打开 Diamond 根目录的 `asiapay-admin.code-workspace`：
+
+1. **Diamond · 后端与旧端** → `.`
+2. **asiapay-admin · 新前端** → `asiapay-admin/`（即本仓库 / `vue-vben-admin`）
+
+也可只打开 `asiapay-admin/` 或其内的 `asiapay-admin.code-workspace`，减少误改后端模块。
 
 ## 版本
 
-- 上游：`vue-vben-admin`（完整 monorepo）
+- 远程仓库：`mon328881/vue-vben-admin`（fork 自上游 `vue-vben-admin` 完整 monorepo）
 - UI 基线：Ant Design Vue（由 `web-antd` 复制为三门户）
