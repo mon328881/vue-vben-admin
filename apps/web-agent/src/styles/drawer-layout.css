@@ -110,12 +110,13 @@
   margin-top: 16px;
 }
 
-/* 查询/重置：独占一行，避免挤在筛选项旁换行后贴得太近 */
+/* 查询/重置：独占一行；底部 margin 置 0，避免 Card 内多出 16px 空白 */
 .ap-page-filter .ant-form-inline > .ant-form-item:has(.ant-btn),
 .ap-page-filter .ap-filter-actions {
   flex: 0 0 100%;
   margin-inline-start: 0 !important;
   margin-inline-end: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .ap-page-filter .ap-filter-actions .ant-space,
@@ -151,7 +152,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .ap-table-toolbar--between {

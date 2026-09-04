@@ -105,12 +105,13 @@
   margin-top: 16px;
 }
 
-/* 查询/重置：独占一行，避免挤在筛选项旁换行后贴得太近 */
+/* 查询/重置：独占一行；底部 margin 置 0，避免 Card 内多出 16px 空白 */
 .ap-page-filter .ant-form-inline > .ant-form-item:has(.ant-btn),
 .ap-page-filter .ap-filter-actions {
   flex: 0 0 100%;
   margin-inline-start: 0 !important;
   margin-inline-end: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .ap-page-filter .ap-filter-actions .ant-space,
@@ -146,7 +147,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .ap-table-toolbar--between {
@@ -310,15 +311,34 @@
   gap: 16px;
 }
 
+/*
+ * 抽屉筛选：筛选项 → 按钮 统一 12px。
+ * 用 margin 而不是只靠 row-gap（ant-form-inline 下 row-gap 常不生效）。
+ * 按钮行 margin-bottom:0，避免吃掉与下方信息区（stat）的 stack gap。
+ */
+.ap-drawer-filter.ant-form-inline,
 .ap-drawer-filter .ant-form-inline {
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: 12px;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start;
+  column-gap: 12px;
+  row-gap: 0;
 }
 
+.ap-drawer-filter.ant-form-inline > .ant-form-item,
+.ap-drawer-filter .ant-form-inline > .ant-form-item,
 .ap-drawer-filter .ant-form-item {
-  margin-inline-end: 16px !important;
-  margin-bottom: 4px !important;
+  margin-inline-end: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+.ap-drawer-filter .ap-filter-actions,
+.ap-drawer-filter.ant-form-inline > .ant-form-item:has(.ant-btn),
+.ap-drawer-filter .ant-form-inline > .ant-form-item:has(.ant-btn) {
+  flex: 0 0 100%;
+  margin-inline-start: 0 !important;
+  margin-inline-end: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* 自动结算模式卡片选项（抽屉表单） */
