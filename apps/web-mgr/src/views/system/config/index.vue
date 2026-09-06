@@ -138,7 +138,7 @@ onMounted(() => {
           v-if="activeTab === PAY_GROUP"
           type="info"
           show-icon
-          class="mb-4"
+          class="pay-config-alert"
           message="支付设置说明"
           description="单通道超时时间用于判断单次通道响应是否超时（5–30 秒）；轮询次数为单笔订单最多允许尝试的通道次数（10–60 次）。"
         />
@@ -185,6 +185,19 @@ onMounted(() => {
 .config-form-wrap {
   margin-top: 4px;
   max-width: 960px;
+}
+
+/* 说明区与下方表单：16px → 12px，避免 Alert 自身底内边距叠出过大空白 */
+.pay-config-alert {
+  margin-bottom: 12px;
+}
+
+.config-form :deep(.ant-form-item) {
+  margin-bottom: 16px;
+}
+
+.config-form :deep(.ant-form-item:last-child) {
+  margin-bottom: 0;
 }
 
 .config-error {

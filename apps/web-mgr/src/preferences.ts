@@ -22,6 +22,7 @@ export const overridesPreferences = defineOverridesPreferences({
     date: '2026',
   },
   widget: {
+    logoutButtonPosition: 'user-dropdown',
     notification: false,
   },
 });

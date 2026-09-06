@@ -5,10 +5,12 @@ import { Form, Input, Modal, Switch, message } from 'ant-design-vue';
 
 import { fetchOpenStateApi, setOpenStateApi } from '#/api';
 import { getCachedCurrentUser } from '#/api/core/user';
+import { useIntakeOpenState } from '#/composables/use-intake-open-state';
 import { hasEnt } from '#/utils/access';
 import { useAccessStore } from '@vben/stores';
 
 const accessStore = useAccessStore();
+const { openState, setIntakeOpen } = useIntakeOpenState();
 
 const canToggle = computed(() => {
   const cached = getCachedCurrentUser();
@@ -16,7 +18,6 @@ const canToggle = computed(() => {
   return hasEnt('ENT_C_MAIN_PAY_COUNT');
 });
 
-const openState = ref(true);
 const openLoading = ref(false);
 const openFetching = ref(false);
 const googleVisible = ref(false);
@@ -34,9 +35,9 @@ async function loadOpenState() {
   openFetching.value = true;
   try {
     const state = await fetchOpenStateApi();
-    openState.value = Number(state) === 1;
+    setIntakeOpen(Number(state) === 1);
   } catch {
-    openState.value = true;
+    setIntakeOpen(true);
   } finally {
     openFetching.value = false;
   }
@@ -58,7 +59,7 @@ async function confirmOpenState() {
       setOpenState: pendingOpenState.value ? 1 : 0,
       googleCode: googleCode.value.trim(),
     });
-    openState.value = pendingOpenState.value;
+    setIntakeOpen(pendingOpenState.value);
     googleVisible.value = false;
     message.success('操作成功');
   } catch (error) {
@@ -90,7 +91,7 @@ onMounted(() => {
 <template>
   <div v-if="canToggle" class="intake-switch-wrap">
     <Switch
-      :checked="openState"
+      :checked="openState ?? true"
       checked-children="进单开"
       un-checked-children="进单关"
       :loading="switchLoading"

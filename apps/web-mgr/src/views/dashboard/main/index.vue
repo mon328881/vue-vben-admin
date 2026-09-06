@@ -1,18 +1,12 @@
 <script lang="ts" setup>
 /**
- * 对齐旧端 MainPage：
- * WorkbenchHeader + TopPanel（六卡 KPI）+ QuickNav + RankList + 租赁到期提醒
+ * 主页：KPI → 今日分析 → 排名/监控 → 轻量快捷入口
  */
-import type { WorkbenchQuickNavItem } from '@vben/common-ui';
-
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import {
-  Page,
-  WorkbenchHeader,
-  WorkbenchQuickNav,
-} from '@vben/common-ui';
+import { Page, WorkbenchHeader } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
 import { preferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
@@ -22,6 +16,7 @@ import { fetchSystemInfoApi, type SystemInfo } from '#/api';
 import { formatYuan } from '#/utils/format';
 
 import DashboardRankList from '../components/RankList.vue';
+import DashboardTodayInsight from '../components/TodayInsight.vue';
 import DashboardTopPanel from '../components/TopPanel.vue';
 
 defineOptions({ name: 'MainDashboard' });
@@ -29,6 +24,13 @@ defineOptions({ name: 'MainDashboard' });
 const LEASE_COOKIE_HOURS = 6;
 const BALANCE_WARN = 500 * 100;
 const EXPIRE_WARN_MS = 3 * 24 * 60 * 60 * 1000;
+
+interface QuickNavItem {
+  color: string;
+  icon: string;
+  title: string;
+  url: string;
+}
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -42,7 +44,7 @@ const displayName = computed(
     '运营同学',
 );
 
-const quickNavItems: WorkbenchQuickNavItem[] = [
+const quickNavItems: QuickNavItem[] = [
   {
     color: '#1fdaca',
     icon: 'ant-design:ordered-list-outlined',
@@ -81,12 +83,12 @@ const quickNavItems: WorkbenchQuickNavItem[] = [
   },
 ];
 
-function navTo(nav: WorkbenchQuickNavItem) {
-  if (nav.url?.startsWith('http')) {
+function navTo(nav: QuickNavItem) {
+  if (nav.url.startsWith('http')) {
     openWindow(nav.url);
     return;
   }
-  if (nav.url?.startsWith('/')) {
+  if (nav.url.startsWith('/')) {
     router.push(nav.url).catch((error) => {
       console.error('Navigation failed:', error);
     });
@@ -232,14 +234,14 @@ onMounted(() => {
   <Page>
     <div class="dashboard-base-page">
       <WorkbenchHeader
-        class="row-container"
+        class="row-container dashboard-header"
         :avatar="userStore.userInfo?.avatar || preferences.app.defaultAvatar"
       >
         <template #title>
           你好，{{ displayName }}，开始今天的运营工作吧
         </template>
         <template #description>
-          实时概览成交、通道与商户表现，快速进入常用业务页
+          实时概览成交、通道与商户表现
         </template>
         <template #actions>
           <span />
@@ -248,14 +250,30 @@ onMounted(() => {
 
       <DashboardTopPanel class="row-container" />
 
-      <WorkbenchQuickNav
-        class="row-container"
-        title="快捷入口"
-        :items="quickNavItems"
-        @click="navTo"
-      />
+      <DashboardTodayInsight class="row-container" />
 
-      <DashboardRankList class="row-container" />
+      <DashboardRankList class="row-container dashboard-rank" />
+
+      <section class="row-container quick-nav" aria-label="快捷入口">
+        <div class="quick-nav__label">快捷入口</div>
+        <div class="quick-nav__list">
+          <button
+            v-for="item in quickNavItems"
+            :key="item.title"
+            type="button"
+            class="quick-nav__item"
+            @click="navTo(item)"
+          >
+            <span
+              class="quick-nav__icon"
+              :style="{ color: item.color, background: `${item.color}18` }"
+            >
+              <IconifyIcon :icon="item.icon" class="size-4" />
+            </span>
+            <span class="quick-nav__title">{{ item.title }}</span>
+          </button>
+        </div>
+      </section>
 
       <Popover
         v-if="leaseCorner"
@@ -312,11 +330,90 @@ onMounted(() => {
 <style scoped>
 .dashboard-base-page {
   position: relative;
-  padding-bottom: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 28px;
 }
 
-.row-container:not(:last-child) {
-  margin-bottom: 16px;
+.row-container {
+  margin-bottom: 0;
+}
+
+.dashboard-header :deep(.flex) {
+  align-items: center;
+}
+
+.dashboard-rank :deep([data-slot='card']) {
+  border-color: hsl(var(--border) / 70%);
+}
+
+.dashboard-rank :deep([data-slot='card-title']) {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.quick-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border) / 70%);
+  background: hsl(var(--card));
+}
+
+.quick-nav__label {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.quick-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.quick-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 65%);
+  background: hsl(var(--background) / 55%);
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.quick-nav__item:hover {
+  border-color: hsl(var(--primary) / 35%);
+  background: hsl(var(--primary) / 6%);
+  transform: translateY(-1px);
+}
+
+.quick-nav__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.quick-nav__title {
+  font-size: 13px;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
 }
 
 .dashboard-lease-corner {
@@ -325,7 +422,6 @@ onMounted(() => {
   color: hsl(var(--muted-foreground));
   line-height: 1.5;
   word-break: break-word;
-  margin-top: 8px;
   cursor: default;
 }
 
