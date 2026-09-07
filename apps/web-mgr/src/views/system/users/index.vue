@@ -20,6 +20,8 @@ import {
 
 import {
   deleteSysUserApi,
+  fetchSysRolesApi,
+  fetchSysUserRoleRelasApi,
   fetchSysUsersApi,
   updateSysUserStateApi,
 } from '#/api';
@@ -33,8 +35,12 @@ import SystemUserRoleAssignDrawer from './components/SystemUserRoleAssignDrawer.
 
 defineOptions({ name: 'SysUserPage' });
 
+interface SysUserRow extends SysUser {
+  roleNames?: string[];
+}
+
 const loading = ref(false);
-const dataSource = ref<SysUser[]>([]);
+const dataSource = ref<SysUserRow[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const query = reactive({
@@ -42,6 +48,8 @@ const query = reactive({
   sysUserId: '',
 });
 const stateBusy = ref<Record<string, boolean>>({});
+/** 角色字典缓存：roleId → roleName */
+const roleNameMap = ref<Record<string, string>>({});
 
 const formRef = ref<InstanceType<typeof SysUserFormDrawer>>();
 const roleRef = ref<InstanceType<typeof SystemUserRoleAssignDrawer>>();
@@ -51,15 +59,54 @@ const canEdit = computed(() => hasEnt('ENT_UR_USER_EDIT'));
 const canDel = computed(() => hasEnt('ENT_UR_USER_DELETE'));
 const canUpdRole = computed(() => hasEnt('ENT_UR_USER_UPD_ROLE'));
 
-const columns: TableColumnsType<SysUser> = [
+const columns: TableColumnsType<SysUserRow> = [
   { dataIndex: 'sysUserId', fixed: 'left', title: '用户ID', width: 120 },
-  { dataIndex: 'loginUsername', title: '用户登录名' },
-  { dataIndex: 'isAdmin', title: '超管', width: 100 },
+  { dataIndex: 'loginUsername', title: '用户登录名', width: 160 },
+  { dataIndex: 'isAdmin', title: '超管', width: 90 },
+  { dataIndex: 'roleNames', title: '角色', minWidth: 200 },
   { dataIndex: 'state', title: '状态', width: 140 },
   { dataIndex: 'createdAt', title: '创建时间', width: 180 },
   { dataIndex: 'updatedAt', title: '修改时间', width: 180 },
   { dataIndex: 'action', fixed: 'right', title: '操作', width: 220 },
 ];
+
+async function ensureRoleNameMap() {
+  if (Object.keys(roleNameMap.value).length > 0) return;
+  const page = await fetchSysRolesApi({ pageSize: -1 });
+  const map: Record<string, string> = {};
+  for (const role of page?.records ?? []) {
+    if (role?.roleId) {
+      map[String(role.roleId)] = role.roleName || String(role.roleId);
+    }
+  }
+  roleNameMap.value = map;
+}
+
+async function attachRoleNames(rows: SysUser[]): Promise<SysUserRow[]> {
+  if (rows.length === 0) return [];
+  try {
+    await ensureRoleNameMap();
+  } catch {
+    // 角色字典失败时仍展示列表，角色列显示为空
+  }
+  const map = roleNameMap.value;
+  const roleLists = await Promise.all(
+    rows.map(async (row) => {
+      try {
+        const relas = await fetchSysUserRoleRelasApi(row.sysUserId);
+        return relas
+          .map((r) => map[String(r.roleId)] || String(r.roleId))
+          .filter(Boolean);
+      } catch {
+        return [] as string[];
+      }
+    }),
+  );
+  return rows.map((row, index) => ({
+    ...row,
+    roleNames: roleLists[index] ?? [],
+  }));
+}
 
 async function loadData(resetPage = false) {
   if (resetPage) pagination.current = 1;
@@ -71,8 +118,9 @@ async function loadData(resetPage = false) {
       pageSize: pagination.pageSize,
       sysUserId: query.sysUserId || undefined,
     });
-    dataSource.value = page?.records ?? [];
+    const records = page?.records ?? [];
     total.value = page?.total ?? 0;
+    dataSource.value = await attachRoleNames(records);
   } finally {
     loading.value = false;
   }
@@ -140,6 +188,11 @@ function onFormSuccess(toFirstPage: boolean) {
   void loadData(toFirstPage);
 }
 
+function onRoleSuccess() {
+  roleNameMap.value = {};
+  void loadData(false);
+}
+
 onMounted(() => {
   void loadData(true);
 });
@@ -149,106 +202,115 @@ onMounted(() => {
   <Page auto-content-height title="操作员">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <Input
-            v-model:value="query.sysUserId"
-            allow-clear
-            placeholder="用户ID"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input
-            v-model:value="query.loginUsername"
-            allow-clear
-            placeholder="用户登录名"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
-
-    <Card>
-      <div class="ap-table-toolbar">
-        <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
-          新建
-        </Button>
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        row-key="sysUserId"
-        size="middle"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'isAdmin'">
-            <Tag v-if="Number(record.isAdmin) === 1" color="error">超管</Tag>
-            <span v-else style="color: #94a3b8">否</span>
-          </template>
-          <template v-else-if="column.dataIndex === 'state'">
-            <Switch
-              :checked="record.state === 1"
-              :loading="!!stateBusy[String(record.sysUserId)]"
-              :disabled="!canEdit"
-              checked-children="开启"
-              un-checked-children="关闭"
-              @change="(c) => onToggleState(record as SysUser, c)"
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <Input
+              v-model:value="query.sysUserId"
+              allow-clear
+              placeholder="用户ID"
             />
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'updatedAt'">
-            {{ formatDateTime(record.updatedAt) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'action'">
-            <Space>
-              <Button
-                v-if="canUpdRole"
-                size="small"
-                type="link"
-                @click="roleRef?.show(record.sysUserId)"
-              >
-                变更角色
-              </Button>
-              <Button
-                v-if="canEdit"
-                size="small"
-                type="link"
-                @click="formRef?.showEdit(record.sysUserId)"
-              >
-                修改
-              </Button>
-              <Popconfirm
-                v-if="canDel"
-                title="确认删除？"
-                description="删除后不可恢复，请谨慎操作。"
-                @confirm="onDelete(record as SysUser)"
-              >
-                <Button danger size="small" type="link">删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
-        </template>
-      </Table>
-    </Card>
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.loginUsername"
+              allow-clear
+              placeholder="用户登录名"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
 
-    <SysUserFormDrawer ref="formRef" @success="onFormSuccess" />
-    <SystemUserRoleAssignDrawer
-      ref="roleRef"
-      @success="() => loadData(false)"
-    />
+      <Card>
+        <div class="ap-table-toolbar">
+          <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
+            新建
+          </Button>
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          row-key="sysUserId"
+          size="middle"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'isAdmin'">
+              <Tag v-if="Number(record.isAdmin) === 1" color="error">超管</Tag>
+              <span v-else style="color: #94a3b8">否</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'roleNames'">
+              <Space v-if="record.roleNames?.length" wrap :size="[4, 4]">
+                <Tag
+                  v-for="name in record.roleNames"
+                  :key="name"
+                  color="processing"
+                >
+                  {{ name }}
+                </Tag>
+              </Space>
+              <span v-else style="color: #94a3b8">未分配</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'state'">
+              <Switch
+                :checked="record.state === 1"
+                :loading="!!stateBusy[String(record.sysUserId)]"
+                :disabled="!canEdit"
+                checked-children="开启"
+                un-checked-children="关闭"
+                @change="(c) => onToggleState(record as SysUser, c)"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'updatedAt'">
+              {{ formatDateTime(record.updatedAt) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <Space>
+                <Button
+                  v-if="canUpdRole"
+                  size="small"
+                  type="link"
+                  @click="roleRef?.show(record.sysUserId)"
+                >
+                  变更角色
+                </Button>
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="link"
+                  @click="formRef?.showEdit(record.sysUserId)"
+                >
+                  修改
+                </Button>
+                <Popconfirm
+                  v-if="canDel"
+                  title="确认删除？"
+                  description="删除后不可恢复，请谨慎操作。"
+                  @confirm="onDelete(record as SysUser)"
+                >
+                  <Button danger size="small" type="link">删除</Button>
+                </Popconfirm>
+              </Space>
+            </template>
+          </template>
+        </Table>
+      </Card>
+
+      <SysUserFormDrawer ref="formRef" @success="onFormSuccess" />
+      <SystemUserRoleAssignDrawer ref="roleRef" @success="onRoleSuccess" />
     </div>
   </Page>
 </template>
