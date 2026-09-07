@@ -1,6 +1,6 @@
 # 新前端 × 后端 API 覆盖差距
 
-> 更新：2026-09-01（P0/P1/清理已落地）  
+> 更新：2026-09-07（对齐后端契约：冻结接口下线、Void 写操作、SlimPageResult）  
 > 范围：`asiapay-admin` 三端（web-mgr / web-mch / web-agent）对照 Diamond 后端（mgr-api / mch-api / agent-api）  
 > 口径：**API 层是否被前端调用**，不是每个按钮交互 100% 对齐旧端。异步导出按「整套任务接口」计 1 类能力。
 
@@ -8,7 +8,7 @@
 
 | 端 | API 覆盖（估计） | 说明 |
 |----|------------------|------|
-| 运营端 web-mgr | ~99% | P0 已修；无未接线业务缺口 |
+| 运营端 web-mgr | ~99% | 已对齐最新契约；无未接线业务缺口 |
 | 商户端 web-mch | ~99% | 主体已齐；已收敛导出常量 |
 | 代理端 web-agent | ~99% | P1 日终导出已接线；`PUT /current/user` API 已补 |
 
@@ -20,7 +20,6 @@
 
 | 项 | 路径 | 说明 |
 |----|------|------|
-| 商户调冻结 | `PUT /mchBalance/{mchNo}/freeze` | `changeMchFreezeApi` + `MchFreezeAdjustDialog` + 列表入口 |
 | 通知单条重发 | `POST /mchNotify/resend` | body 传 JSON 字符串 `notifyId` |
 
 ### 代理端 P1 / P2
@@ -36,6 +35,7 @@
 |----|------|
 | 三端 `refreshTokenApi` | 改为空实现，不再请求不存在的 `/auth/refresh` |
 | 商户端 `EXPORT_PATHS` | 仅保留 `payOrder` / `mchHistory` / `mchPrepaidHistory`，去掉 mgr 路径 |
+| 商户调冻结 | 后端已删除 `PUT /mchBalance/{mchNo}/freeze`；前端已去掉 `changeMchFreezeApi` 与调整弹窗，冻结列只读展示 |
 
 ---
 
@@ -59,7 +59,7 @@
 
 - 鉴权 / 个人中心（谷歌绑定、改密）
 - 主页图表、进单开关、排名/并发
-- 商户 / 代理 / 商户分组 CRUD + 批量 + 预付结算 + 调冻结
+- 商户 / 代理 / 商户分组 CRUD + 批量 + 预付结算（冻结仅展示，不可调）
 - 通道 / 产品 / 接口 / 供应商 CRUD + 批量 + 日切
 - 订单、强制补单、改金额、异常单、通知重发
 - 结算审核（商户/代理）、统计与流水、异步导出（约 14 类）

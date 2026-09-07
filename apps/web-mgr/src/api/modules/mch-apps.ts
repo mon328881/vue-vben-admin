@@ -96,14 +96,14 @@ export async function fetchMchAppApi(payPassageId: number | string) {
 }
 
 export async function createMchAppApi(payload: Record<string, unknown>) {
-  return requestClient.post<PayPassage>('/mchApps', payload);
+  return requestClient.post<void>('/mchApps', payload);
 }
 
 export async function updateMchAppApi(
   payPassageId: number | string,
   payload: Record<string, unknown>,
 ) {
-  return requestClient.put<PayPassage>(`/mchApps/${payPassageId}`, payload);
+  return requestClient.put<void>(`/mchApps/${payPassageId}`, payload);
 }
 
 export async function deleteMchAppApi(payPassageId: number | string) {

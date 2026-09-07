@@ -33,14 +33,14 @@ export async function fetchIsvInfoApi(agentNo: string) {
 }
 
 export async function createIsvInfoApi(payload: AgentInfoPayload) {
-  return requestClient.post<AgentInfo>('/isvInfo', payload);
+  return requestClient.post<void>('/isvInfo', payload);
 }
 
 export async function updateIsvInfoApi(
   agentNo: string,
   payload: AgentInfoPayload | Record<string, unknown>,
 ) {
-  return requestClient.put<AgentInfo>(`/isvInfo/${agentNo}`, payload);
+  return requestClient.put<void>(`/isvInfo/${agentNo}`, payload);
 }
 
 export async function resetIsvLoginAuthApi(agentNo: string, state: number) {

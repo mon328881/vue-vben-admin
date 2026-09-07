@@ -58,14 +58,14 @@ export async function fetchMchInfoApi(mchNo: string) {
 }
 
 export async function createMchInfoApi(payload: MchInfoCreatePayload) {
-  return requestClient.post<MchInfo>('/mchInfo', payload);
+  return requestClient.post<void>('/mchInfo', payload);
 }
 
 export async function updateMchInfoApi(
   mchNo: string,
   payload: MchInfoUpdatePayload,
 ) {
-  return requestClient.put<MchInfo>(`/mchInfo/${mchNo}`, payload);
+  return requestClient.put<void>(`/mchInfo/${mchNo}`, payload);
 }
 
 export async function resetMchLoginAuthApi(mchNo: string) {
@@ -245,14 +245,6 @@ export async function changeMchBalanceApi(
   payload: { changeAmount: number; changeRemark: string },
 ) {
   return requestClient.put(`/mchBalance/${mchNo}`, payload);
-}
-
-/** 调整商户冻结金额：正数从余额冻结，负数解冻回余额 */
-export async function changeMchFreezeApi(
-  mchNo: string,
-  payload: { changeAmount: number; changeRemark: string },
-) {
-  return requestClient.put(`/mchBalance/${mchNo}/freeze`, payload);
 }
 
 export async function changeMchPrepaidApi(

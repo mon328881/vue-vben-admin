@@ -50,7 +50,7 @@ export async function createPayWayApi(payload: {
   mode: number;
   icon?: string;
 }) {
-  return requestClient.post<PayWay>('/payWays', payload);
+  return requestClient.post<void>('/payWays', payload);
 }
 
 export async function updatePayWayApi(
@@ -59,7 +59,7 @@ export async function updatePayWayApi(
     Pick<PayWay, 'productName' | 'detail' | 'mode' | 'icon' | 'state' | 'limitState'>
   >,
 ) {
-  return requestClient.put<PayWay>(`/payWays/${productId}`, payload);
+  return requestClient.put<void>(`/payWays/${productId}`, payload);
 }
 
 export async function deletePayWayApi(productId: number) {

@@ -53,7 +53,7 @@ export async function createSysUserApi(payload: {
   loginUsername: string;
   isAdmin: number;
 }) {
-  return requestClient.post<SysUser>('/sysUsers', payload);
+  return requestClient.post<void>('/sysUsers', payload);
 }
 
 export async function updateSysUserApi(
@@ -64,7 +64,7 @@ export async function updateSysUserApi(
     defaultPass?: boolean;
   },
 ) {
-  return requestClient.put<SysUser>(`/sysUsers/${sysUserId}`, payload);
+  return requestClient.put<void>(`/sysUsers/${sysUserId}`, payload);
 }
 
 export async function updateSysUserStateApi(
@@ -95,14 +95,14 @@ export async function createSysRoleApi(payload: {
   roleName: string;
   entIdListStr: string;
 }) {
-  return requestClient.post<SysRole>('/sysRoles', payload);
+  return requestClient.post<void>('/sysRoles', payload);
 }
 
 export async function updateSysRoleApi(
   roleId: number | string,
   payload: { roleName: string; entIdListStr: string },
 ) {
-  return requestClient.put<SysRole>(`/sysRoles/${roleId}`, payload);
+  return requestClient.put<void>(`/sysRoles/${roleId}`, payload);
 }
 
 export async function deleteSysRoleApi(roleId: number | string) {
@@ -121,8 +121,10 @@ export async function saveSysUserRoleRelasApi(
   userId: number | string,
   roleIds: Array<number | string>,
 ) {
+  const ids = roleIds.map((id) => String(id));
   return requestClient.post(`/sysUserRoleRelas/relas/${userId}`, {
-    roleIdListStr: JSON.stringify(roleIds),
+    roleIds: ids,
+    roleIdListStr: JSON.stringify(ids),
   });
 }
 

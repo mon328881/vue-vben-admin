@@ -59,7 +59,7 @@ const formSchema = computed((): VbenFormSchema[] => {
     {
       component: 'VbenInput',
       componentProps: {
-        placeholder: '谷歌验证码（可选）',
+        placeholder: '已开启谷歌验证时必填',
       },
       fieldName: 'google',
       label: '谷歌验证码',
