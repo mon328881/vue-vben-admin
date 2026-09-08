@@ -36,6 +36,7 @@ import FilterActions from '#/components/list/FilterActions.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import {
   BATCH_RATE_ACTIONS,
+  PRODUCT_RATE_PRECISION,
   PRODUCT_STATE_OPTIONS,
   parseCommandRate,
   productPollMode,
@@ -815,16 +816,16 @@ onMounted(() => {
                 <InputNumber
                   v-show="batchForm.useUnifiedValue"
                   v-model:value="batchForm.unifiedValue"
-                  :precision="2"
+                  :precision="PRODUCT_RATE_PRECISION"
                   :step="0.01"
                   :min="-100"
                   :max="100"
-                  placeholder="如：5.25，可为负数"
+                  placeholder="如：5.25，最多六位小数，可为负数"
                   style="width: 260px"
                 />
               </div>
               <p class="mt-1 text-sm text-muted-foreground">
-                开启后为全部已选产品设置相同费率，范围 -100 到 100，最多两位小数。
+                开启后为全部已选产品设置相同费率，范围 -100 到 100，最多六位小数。
               </p>
             </Form.Item>
             <div class="batch-rate-product-table">
@@ -841,12 +842,12 @@ onMounted(() => {
                 </div>
                 <InputNumber
                   v-model:value="item.rateValue"
-                  :precision="2"
+                  :precision="PRODUCT_RATE_PRECISION"
                   :step="0.01"
                   :min="-100"
                   :max="100"
                   :disabled="batchForm.useUnifiedValue"
-                  placeholder="如：5.25,最多两位小数"
+                  placeholder="如：5.25，最多六位小数"
                   style="width: 260px"
                 />
               </div>
@@ -858,11 +859,11 @@ onMounted(() => {
           >
             <InputNumber
               v-model:value="batchForm.adjustValue"
-              :precision="2"
+              :precision="PRODUCT_RATE_PRECISION"
               :step="0.01"
               :min="-100"
               :max="100"
-              placeholder="如：1.25 或 -1.25"
+              placeholder="如：1.25 或 -1.25，最多六位小数"
               style="width: 260px"
             />
             <p class="mt-1 text-sm text-muted-foreground">

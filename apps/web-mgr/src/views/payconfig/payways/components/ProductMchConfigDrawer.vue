@@ -26,8 +26,13 @@ import {
   type PayWay,
   type ProductMchBind,
 } from '#/api';
-import { PRODUCT_RATE_RE } from '#/constants/payWays';
-import { formatRateDecimal } from '#/utils/format';
+import {
+  PRODUCT_RATE_PRECISION,
+  percentFromRate,
+  toProductRate,
+  validateProductRate,
+} from '#/constants/payWays';
+import { formatFeeRate } from '#/utils/format';
 
 const visible = ref(false);
 const loading = ref(false);
@@ -119,29 +124,22 @@ async function confirmUnBlindAll() {
 function openEdit(row: ProductMchBind) {
   editing.value = row;
   editForm.state = row.state ?? 1;
-  editForm.mchRatePercent =
-    row.mchRate != null ? (Number(row.mchRate) * 100).toFixed(2) : '';
-  editForm.agentRatePercent =
-    row.agentRate != null ? (Number(row.agentRate) * 100).toFixed(2) : '';
+  editForm.mchRatePercent = percentFromRate(row.mchRate);
+  editForm.agentRatePercent = percentFromRate(row.agentRate);
   editVisible.value = true;
 }
 
 function parsePercent(raw: unknown, label: string) {
-  const text = String(raw ?? '').trim();
-  if (!text) {
-    message.error(`${label}不能为空`);
+  const error = validateProductRate(raw, label);
+  if (error) {
+    message.error(
+      error.includes('格式错误')
+        ? `${label}格式错误，最多六位小数，可为负数`
+        : error,
+    );
     return null;
   }
-  if (!PRODUCT_RATE_RE.test(text)) {
-    message.error(`${label}格式错误，最多两位小数，可为负数`);
-    return null;
-  }
-  const num = Number(text);
-  if (Number.isNaN(num)) {
-    message.error(`${label}格式错误`);
-    return null;
-  }
-  return num / 100;
+  return toProductRate(raw);
 }
 
 async function saveEdit() {
@@ -268,10 +266,10 @@ defineExpose({ show });
               </Tag>
             </template>
             <template v-else-if="column.dataIndex === 'mchRate'">
-              <b>{{ formatRateDecimal(record.mchRate) }}</b>
+              <b>{{ formatFeeRate(record.mchRate) }}</b>
             </template>
             <template v-else-if="column.dataIndex === 'agentRate'">
-              {{ formatRateDecimal(record.agentRate) }}
+              {{ formatFeeRate(record.agentRate) }}
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <Button
@@ -314,22 +312,22 @@ defineExpose({ show });
       <Form.Item label="商户费率(%)">
         <InputNumber
           v-model:value="editForm.mchRatePercent"
-          :precision="2"
+          :precision="PRODUCT_RATE_PRECISION"
           :step="0.01"
           :min="-200"
           :max="200"
-          placeholder="如：5.25，可为负数"
+          placeholder="如：5.25，最多六位小数，可为负数"
           style="width: 260px"
         />
       </Form.Item>
       <Form.Item label="代理费率(%)">
         <InputNumber
           v-model:value="editForm.agentRatePercent"
-          :precision="2"
+          :precision="PRODUCT_RATE_PRECISION"
           :step="0.01"
           :min="-200"
           :max="200"
-          placeholder="如：5.25，可为负数"
+          placeholder="如：5.25，最多六位小数，可为负数"
           style="width: 260px"
         />
       </Form.Item>

@@ -33,10 +33,14 @@ export interface PayWayListParams {
   productName?: string;
   state?: string;
   limitState?: string;
+  sortField?: string;
+  sortOrder?: string;
 }
 
 export async function fetchPayWaysApi(params: PayWayListParams) {
-  return requestClient.get<PageResult<PayWay>>('/payWays', { params });
+  return requestClient.get<PageResult<PayWay>>('/payWays', {
+    params: { sortOrder: 'descend', ...params },
+  });
 }
 
 export async function fetchPayWayApi(productId: number) {

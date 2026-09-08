@@ -46,7 +46,9 @@ export interface MchInfoUpdatePayload {
 }
 
 export async function fetchMchListApi(params: MchListParams) {
-  return requestClient.get<PageResult<MchInfo>>('/mchInfo', { params });
+  return requestClient.get<PageResult<MchInfo>>('/mchInfo', {
+    params: { sortOrder: 'descend', ...params },
+  });
 }
 
 export async function fetchMchStatInfoApi(params: MchListParams) {

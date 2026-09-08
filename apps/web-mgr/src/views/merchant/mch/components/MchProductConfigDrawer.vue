@@ -30,9 +30,14 @@ import {
   updateMchProductInfoApi,
 } from '#/api';
 import type { MchInfo, MchProductInfo } from '#/api/types/business';
-import { formatRateDecimal } from '#/utils/format';
+import {
+  PRODUCT_RATE_PRECISION,
+  percentFromRate,
+  toProductRate,
+  validateProductRate,
+} from '#/constants/payWays';
+import { formatFeeRate } from '#/utils/format';
 
-const RATE_RE = /^-?\d+(?:\.\d{1,2})?$/;
 const MCH_NO_RE = /(?:^|\s)M\d{10}(?:\s|$)/;
 
 const visible = ref(false);
@@ -143,26 +148,22 @@ async function confirmUnBlindAll() {
 function openEdit(row: MchProductInfo) {
   editing.value = row;
   editForm.state = row.state ?? 1;
-  editForm.mchRatePercent =
-    row.mchRate != null ? Number((Number(row.mchRate) * 100).toFixed(2)) : '';
-  editForm.agentRatePercent =
-    row.agentRate != null
-      ? Number((Number(row.agentRate) * 100).toFixed(2))
-      : '';
+  editForm.mchRatePercent = percentFromRate(row.mchRate);
+  editForm.agentRatePercent = percentFromRate(row.agentRate);
   editVisible.value = true;
 }
 
 function parsePercent(raw: number | string, label: string) {
-  const text = String(raw ?? '').trim();
-  if (!text) {
-    message.error(`${label}不能为空`);
+  const error = validateProductRate(raw, label);
+  if (error) {
+    message.error(
+      error.includes('格式错误')
+        ? `${label}格式错误，最多六位小数，可为负数`
+        : error,
+    );
     return null;
   }
-  if (!RATE_RE.test(text)) {
-    message.error(`${label}格式错误，最多两位小数，可为负数`);
-    return null;
-  }
-  return Number(text) / 100;
+  return toProductRate(raw);
 }
 
 async function saveEdit() {
@@ -303,16 +304,11 @@ function normalizeRateCommand(raw: string): string {
 }
 
 function validateRateField(raw: string, label: string) {
-  const text = String(raw ?? '').trim();
-  if (!text) return `${label}不能为空`;
-  if (!RATE_RE.test(text)) return `${label}格式错误，最多两位小数`;
-  const n = Number.parseFloat(text);
-  if (n < -100 || n > 100) return `${label}范围应在 -100~100 之间`;
-  return '';
+  return validateProductRate(raw, label);
 }
 
 function toRate(raw: string) {
-  return Number((Number.parseFloat(String(raw).trim()) / 100).toFixed(4));
+  return toProductRate(raw);
 }
 
 async function saveBatch() {
@@ -540,10 +536,10 @@ defineExpose({ show });
               </Tag>
             </template>
             <template v-else-if="column.dataIndex === 'mchRate'">
-              <b>{{ formatRateDecimal(record.mchRate) }}</b>
+              <b>{{ formatFeeRate(record.mchRate) }}</b>
             </template>
             <template v-else-if="column.dataIndex === 'agentRate'">
-              {{ formatRateDecimal(record.agentRate) }}
+              {{ formatFeeRate(record.agentRate) }}
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <Button
@@ -585,18 +581,18 @@ defineExpose({ show });
         <InputNumber
           v-model:value="editForm.mchRatePercent"
           :step="0.01"
-          :precision="2"
+          :precision="PRODUCT_RATE_PRECISION"
           style="width: 200px"
-          placeholder="请输入费率，如：5.25，可为负数"
+          placeholder="请输入费率，如：5.25，最多六位小数，可为负数"
         />
       </Form.Item>
       <Form.Item label="代理费率(%)">
         <InputNumber
           v-model:value="editForm.agentRatePercent"
           :step="0.01"
-          :precision="2"
+          :precision="PRODUCT_RATE_PRECISION"
           style="width: 200px"
-          placeholder="请输入费率，如：5.25，可为负数"
+          placeholder="请输入费率，如：5.25，最多六位小数，可为负数"
         />
       </Form.Item>
     </Form>
@@ -629,7 +625,7 @@ defineExpose({ show });
           <Checkbox value="2">代理费率</Checkbox>
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
-          将选中产品的费率覆盖为固定值，范围 -100~100，最多两位小数。与下方增量调整互斥。
+          将选中产品的费率覆盖为固定值，范围 -100~100，最多六位小数。与下方增量调整互斥。
         </p>
       </Form.Item>
       <Form.Item
@@ -661,7 +657,7 @@ defineExpose({ show });
           <Checkbox value="4">代理费率</Checkbox>
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
-          在现有费率基础上加减，正数上调，负数下调，范围 -100~100，最多两位小数。与上方固定设置互斥。
+          在现有费率基础上加减，正数上调，负数下调，范围 -100~100，最多六位小数。与上方固定设置互斥。
         </p>
       </Form.Item>
       <Form.Item

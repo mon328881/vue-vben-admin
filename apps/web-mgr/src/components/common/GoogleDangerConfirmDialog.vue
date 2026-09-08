@@ -9,6 +9,7 @@ const props = defineProps<{
   open: boolean;
   header: string;
   warning: string;
+  hint?: string;
   saving?: boolean;
 }>();
 
@@ -50,6 +51,7 @@ function submit() {
     <Form layout="vertical">
       <Form.Item label="说明">
         <Alert type="warning" show-icon :message="warning" />
+        <p v-if="hint" class="text-muted-foreground mt-2 text-xs">{{ hint }}</p>
       </Form.Item>
       <Form.Item label="谷歌验证码" required>
         <Input

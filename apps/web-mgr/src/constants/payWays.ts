@@ -50,7 +50,10 @@ export const PRODUCT_DETAIL_MAX = 800;
 
 export const PRODUCT_ID_PATTERN = /^[1-9]\d{0,7}$/;
 
-export const PRODUCT_RATE_RE = /^-?\d+(?:\.\d{1,2})?$/;
+/** 对齐 mch_product_info DECIMAL(12,6) HALF_UP；界面按百分比录入 */
+export const PRODUCT_RATE_PRECISION = 6;
+
+export const PRODUCT_RATE_RE = /^-?\d+(?:\.\d{1,6})?$/;
 
 export const BATCH_RATE_ACTIONS = [
   {
@@ -88,14 +91,23 @@ export function productPollMode(mode?: number | string | null) {
 
 export function toProductRate(value: unknown) {
   return Number(
-    (Number.parseFloat(String(value ?? '').trim()) / 100).toFixed(4),
+    (
+      Number.parseFloat(String(value ?? '').trim()) / 100
+    ).toFixed(PRODUCT_RATE_PRECISION),
   );
+}
+
+export function percentFromRate(value: unknown) {
+  if (value == null || value === '') return '';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '';
+  return Number((num * 100).toFixed(PRODUCT_RATE_PRECISION));
 }
 
 export function validateProductRate(value: unknown, label: string) {
   const text = String(value ?? '').trim();
   if (!text) return `${label}不能为空`;
-  if (!PRODUCT_RATE_RE.test(text)) return `${label}格式错误，最多两位小数`;
+  if (!PRODUCT_RATE_RE.test(text)) return `${label}格式错误，最多六位小数`;
   const number = Number.parseFloat(text);
   if (number < -100 || number > 100) return `${label}范围应在 -100~100 之间`;
   return '';
@@ -109,5 +121,5 @@ export function parseCommandRate(value: unknown, label: string) {
   const number = Number.parseFloat(text);
   if (number < -100 || number > 100)
     return { error: `${label}范围应在 -100~100 之间` };
-  return { value: number.toFixed(2) };
+  return { value: number.toFixed(PRODUCT_RATE_PRECISION) };
 }

@@ -742,6 +742,7 @@ onMounted(async () => {
       v-model:open="allPrepaidVisible"
       header="预付全部清零"
       warning="该操作将清零所有商户预付，请谨慎操作。"
+      hint="验证码错误后 60 秒内请勿重复提交，否则会提示请求过于频繁。"
       :saving="allPrepaidSaving"
       @confirm="submitAllPrepaid"
     />
@@ -749,6 +750,7 @@ onMounted(async () => {
       v-model:open="allSettleVisible"
       header="商户全部结算"
       warning="该操作将对所有商户进行结算，请谨慎操作。"
+      hint="验证码错误后 60 秒内请勿重复提交，否则会提示请求过于频繁。"
       :saving="allSettleSaving"
       @confirm="submitAllSettle"
     />

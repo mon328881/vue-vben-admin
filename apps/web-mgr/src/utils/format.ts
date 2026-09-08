@@ -53,7 +53,7 @@ export function formatFeeRate(value?: number | string | null): string {
   const num =
     typeof value === 'string' ? Number.parseFloat(value) : Number(value ?? 0);
   if (!Number.isFinite(num)) return '--';
-  const text = (num * 100).toFixed(4).replace(/\.?0+$/, '');
+  const text = (num * 100).toFixed(6).replace(/\.?0+$/, '');
   return `${text || '0'}%`;
 }
 
