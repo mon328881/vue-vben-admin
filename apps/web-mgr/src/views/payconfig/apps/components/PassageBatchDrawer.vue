@@ -510,23 +510,23 @@ defineExpose({ show, closeAndReset });
         </Divider>
         <Row :gutter="[8, 8]">
           <Col :span="12">
-            <Button ghost @click="openDialog('product')">修改所属产品</Button>
+            <Button @click="openDialog('product')">修改所属产品</Button>
           </Col>
           <Col :span="12">
-            <Button ghost @click="openDialog('rate')">设置通道费率</Button>
+            <Button @click="openDialog('rate')">设置通道费率</Button>
           </Col>
         </Row>
         <Row :gutter="[8, 8]" class="mt-2">
           <Col :span="12">
-            <Button ghost @click="openDialog('payRules')">修改收款规则</Button>
+            <Button @click="openDialog('payRules')">修改收款规则</Button>
           </Col>
           <Col :span="12">
-            <Button ghost @click="openDialog('weights')">修改轮询权重</Button>
+            <Button @click="openDialog('weights')">修改轮询权重</Button>
           </Col>
         </Row>
         <Row :gutter="[8, 8]" class="mt-2">
           <Col :span="24">
-            <Button ghost @click="openDialog('ifCode')">修改支付接口</Button>
+            <Button @click="openDialog('ifCode')">修改支付接口</Button>
           </Col>
         </Row>
       </section>
@@ -537,18 +537,18 @@ defineExpose({ show, closeAndReset });
         </Divider>
         <Row :gutter="[8, 8]">
           <Col :span="12">
-            <Button ghost @click="openDialog('mchNo')">修改通道商户号</Button>
+            <Button @click="openDialog('mchNo')">修改通道商户号</Button>
           </Col>
           <Col :span="12">
-            <Button ghost @click="openDialog('secret')">修改商户密钥</Button>
+            <Button @click="openDialog('secret')">修改商户密钥</Button>
           </Col>
         </Row>
         <Row :gutter="[8, 8]" class="mt-2">
           <Col :span="12">
-            <Button ghost @click="openDialog('gate')">修改下单网关</Button>
+            <Button @click="openDialog('gate')">修改下单网关</Button>
           </Col>
           <Col :span="12">
-            <Button ghost @click="openDialog('ip')">修改通道回调 IP</Button>
+            <Button @click="openDialog('ip')">修改通道回调 IP</Button>
           </Col>
         </Row>
       </section>
@@ -559,12 +559,12 @@ defineExpose({ show, closeAndReset });
         </Divider>
         <Row :gutter="[8, 8]">
           <Col :span="12">
-            <Button ghost @click="openDialog('timeLimitState')">
+            <Button @click="openDialog('timeLimitState')">
               开关通道定时
             </Button>
           </Col>
           <Col :span="12">
-            <Button ghost @click="openTimeLimitRules">修改定时配置</Button>
+            <Button @click="openTimeLimitRules">修改定时配置</Button>
           </Col>
         </Row>
       </section>
@@ -575,7 +575,7 @@ defineExpose({ show, closeAndReset });
         </Divider>
         <Row :gutter="[8, 8]">
           <Col :span="24">
-            <Button ghost @click="openDialog('passageGroup')">
+            <Button @click="openDialog('passageGroup')">
               修改所属供应商
             </Button>
           </Col>
@@ -990,6 +990,18 @@ defineExpose({ show, closeAndReset });
 
 .pbd-section :deep(.ant-btn) {
   max-width: 100%;
+}
+
+/* ant default ghost = 白字白边，浅色抽屉里等于看不见 */
+.pbd-section :deep(.ant-btn-default.ant-btn-background-ghost) {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+  background: transparent;
+}
+
+.pbd-section :deep(.ant-btn-default.ant-btn-background-ghost:hover) {
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
 }
 
 .pbd-section--risk {
