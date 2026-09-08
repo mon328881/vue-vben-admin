@@ -279,28 +279,28 @@ defineExpose({ show });
               {{ formatRateDecimal(record.productRate) }}
             </template>
             <template v-else-if="column.dataIndex === 'state'">
-              <Tag :color="record.state === 1 ? 'success' : 'default'">
-                {{ record.state === 1 ? '已绑定' : '未绑定' }}
+              <Tag :color="Number(record.state) === 1 ? 'success' : 'default'">
+                {{ Number(record.state) === 1 ? '已绑定' : '未绑定' }}
               </Tag>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <Space>
-                <Button
-                  size="small"
-                  type="link"
-                  @click="bindRow(record as PassageMchBind, 1)"
-                >
-                  绑定
-                </Button>
-                <Button
-                  danger
-                  size="small"
-                  type="link"
-                  @click="bindRow(record as PassageMchBind, 0)"
-                >
-                  解绑
-                </Button>
-              </Space>
+              <Button
+                v-if="Number(record.state) !== 1"
+                size="small"
+                type="link"
+                @click="bindRow(record as PassageMchBind, 1)"
+              >
+                绑定
+              </Button>
+              <Button
+                v-else
+                danger
+                size="small"
+                type="link"
+                @click="bindRow(record as PassageMchBind, 0)"
+              >
+                解绑
+              </Button>
             </template>
           </template>
         </Table>

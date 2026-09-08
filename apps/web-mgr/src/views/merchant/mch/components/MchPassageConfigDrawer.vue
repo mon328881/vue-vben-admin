@@ -58,12 +58,19 @@ const columns: TableColumnsType<MchPassageInfo> = [
 
 async function loadData(resetPage = false) {
   if (!query.mchNo) return;
+  const passageIdText = String(query.payPassageId ?? '').trim();
+  if (passageIdText && !/^\d+$/.test(passageIdText)) {
+    message.error('通道ID须为整数');
+    return;
+  }
   if (resetPage) pagination.current = 1;
   loading.value = true;
   try {
     const page = await fetchMchPassageInfoApi({
-      ...query,
+      mchNo: query.mchNo,
+      payPassageName: query.payPassageName || undefined,
       haveAgent: query.haveAgent || undefined,
+      ...(passageIdText ? { payPassageId: Number(passageIdText) } : {}),
       pageNumber: pagination.current,
       pageSize: pagination.pageSize,
     });

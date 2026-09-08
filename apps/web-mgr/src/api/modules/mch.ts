@@ -156,8 +156,16 @@ export async function execMchProductRateCommandApi(
 
 /** —— 商户通道绑定 —— */
 export async function fetchMchPassageInfoApi(params: Record<string, unknown>) {
+  const { payPassageId, ...rest } = params;
+  const query: Record<string, unknown> = { ...rest };
+  if (payPassageId !== '' && payPassageId != null) {
+    const id = Number(payPassageId);
+    if (Number.isInteger(id)) {
+      query.payPassageId = id;
+    }
+  }
   return requestClient.get<PageResult<MchPassageInfo>>('/mchPassageInfo', {
-    params,
+    params: query,
   });
 }
 
@@ -166,7 +174,7 @@ export async function updateMchPassageInfoApi(payload: {
   state: number;
   mchNo: string;
 }) {
-  return requestClient.put('/mchPassageInfo/', payload);
+  return requestClient.put('/mchPassageInfo', payload);
 }
 
 export async function mchPassageBlindAllApi(mchNo: string) {

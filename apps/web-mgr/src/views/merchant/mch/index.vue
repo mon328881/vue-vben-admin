@@ -361,6 +361,10 @@ async function submitAllSettle(googleCode: string) {
 }
 
 async function copyCashier(row: MchInfo) {
+  if (row.cashierState !== 1) {
+    message.error('收银台不可用');
+    return;
+  }
   try {
     const url = await fetchMchCashierApi(row.mchNo);
     const text = typeof url === 'string' ? url : String(url ?? '');
@@ -371,7 +375,7 @@ async function copyCashier(row: MchInfo) {
     await navigator.clipboard.writeText(text);
     message.success('已复制收银台地址！');
   } catch {
-    message.error('获取收银台地址失败');
+    // 拦截器已展示后端 msg（如「收银台不可用」）
   }
 }
 
@@ -698,7 +702,11 @@ onMounted(async () => {
                       对接信息
                     </Menu.Item>
                     <Menu.Item
-                      v-if="canEdit && record.mchNo !== LOCKED_MCH_NO"
+                      v-if="
+                        canEdit &&
+                        record.mchNo !== LOCKED_MCH_NO &&
+                        record.cashierState === 1
+                      "
                       key="cashier"
                     >
                       收银台地址

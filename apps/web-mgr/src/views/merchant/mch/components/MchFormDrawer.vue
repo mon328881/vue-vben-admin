@@ -144,8 +144,12 @@ async function save() {
         return;
       }
     }
-    if (!/^[a-z0-9]{128}$/i.test(form.secret)) {
-      message.error('私钥须为128位字母数字');
+    if (!form.secret.trim()) {
+      message.error('请填写商户私钥');
+      return;
+    }
+    if (form.secret.length > 512) {
+      message.error('私钥不能超过512个字符');
       return;
     }
   }
@@ -214,6 +218,14 @@ function openWhiteList() {
 
 async function saveWhiteList() {
   const text = whiteText.value.trim();
+  if (!text) {
+    message.error('白名单不能为空（留空不会清空已有配置）');
+    return;
+  }
+  if (text.length > 1024) {
+    message.error('白名单不能超过1024个字符');
+    return;
+  }
   if (!isValidWhiteList(text)) {
     message.error('白名单格式错误（多个 IP 用 | 分隔，或填 *）');
     return;
@@ -230,6 +242,10 @@ async function saveWhiteList() {
 }
 
 async function openCashier() {
+  if (form.cashierState !== 1) {
+    message.error('收银台不可用');
+    return;
+  }
   const url = await fetchMchCashierApi(form.mchNo);
   if (url) window.open(url, '_blank');
 }
@@ -266,11 +282,16 @@ defineExpose({ show });
       <Form.Item
         label="商户名称"
         name="mchName"
-        :rules="[{ required: true, message: '请输入商户名称' }]"
+        :rules="[
+          { required: true, message: '请输入商户名称' },
+          { max: 64, message: '商户名称不能超过64个字符' },
+        ]"
       >
         <Input
           v-model:value="form.mchName"
           placeholder="请输入商户名称"
+          :maxlength="64"
+          show-count
           :disabled="locked"
         />
       </Form.Item>
@@ -341,11 +362,16 @@ defineExpose({ show });
         <Form.Item
           label="商户私钥"
           name="secret"
-          :rules="[{ required: true, message: '请点击生成私钥' }]"
+          :rules="[
+            { required: true, message: '请点击生成私钥' },
+            { max: 512, message: '私钥不能超过512个字符' },
+          ]"
         >
           <Textarea
             v-model:value="form.secret"
-            placeholder="请输入（128位，可点击随机生成）"
+            placeholder="最多512位，可点击随机生成128位"
+            :maxlength="512"
+            show-count
             :rows="4"
           />
           <Button
@@ -359,10 +385,16 @@ defineExpose({ show });
           </Button>
         </Form.Item>
       </template>
-      <Form.Item label="备注" name="remark">
+      <Form.Item
+        label="备注"
+        name="remark"
+        :rules="[{ max: 128, message: '备注不能超过128个字符' }]"
+      >
         <Textarea
           v-model:value="form.remark"
           placeholder="请输入内容"
+          :maxlength="128"
+          show-count
           :rows="4"
         />
       </Form.Item>
@@ -373,7 +405,7 @@ defineExpose({ show });
         <Form.Item v-if="loaded" label="商户登录IP白名单">
           <Textarea
             v-model:value="form.loginWhiteList"
-            placeholder="登录白名单(多个IP | 隔开，允许所有IP登录为 *"
+            placeholder="多个 IP 用 | 分隔，* 表示不限；留空保存不会清空"
             :rows="4"
             disabled
           />
@@ -420,9 +452,21 @@ defineExpose({ show });
           </Radio.Group>
         </Form.Item>
         <Form.Item label="收银台地址">
-          <Button size="small" type="primary" ghost @click="openCashier">
+          <Button
+            size="small"
+            type="primary"
+            ghost
+            :disabled="form.cashierState !== 1"
+            @click="openCashier"
+          >
             打开收银台地址
           </Button>
+          <div
+            v-if="form.cashierState !== 1"
+            class="text-muted-foreground mt-1 text-xs"
+          >
+            启用收银台后才可打开
+          </div>
         </Form.Item>
       </template>
     </Form>
@@ -445,7 +489,9 @@ defineExpose({ show });
   >
     <Textarea
       v-model:value="whiteText"
-      placeholder="登录白名单(多个IP | 隔开，允许所有IP登录为 *"
+      placeholder="多个 IP 用 | 分隔，* 表示不限；留空不会清空已有配置"
+      :maxlength="1024"
+      show-count
       :rows="6"
     />
   </Modal>
