@@ -6,6 +6,8 @@ import { Input, Spin } from 'ant-design-vue';
 
 import { getVercodeApi } from '#/api';
 import {
+  loginCaptchaSession,
+  markLoginCaptchaExpired,
   registerLoginCaptchaReload,
   setLoginCaptchaToken,
 } from '#/api/helper/captcha-session';
@@ -22,7 +24,9 @@ const props = defineProps<{
 const loading = ref(false);
 const imageBase64 = ref('');
 const remain = ref(0);
+const issued = ref(false);
 const codeLength = computed(() => props.maxlength ?? 6);
+const expired = computed(() => loginCaptchaSession.expired);
 let timer: null | ReturnType<typeof setInterval> = null;
 
 function stopTimer() {
@@ -39,6 +43,7 @@ function startTimer(seconds: number) {
     remain.value -= 1;
     if (remain.value <= 0) {
       stopTimer();
+      if (issued.value) markLoginCaptchaExpired();
     }
   }, 1000);
 }
@@ -50,6 +55,7 @@ async function loadVercode() {
     const data = await getVercodeApi();
     imageBase64.value = data.imageBase64Data;
     setLoginCaptchaToken(data.vercodeToken);
+    issued.value = true;
     startTimer(Number(data.expireTime || 60));
     modelValue.value = '';
   } catch {
@@ -86,26 +92,32 @@ defineExpose({ reload: loadVercode });
       <button
         class="border-border bg-accent relative h-9 w-[110px] shrink-0 overflow-hidden rounded border"
         type="button"
-        title="点击刷新验证码"
+        :title="expired ? '验证码已过期，请点击刷新' : '点击刷新验证码'"
         @click="loadVercode"
       >
         <img
-          v-if="imageBase64"
+          v-if="imageBase64 && !expired"
           :src="imageBase64"
           alt="captcha"
           class="h-full w-full object-cover"
         />
         <span
-          v-else
+          v-else-if="!expired"
           class="text-muted-foreground flex h-full items-center justify-center text-xs"
         >
           <IconifyIcon icon="ant-design:reload-outlined" />
         </span>
         <span
-          v-if="remain > 0"
+          v-if="remain > 0 && !expired"
           class="bg-background/70 absolute right-0.5 bottom-0.5 rounded px-1 text-[10px] leading-none"
         >
           {{ remain }}s
+        </span>
+        <span
+          v-if="expired"
+          class="absolute inset-0 flex items-center justify-center bg-black/55 px-1 text-center text-[11px] leading-tight text-white"
+        >
+          验证码已过期
         </span>
       </button>
     </Spin>

@@ -69,6 +69,10 @@ const formSchema = computed((): VbenFormSchema[] => {
 });
 
 async function handleLogin(values: Record<string, any>) {
+  if (loginCaptchaSession.expired) {
+    message.error('验证码已过期，请点击验证码刷新');
+    return;
+  }
   if (!loginCaptchaSession.token) {
     message.error('验证码无效，请点击验证码刷新');
     await reloadLoginCaptcha();
