@@ -1,6 +1,6 @@
 import { requestClient } from '#/api/request';
 
-import type { PageResult } from '#/api/types/business';
+import type { PageResult, PayTestEnvelope } from '#/api/types/business';
 
 export interface PayPassage {
   payPassageId: number;
@@ -231,7 +231,8 @@ export async function doPassagePayTestApi(payload: {
   testOrderIn: number;
   productId?: number;
 }) {
-  return requestClient.post<{ payData?: string }>('/passageTest/doPay', payload);
+  // 拦截器剥外层后为内层信封 {code,data:{payData,...},msg,sign}
+  return requestClient.post<PayTestEnvelope>('/passageTest/doPay', payload);
 }
 
 export async function fetchPayIfCodeApi() {

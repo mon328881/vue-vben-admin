@@ -29,7 +29,8 @@ async function submit() {
     message.error('请输入调整余额金额');
     return;
   }
-  if (!form.changeRemark.trim()) {
+  // 线上契约：仅 null/空串拒绝，全空格备注原样提交
+  if (form.changeRemark == null || form.changeRemark === '') {
     message.error('请输入调整备注');
     return;
   }
@@ -55,6 +56,7 @@ defineExpose({ show });
     v-model:open="visible"
     :title="row ? `调整商户[余额] - ${row.mchName}` : '调整商户[余额]'"
     :confirm-loading="saving"
+    centered
     ok-text="确定"
     cancel-text="取消"
     width="600px"

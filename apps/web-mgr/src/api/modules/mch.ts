@@ -6,6 +6,7 @@ import type {
   MchProductInfo,
   MchStatInfo,
   PageResult,
+  PayTestEnvelope,
 } from '#/api/types/business';
 
 export interface MchListParams {
@@ -297,10 +298,8 @@ export async function doMchPayTestApi(payload: {
   amount: number;
   mchNo: string;
 }) {
-  return requestClient.post<{ payData?: string }>(
-    '/mchPayTest/doPay',
-    payload,
-  );
+  // 拦截器剥外层后为内层信封 {code,data:{payData,...},msg,sign}
+  return requestClient.post<PayTestEnvelope>('/mchPayTest/doPay', payload);
 }
 
 export interface PassageShort {

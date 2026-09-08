@@ -17,6 +17,8 @@ import {
 } from 'ant-design-vue';
 import { IconifyIcon } from '@vben/icons';
 
+import type { PayTestEnvelope } from '#/api/types/business';
+
 const props = withDefaults(
   defineProps<{
     modelValue: boolean;
@@ -29,7 +31,7 @@ const props = withDefaults(
       testOrderNo: string;
       amount: number;
       testOrderIn: number;
-    }) => Promise<{ payData?: string } | null | undefined>;
+    }) => Promise<PayTestEnvelope | null | undefined>;
   }>(),
   {
     showTestOrderIn: false,
@@ -101,17 +103,11 @@ async function submit() {
     });
     testOrderNo.value = orderNo;
     rawResult.value = JSON.stringify(res ?? {}, null, 2);
-    const link = res?.payData;
+    // 线上契约：res 为内层信封 {code,data:{payData},msg,sign}；成功=内层 code 0 且 payData 非空
+    const innerData = res?.data;
+    const link = innerData?.payData;
     const linkText = link == null ? '' : String(link).trim();
-    const isSkipIndb = linkText === 'TEST_SKIP_INDB';
-    const hasLink = linkText !== '' && !isSkipIndb;
-    if (isSkipIndb) {
-      payData.value = '';
-      payOk.value = true;
-      message.success('拉起测试通过（未入库）');
-      return;
-    }
-    if (hasLink) {
+    if (res?.code === 0 && linkText !== '') {
       payData.value = String(link);
       payOk.value = true;
       message.success('下单成功');
@@ -119,7 +115,11 @@ async function submit() {
     }
     payOk.value = false;
     payData.value = '';
-    message.error('下单失败：返回 code 非 0 或缺少支付数据');
+    message.error(
+      innerData?.errMsg ||
+        res?.msg ||
+        '下单失败：返回 code 非 0 或缺少支付数据',
+    );
   } catch (error) {
     payOk.value = false;
     payData.value = '';

@@ -75,7 +75,8 @@ async function submit() {
     message.error('请输入调整预付金额');
     return;
   }
-  if (!form.changePrepaidRemark.trim()) {
+  // 线上契约：仅 null/空串拒绝，全空格备注原样提交
+  if (form.changePrepaidRemark == null || form.changePrepaidRemark === '') {
     message.error('请输入调整备注');
     return;
   }

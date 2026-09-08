@@ -183,3 +183,20 @@ export interface SysUser {
   belongInfoId?: string;
   createdAt?: string;
 }
+
+/** 下单测试内层 data（6 字段）；拦截器剥外层后得到 PayTestEnvelope */
+export interface PayTestInnerData {
+  errMsg?: string;
+  mchOrderNo?: string;
+  orderState?: number | null;
+  payData?: string;
+  payDataType?: string;
+  payOrderId?: string;
+}
+
+export interface PayTestEnvelope {
+  code?: number;
+  msg?: string;
+  sign?: string;
+  data?: null | PayTestInnerData;
+}

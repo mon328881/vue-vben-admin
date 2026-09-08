@@ -82,6 +82,8 @@ const allPrepaidVisible = ref(false);
 const allPrepaidSaving = ref(false);
 const allSettleVisible = ref(false);
 const allSettleSaving = ref(false);
+/** 对齐后端 ClickThrottle：同会话收银台复制最小间隔 300ms */
+let lastCashierClickAt = 0;
 
 const formRef = ref<InstanceType<typeof MchFormDrawer>>();
 const productRef = ref<InstanceType<typeof MchProductConfigDrawer>>();
@@ -365,6 +367,12 @@ async function copyCashier(row: MchInfo) {
     message.error('收银台不可用');
     return;
   }
+  const now = Date.now();
+  if (now - lastCashierClickAt < 300) {
+    message.error('点击太快，请稍后再试');
+    return;
+  }
+  lastCashierClickAt = now;
   try {
     const url = await fetchMchCashierApi(row.mchNo);
     const text = typeof url === 'string' ? url : String(url ?? '');
@@ -375,7 +383,7 @@ async function copyCashier(row: MchInfo) {
     await navigator.clipboard.writeText(text);
     message.success('已复制收银台地址！');
   } catch {
-    // 拦截器已展示后端 msg（如「收银台不可用」）
+    // 拦截器已展示后端 msg（如「收银台不可用」「点击太快，请稍后再试」）
   }
 }
 
