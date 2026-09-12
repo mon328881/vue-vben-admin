@@ -263,7 +263,6 @@ export async function changeMchPrepaidApi(
   payload: {
     changePrepaidAmount: number;
     changePrepaidRemark: string;
-    pic?: string;
   },
 ) {
   return requestClient.put(`/mchPrepaid/changePrepaid/${mchNo}`, payload);
@@ -349,17 +348,7 @@ export async function fetchMchGroupListShortApi() {
   return requestClient.post<MchGroupShort[]>('/mchGroupListShort', {});
 }
 
-/** —— 凭证图片 —— */
-export async function uploadPicApi(file: File) {
-  const form = new FormData();
-  form.append('file', file);
-  return requestClient.post<string>('/file/uploadPic', form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-}
-
+/** 线上契约：POST body 传 pic（query 无效）；无/空串→400，空白/不存在→200/9999「文件不存在」 */
 export async function fetchPicBase64Api(pic: string) {
-  return requestClient.post<string>('/file/getPicBase64', undefined, {
-    params: { pic },
-  });
+  return requestClient.post<string>('/file/getPicBase64', { pic });
 }

@@ -1,18 +1,9 @@
 <script lang="ts" setup>
-import type { UploadChangeParam, UploadFile } from 'ant-design-vue';
-
 import { reactive, ref } from 'vue';
 
-import {
-  Form,
-  InputNumber,
-  Modal,
-  Textarea,
-  Upload,
-  message,
-} from 'ant-design-vue';
+import { Form, InputNumber, Modal, Textarea, message } from 'ant-design-vue';
 
-import { changeMchPrepaidApi, uploadPicApi } from '#/api';
+import { changeMchPrepaidApi } from '#/api';
 import type { MchInfo } from '#/api/types/business';
 
 const emit = defineEmits<{ success: [] }>();
@@ -20,50 +11,16 @@ const emit = defineEmits<{ success: [] }>();
 const visible = ref(false);
 const saving = ref(false);
 const row = ref<MchInfo | null>(null);
-const fileList = ref<UploadFile[]>([]);
 const form = reactive({
   changePrepaidAmount: undefined as number | undefined,
   changePrepaidRemark: '',
-  pic: '',
 });
 
 function show(target: MchInfo) {
   row.value = target;
   form.changePrepaidAmount = undefined;
   form.changePrepaidRemark = '';
-  form.pic = '';
-  fileList.value = [];
   visible.value = true;
-}
-
-async function customRequest(options: {
-  file: string | Blob | File;
-  onSuccess?: (body: unknown) => void;
-  onError?: (error: Error) => void;
-}) {
-  const raw = options.file;
-  if (!(raw instanceof File)) {
-    options.onError?.(new Error('请选择图片'));
-    return;
-  }
-  try {
-    const pic = await uploadPicApi(raw);
-    form.pic = pic ?? '';
-    options.onSuccess?.(pic);
-  } catch (error) {
-    options.onError?.(
-      error instanceof Error ? error : new Error('上传失败'),
-    );
-  }
-}
-
-function onRemove() {
-  form.pic = '';
-  fileList.value = [];
-}
-
-function onChange(info: UploadChangeParam) {
-  fileList.value = info.fileList.slice(-1);
 }
 
 async function submit() {
@@ -85,7 +42,6 @@ async function submit() {
     await changeMchPrepaidApi(row.value.mchNo, {
       changePrepaidAmount: form.changePrepaidAmount,
       changePrepaidRemark: form.changePrepaidRemark,
-      pic: form.pic || undefined,
     });
     message.success('预付调整成功');
     visible.value = false;
@@ -103,9 +59,10 @@ defineExpose({ show });
     v-model:open="visible"
     :title="row ? `调整商户[预付] - ${row.mchName}` : '调整商户[预付]'"
     :confirm-loading="saving"
+    centered
     ok-text="确定"
     cancel-text="取消"
-    width="600px"
+    width="500px"
     destroy-on-close
     @ok="submit"
   >
@@ -129,22 +86,6 @@ defineExpose({ show });
           :rows="3"
           placeholder="请输入本次调整的原因说明"
         />
-      </Form.Item>
-      <Form.Item label="凭证图片">
-        <Upload
-          v-model:file-list="fileList"
-          accept="image/png,image/jpeg,image/gif,image/webp"
-          list-type="picture-card"
-          :max-count="1"
-          :custom-request="customRequest"
-          @change="onChange"
-          @remove="onRemove"
-        >
-          <div v-if="fileList.length < 1">上传</div>
-        </Upload>
-        <div class="text-muted-foreground mt-1 text-xs">
-          选填，支持 jpg/png/gif/webp，最大 5MB
-        </div>
       </Form.Item>
     </Form>
   </Modal>

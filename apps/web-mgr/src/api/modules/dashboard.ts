@@ -6,6 +6,10 @@ export interface SystemInfo {
   type?: number;
   balance?: number;
   expireDate?: string;
+  /** 三端地址，来自 tenant_endpoint（role=MGR/MCH/AGENT 的 api_host） */
+  mgrUrl?: string;
+  mchUrl?: string;
+  agentUrl?: string;
 }
 
 export interface RealTimePassageItem {
