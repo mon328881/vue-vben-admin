@@ -16,6 +16,8 @@ export interface MchExportTask {
   reused?: boolean;
   cancellable?: boolean;
   errMsg?: string;
+  processedRows?: number;
+  exportType?: string;
   rowKey?: string;
 }
 

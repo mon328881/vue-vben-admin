@@ -122,7 +122,8 @@ export async function updateMchProductInfoApi(payload: {
   agentRate: number;
   mchNo: string;
 }) {
-  return requestClient.put('/mchProductInfo/', payload);
+  // 不带尾斜杠：线上无 /api/mchProductInfo/ 映射（尾斜杠路径无 handler → 401）
+  return requestClient.put('/mchProductInfo', payload);
 }
 
 export async function mchProductBlindAllApi(mchNo: string) {

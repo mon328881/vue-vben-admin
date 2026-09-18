@@ -13,7 +13,7 @@ export interface SystemInfo {
 }
 
 export interface RealTimePassageItem {
-  passageId?: number;
+  payPassageId?: number;
   passageName?: string;
   allCount?: number;
   successCount?: number;
