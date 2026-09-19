@@ -26,7 +26,14 @@ function show(row: PayPassage) {
 }
 
 function beforeSubmit() {
-  return passage.value?.payPassageId ? null : '通道信息无效';
+  if (!passage.value?.payPassageId) return '通道信息无效';
+  if (
+    passage.value.productId == null ||
+    String(passage.value.productId).trim() === ''
+  ) {
+    return '参数有误[参数productId必填]';
+  }
+  return null;
 }
 
 async function submitRequest(payload: {
@@ -39,7 +46,7 @@ async function submitRequest(payload: {
     passageId: Number(passage.value?.payPassageId),
     amount: payload.amount,
     testOrderIn: payload.testOrderIn,
-    productId: passage.value?.productId,
+    productId: Number(passage.value?.productId),
   });
 }
 

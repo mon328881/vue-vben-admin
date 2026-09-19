@@ -1,20 +1,8 @@
 import { requestClient } from '#/api/request';
 
-export interface CashierOrder {
-  payOrderId: string;
-  mchName: string;
-  productName: string;
-  icon: string;
-  amount: number;
-  state: number;
-  mchOrderNo: string;
-  cashierToken: string;
-}
-
 export interface CashierProduct {
   productId: number;
   productName: string;
-  icon?: string;
 }
 
 export interface CashierPayResult {
@@ -24,20 +12,11 @@ export interface CashierPayResult {
   errMsg?: string;
 }
 
-export async function fetchCashierOrderApi(payOrderId: string) {
-  return requestClient.get<CashierOrder>('/anon/cashier/order', {
-    params: { payOrderId },
-  });
-}
-
-export async function payCashierOrderApi(
-  payOrderId: string,
-  cashierToken: string,
-) {
-  return requestClient.post<{ payOrderId: string; state: number }>(
-    '/anon/cashier/pay',
-    { cashierToken, payOrderId },
-  );
+/** 收银台下单整封（拦截器不剥 data，由页面按 code/orderState 分支） */
+export interface CashierPayEnvelope {
+  code?: number;
+  msg?: string;
+  data?: CashierPayResult | null;
 }
 
 export async function fetchCashierProductListApi(mchNo: string, secret: string) {
@@ -47,11 +26,14 @@ export async function fetchCashierProductListApi(mchNo: string, secret: string) 
   });
 }
 
-export async function placeCashierOrderApi(body: {
+export async function placeCashierOrderRawApi(body: {
   mchNo: string;
   secret: string;
   amount: number;
   productId: number;
 }) {
-  return requestClient.post<CashierPayResult>('/anon/cashier/pay', body);
+  // 线上契约：返回整个信封 {code,data,msg}，非 0 不在传输层拦截
+  return requestClient.post<CashierPayEnvelope>('/anon/cashier/pay', body, {
+    responseReturn: 'body',
+  });
 }

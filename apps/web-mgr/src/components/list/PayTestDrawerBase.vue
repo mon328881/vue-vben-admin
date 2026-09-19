@@ -93,7 +93,8 @@ async function submit() {
     message.error(blocked);
     return;
   }
-  const orderNo = genTestOrderNo();
+  // 线上契约：订单号用户可输入（placeholder 请输入）；留空自动生成
+  const orderNo = testOrderNo.value.trim() || genTestOrderNo();
   submitting.value = true;
   try {
     const res = await props.submitRequest({
@@ -202,19 +203,13 @@ defineExpose({ resetState });
           <Form layout="vertical" class="ap-form-label-wide">
             <Form.Item label="测试商户订单号">
               <div class="pay-test-drawer__order-row">
-                <div class="pay-test-display pay-test-display--single">
-                  <Tooltip title="复制内容">
-                    <Button
-                      class="pay-test-display__copy"
-                      size="small"
-                      type="text"
-                      @click="copyText(testOrderNo)"
-                    >
-                      <IconifyIcon icon="ant-design:copy-outlined" />
-                    </Button>
-                  </Tooltip>
-                  <Input :value="testOrderNo" readonly />
-                </div>
+                <Input
+                  v-model:value="testOrderNo"
+                  class="pay-test-drawer__order-input"
+                  placeholder="请输入"
+                  :maxlength="64"
+                  allow-clear
+                />
                 <Button
                   v-if="payOk && payData"
                   danger
@@ -315,6 +310,11 @@ defineExpose({ resetState });
   align-items: center;
 }
 
+.pay-test-drawer__order-input {
+  width: 280px;
+  max-width: 100%;
+}
+
 .pay-test-drawer__pay-link {
   word-break: break-all;
   color: hsl(var(--primary));
@@ -325,11 +325,6 @@ defineExpose({ resetState });
   width: 100%;
 }
 
-.pay-test-display--single {
-  width: 280px;
-  max-width: 100%;
-}
-
 .pay-test-display__copy {
   position: absolute;
   top: 4px;
@@ -337,19 +332,9 @@ defineExpose({ resetState });
   z-index: 1;
 }
 
-.pay-test-display--single .pay-test-display__copy {
-  top: 2px;
-}
-
 .pay-test-display__mono :deep(textarea) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
-  padding-right: 32px;
-  background: hsl(var(--muted));
-  cursor: default;
-}
-
-.pay-test-display--single :deep(.ant-input) {
   padding-right: 32px;
   background: hsl(var(--muted));
   cursor: default;

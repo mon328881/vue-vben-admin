@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { IconifyIcon } from '@vben/icons';
 import {
   Button,
   Empty,
@@ -16,29 +15,21 @@ import {
 } from 'ant-design-vue';
 
 import {
-  fetchCashierOrderApi,
   fetchCashierProductListApi,
-  payCashierOrderApi,
-  placeCashierOrderApi,
+  placeCashierOrderRawApi,
 } from '#/api';
-import type { CashierOrder, CashierProduct } from '#/api/modules/cashier';
-import { formatYuanAmount } from '#/utils/format';
+import type { CashierProduct } from '#/api/modules/cashier';
 
 defineOptions({ name: 'CashierPage' });
 
 const route = useRoute();
 
-const payOrderId = computed(() => String(route.query.payOrderId || ''));
-const mchNoFromUrl = computed(() => String(route.query.mchNo || ''));
-const secretFromUrl = computed(() => String(route.query.secret || ''));
-const publicMode = computed(
-  () => !payOrderId.value && !!mchNoFromUrl.value && !!secretFromUrl.value,
-);
+const mchNoFromUrl = computed(() => String(route.query.mchNo || '').trim());
+const secretFromUrl = computed(() => String(route.query.secret || '').trim());
+const publicMode = computed(() => !!mchNoFromUrl.value && !!secretFromUrl.value);
 
-const order = ref<CashierOrder | null>(null);
 const loading = ref(false);
 const paying = ref(false);
-const paid = ref(false);
 
 const products = ref<CashierProduct[]>([]);
 const amountYuan = ref<number>();
@@ -58,7 +49,7 @@ const canSubmit = computed(
 
 const productOptions = computed(() =>
   products.value.map((p) => ({
-    label: p.productName,
+    label: `[${p.productId}] ${p.productName}`,
     value: Number(p.productId),
   })),
 );
@@ -91,37 +82,6 @@ function yuanToCent(value?: number) {
   return Math.round(Number.parseFloat(String(value)) * 100);
 }
 
-async function loadSettleOrder() {
-  if (!payOrderId.value) {
-    message.error('缺少订单号');
-    return;
-  }
-  loading.value = true;
-  try {
-    order.value = await fetchCashierOrderApi(payOrderId.value);
-    if (order.value.state === 2) paid.value = true;
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '订单查询失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function settlePay() {
-  if (!order.value) return;
-  paying.value = true;
-  try {
-    await payCashierOrderApi(order.value.payOrderId, order.value.cashierToken);
-    paid.value = true;
-    message.success('支付成功');
-    await loadSettleOrder();
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '支付失败');
-  } finally {
-    paying.value = false;
-  }
-}
-
 async function loadProducts() {
   if (!mchNoFromUrl.value || !secretFromUrl.value) {
     message.error('缺少必要的参数');
@@ -139,7 +99,11 @@ async function loadProducts() {
       message.success('已自动选择唯一支付产品');
     }
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '获取支付产品失败');
+    if (error instanceof Error && error.message) {
+      message.error(error.message);
+    } else {
+      message.error('获取支付产品失败');
+    }
   } finally {
     loading.value = false;
   }
@@ -149,16 +113,17 @@ async function createPay() {
   if (!canSubmit.value || productId.value == null) return;
   paying.value = true;
   try {
-    const data = await placeCashierOrderApi({
+    // 线上契约：信封层判 code===0 && data.orderState===1；失败取 data.errMsg → 信封 msg → 「出码失败」
+    const n = await placeCashierOrderRawApi({
       amount: yuanToCent(amountYuan.value),
       mchNo: mchNoFromUrl.value,
       productId: Number(productId.value),
       secret: secretFromUrl.value,
     });
-    if (data && data.orderState === 1) {
+    if (n && n.code === 0 && n.data && n.data.orderState === 1) {
       created.value = true;
-      payData.value = data.payData || '';
-      mchOrderNo.value = data.mchOrderNo || '';
+      payData.value = n.data.payData || '';
+      mchOrderNo.value = n.data.mchOrderNo || '';
       if (payType.value === 1) {
         message.success('拉起成功，即将自动跳转');
         setTimeout(() => openPay(), 1000);
@@ -168,10 +133,10 @@ async function createPay() {
         message.success('测试拉起成功');
       }
     } else {
-      message.error(data?.errMsg || '出码失败');
+      message.error(n?.data?.errMsg || n?.msg || '出码失败');
     }
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '出码失败');
+  } catch {
+    // 线上契约：请求异常（含缺参 401 空体）静默
   } finally {
     paying.value = false;
   }
@@ -203,10 +168,6 @@ function resetCreated() {
 }
 
 onMounted(() => {
-  if (payOrderId.value) {
-    void loadSettleOrder();
-    return;
-  }
   void loadProducts();
 });
 </script>
@@ -219,43 +180,7 @@ onMounted(() => {
         <span class="sub">收银台</span>
       </div>
 
-      <Spin v-if="loading" size="large" :tip="payOrderId ? '加载订单中...' : '加载支付产品中...'" />
-
-      <template v-else-if="payOrderId">
-        <div v-if="order" class="content">
-          <div class="row">
-            <span class="label">收款方</span>
-            <span class="value">{{ order.mchName }}</span>
-          </div>
-          <div class="row">
-            <span class="label">支付方式</span>
-            <span class="value">{{ order.productName }}</span>
-          </div>
-          <div class="amount">
-            <span class="amount-num">{{ formatYuanAmount(order.amount) }}</span>
-            <span class="amount-unit">元</span>
-          </div>
-          <div class="row">
-            <span class="label">订单号</span>
-            <span class="value">{{ order.payOrderId }}</span>
-          </div>
-          <div v-if="paid" class="paid-tip">
-            <IconifyIcon class="text-4xl text-green-600" icon="ant-design:check-circle-filled" />
-            <p>支付成功</p>
-          </div>
-          <Button
-            v-else
-            block
-            size="large"
-            type="primary"
-            :loading="paying"
-            @click="settlePay"
-          >
-            立即支付
-          </Button>
-        </div>
-        <Empty v-else description="订单不存在或已过期" />
-      </template>
+      <Spin v-if="loading" size="large" tip="加载支付产品中..." />
 
       <template v-else-if="publicMode">
         <div v-if="!created" class="content">
@@ -377,35 +302,6 @@ onMounted(() => {
 .value {
   color: #333;
   font-weight: 500;
-}
-
-.amount {
-  margin: 16px 0;
-  text-align: center;
-}
-
-.amount-num {
-  color: #0052d9;
-  font-size: 36px;
-  font-weight: 700;
-}
-
-.amount-unit {
-  color: #666;
-  font-size: 16px;
-  margin-left: 4px;
-}
-
-.paid-tip {
-  color: #00a870;
-  padding: 24px 0;
-  text-align: center;
-}
-
-.paid-tip p {
-  font-size: 16px;
-  font-weight: 600;
-  margin-top: 8px;
 }
 
 .qr-wrap {

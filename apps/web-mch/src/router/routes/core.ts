@@ -112,6 +112,7 @@ const coreRoutes: RouteRecordRaw[] = [
       hideInBreadcrumb: true,
       hideInMenu: true,
       hideInTab: true,
+      ignoreAccess: true,
       title: '收银台',
     },
   },

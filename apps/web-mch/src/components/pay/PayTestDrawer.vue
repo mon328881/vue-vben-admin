@@ -81,7 +81,8 @@ async function submit() {
     message.error('商户号不存在，无法下单测试');
     return;
   }
-  const orderNo = genTestOrderNo();
+  // 线上契约：订单号用户可输入（placeholder 请输入）；留空自动生成
+  const orderNo = testOrderNo.value.trim() || genTestOrderNo();
   submitting.value = true;
   try {
     const res = await props.submitRequest({ amount: yuan, testOrderNo: orderNo });
@@ -170,7 +171,13 @@ watch(visible, (open) => {
           <Form layout="vertical" class="ap-form-label-wide">
             <Form.Item label="测试商户订单号">
               <div class="result-order-row">
-                <Input :value="testOrderNo" readonly class="result-input" />
+                <Input
+                  v-model:value="testOrderNo"
+                  class="result-input"
+                  placeholder="请输入"
+                  :maxlength="64"
+                  allow-clear
+                />
                 <Button v-if="payOk" danger size="small" @click="goPayOrder">
                   去订单页查看
                 </Button>

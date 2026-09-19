@@ -229,7 +229,7 @@ export async function doPassagePayTestApi(payload: {
   passageId: number;
   amount: number;
   testOrderIn: number;
-  productId?: number;
+  productId: number;
 }) {
   // 拦截器剥外层后为内层信封 {code,data:{payData,...},msg,sign}
   return requestClient.post<PayTestEnvelope>('/passageTest/doPay', payload);

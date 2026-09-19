@@ -88,15 +88,23 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   );
 
   // token 过期（HTTP 401）；mch-api 对 ExpiredJwt 也可能返回 500
-  client.addResponseInterceptor(
-    authenticateResponseInterceptor({
-      client,
-      doReAuthenticate,
-      doRefreshToken,
-      enableRefreshToken: false,
-      formatToken: () => null,
-    }),
-  );
+  // 线上契约：收银台 /anon/cashier/pay 缺参也是 401 空体，不能当登录失效
+  const authInterceptor = authenticateResponseInterceptor({
+    client,
+    doReAuthenticate,
+    doRefreshToken,
+    enableRefreshToken: false,
+    formatToken: () => null,
+  });
+  client.addResponseInterceptor({
+    rejected: async (error) => {
+      const url = String(error?.config?.url ?? '');
+      if (error?.response?.status === 401 && url.includes('/anon/cashier')) {
+        throw error;
+      }
+      return authInterceptor.rejected?.(error);
+    },
+  });
 
   client.addResponseInterceptor({
     rejected: async (error) => {
