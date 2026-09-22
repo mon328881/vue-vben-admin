@@ -46,6 +46,20 @@ const googleKeyLoading = ref(false);
 
 const googleEnabled = computed(() => (currentUser.value?.googleAuth ?? 0) === 1);
 
+/** 与运营端系统日志一致：接口返回 MCH/AGENT/MGR 等英文码 */
+const SYS_TYPE_LABEL: Record<string, string> = {
+  MGR: '运营',
+  MCH: '商户',
+  AGENT: '代理',
+  ROBOT: '机器人',
+};
+
+const sysTypeText = computed(() => {
+  const code = currentUser.value?.sysType;
+  if (!code) return '';
+  return SYS_TYPE_LABEL[code] ?? code;
+});
+
 const googleQrSrc = computed(() => {
   const value = String(googleKeyData.value.qrCode ?? '').trim();
   if (!value) return '';
@@ -212,7 +226,7 @@ onMounted(() => {
               />
             </Form.Item>
             <Form.Item label="用户类型">
-              <Input :value="currentUser?.sysType || ''" disabled />
+              <Input :value="sysTypeText" disabled />
             </Form.Item>
             <Form.Item label="账户状态">
               <Tag :color="currentUser?.state === 1 ? 'success' : 'error'">
