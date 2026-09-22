@@ -892,7 +892,7 @@ onUnmounted(() => {
             <template v-else-if="column.dataIndex === 'createdAt'">
               <div>{{ formatDateTime(record.createdAt) }}</div>
               <div class="text-muted-foreground text-xs">
-                {{ formatDateTime(record.successTime) }}
+                {{ record.successTime ? formatDateTime(record.successTime) : '--' }}
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'passageName'">
