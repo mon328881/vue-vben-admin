@@ -44,11 +44,12 @@ export async function updateIsvInfoApi(
 }
 
 export async function resetIsvLoginAuthApi(agentNo: string, state: number) {
+  // demo 契约：confirmPwd 必填非空（不与 defaultPass 比对）；缺/空 → 400/11
   return requestClient.put(`/isvInfo/${agentNo}`, {
     state,
     resetPass: true,
     defaultPass: true,
-    confirmPwd: '',
+    confirmPwd: '123456',
   });
 }
 
