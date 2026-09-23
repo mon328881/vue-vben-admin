@@ -33,7 +33,8 @@ async function submit() {
     message.error('请输入调整余额金额');
     return;
   }
-  if (!form.changeRemark || form.changeRemark.trim() === '') {
+  // 线上契约：仅 null/空串拒绝，纯空格备注原样提交（与商户余额调账 / demo 一致）
+  if (form.changeRemark == null || form.changeRemark === '') {
     message.error('请输入调整备注');
     return;
   }
@@ -41,7 +42,7 @@ async function submit() {
   try {
     await changeIsvBalanceApi(row.value.agentNo, {
       changeAmount: form.changeAmount,
-      changeRemark: form.changeRemark.trim(),
+      changeRemark: form.changeRemark,
     });
     message.success('修改成功');
     visible.value = false;
