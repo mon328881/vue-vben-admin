@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import type { VbenFormSchema } from '@vben/common-ui';
 
-import { computed, markRaw } from 'vue';
+import { computed, markRaw, onMounted, ref } from 'vue';
 
 import { AuthenticationLogin, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 import { message } from 'ant-design-vue';
 
+import { getTitleApi } from '#/api';
 import {
   loginCaptchaSession,
   reloadLoginCaptcha,
@@ -18,6 +19,7 @@ import CaptchaInput from './captcha-input.vue';
 defineOptions({ name: 'Login' });
 
 const authStore = useAuthStore();
+const siteTitle = ref('亚洲支付 · 运营端');
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -44,15 +46,15 @@ const formSchema = computed((): VbenFormSchema[] => {
     {
       component: markRaw(CaptchaInput),
       componentProps: {
-        maxlength: 6,
-        placeholder: '请输入6位验证码',
+        maxlength: 4,
+        placeholder: '请输入4位验证码',
       },
       fieldName: 'vercode',
       label: '验证码',
       rules: z
         .string()
         .min(1, { message: '请输入验证码' })
-        .regex(/^\d{6}$/, { message: '验证码必须为6位数字' }),
+        .regex(/^\d{4}$/, { message: '验证码必须为4位数字' }),
     },
     {
       component: 'VbenInput',
@@ -85,6 +87,15 @@ async function handleLogin(values: Record<string, any>) {
     await reloadLoginCaptcha();
   }
 }
+
+onMounted(async () => {
+  try {
+    const title = await getTitleApi();
+    if (title) siteTitle.value = title;
+  } catch {
+    // ignore
+  }
+});
 </script>
 
 <template>
@@ -96,7 +107,7 @@ async function handleLogin(values: Record<string, any>) {
     :show-qrcode-login="false"
     :show-register="false"
     :show-third-party-login="false"
-    title="亚洲支付 · 运营端"
+    :title="siteTitle"
     sub-title="请使用运营账号登录"
     @submit="handleLogin"
   />

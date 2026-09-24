@@ -206,8 +206,14 @@ const listStatItems = computed<ListStatCardItem[]>(() => {
   ];
 });
 
+/** 补单可操作态 {1,3,5,6,8}（冲正/调额单可再 force） */
 function canForce(row: PayOrder) {
-  return canEdit.value && [1, 3, 6].includes(Number(row.state));
+  return canEdit.value && [1, 3, 5, 6, 8].includes(Number(row.state));
+}
+
+/** 调额可操作态 {1,3,5,6}——state=8 为调额终态不可再调 */
+function canChange(row: PayOrder) {
+  return canEdit.value && [1, 3, 5, 6].includes(Number(row.state));
 }
 
 function canRedo(row: PayOrder) {
@@ -218,7 +224,7 @@ function opItems(row: PayOrder): TableActionItem[] {
   return [
     { key: 'detail', label: '详情', hidden: !canView.value },
     { key: 'force', label: '补单', hidden: !canForce(row) },
-    { key: 'changeAmount', label: '调额', hidden: !canForce(row) },
+    { key: 'changeAmount', label: '调额', hidden: !canChange(row) },
     { key: 'testRedo', label: '冲正', danger: true, hidden: !canRedo(row) },
   ];
 }

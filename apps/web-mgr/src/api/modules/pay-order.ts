@@ -83,16 +83,15 @@ export async function changePayOrderAmountApi(
   payOrderId: string,
   amountCent: number,
 ) {
-  // 生产：GET /payOrder/{id}/changePayOrder/{amountCent}，不传验证码
-  return requestClient.get<PayOrder>(
+  // 契约：GET /payOrder/{id}/changePayOrder/{amountCent}——金额仅路径占位，
+  // 只置 state=8，不改金额/不结算；返回 data=null
+  return requestClient.get<null>(
     `/payOrder/${payOrderId}/changePayOrder/${amountCent}`,
   );
 }
 
 export async function forcePayOrderRedoApi(payOrderId: string) {
-  // 生产：GET /payOrder/{id}/forcePayOrderRedo，不传验证码
-  // 勿先调 queryForcePayOrderKey：该接口 assertCanForce 仅允许 1/3/6，
-  // 而冲正要求订单已成功(state=2)，会误报「订单状态错误」
+  // 契约：GET /payOrder/{id}/forcePayOrderRedo；要求 state=2 + 已绑谷歌
   return requestClient.get<PayOrder>(
     `/payOrder/${payOrderId}/forcePayOrderRedo`,
   );

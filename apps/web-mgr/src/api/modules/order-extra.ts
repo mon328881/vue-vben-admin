@@ -52,15 +52,9 @@ export async function fetchMchNotifyDetailApi(notifyId: string) {
   return requestClient.get<Record<string, unknown>>(`/mchNotify/${notifyId}`);
 }
 
-/** 单条重发：后端 POST /mchNotify/resend，body 为 JSON 字符串 notifyId */
+/** 单条重发：demo 契约 POST /mchNotify/resend/{notifyId}（旧 body 路由 401） */
 export async function resendMchNotifyApi(notifyId: number | string) {
-  return requestClient.post(
-    '/mchNotify/resend',
-    JSON.stringify(String(notifyId)),
-    {
-      headers: { 'Content-Type': 'application/json' },
-    },
-  );
+  return requestClient.post(`/mchNotify/resend/${notifyId}`);
 }
 
 export async function resendAllMchNotifyApi(params: Record<string, unknown>) {
