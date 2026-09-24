@@ -114,7 +114,7 @@ const apis: ApiPage[] = [
     paramsTitle: '请求参数',
     params: [
       { name: 'mchNo', type: 'string', required: true, desc: '商户号' },
-      { name: 'mchOrderNo', type: 'string', required: true, desc: '商户订单号' },
+      { name: 'mchOrderNo', type: 'string', required: true, desc: '商户订单号（最大长度 64）' },
       { name: 'productId', type: 'string', required: true, desc: '产品编码' },
       { name: 'amount', type: 'integer', required: true, desc: '支付金额 (单位: 分)', descHtml: '支付金额 (<span class="param-required">单位: 分</span>)' },
       { name: 'clientIp', type: 'string', required: true, desc: '客户端 IPV4 地址' },
@@ -145,7 +145,7 @@ const apis: ApiPage[] = [
           required: true,
           desc: '以下是 data 数据说明',
           children: [
-            { name: 'payOrderId', type: 'string', required: true, desc: '支付系统订单号' },
+            { name: 'payOrderId', type: 'string', required: true, desc: '支付系统订单号（字母开头 + 恰好 19 位数字）' },
             { name: 'mchOrderNo', type: 'string', required: true, desc: '商户订单号' },
             { name: 'payDataType', type: 'string', required: true, desc: '支付参数类型payUrl，此处是固定值' },
             { name: 'payData', type: 'string', required: true, desc: '支付链接（orderState为 1 时有值）', descHtml: '支付链接（<span class="param-required">orderState为 1 时有值</span>）' },
@@ -157,7 +157,7 @@ const apis: ApiPage[] = [
         code: 0,
         msg: 'SUCCESS',
         data: {
-          payOrderId: 'P202106181642329900002',
+          payOrderId: 'P2609241754144531004',
           mchOrderNo: 'mho1624005752661',
           payDataType: 'payUrl',
           payData: 'http://www.google.com/testpay',
@@ -176,14 +176,14 @@ const apis: ApiPage[] = [
     paramsTitle: '请求参数',
     params: [
       { name: 'mchNo', type: 'string', required: true, desc: '商户号' },
-      { name: 'mchOrderNo', type: 'string', required: false, desc: '商户订单号【mchOrderNo 和 payOrderId 二选一传入，不要同时为空】' },
-      { name: 'payOrderId', type: 'string', required: false, desc: '支付系统订单号【mchOrderNo 和 payOrderId 二选一传入，不要同时为空】' },
+      { name: 'mchOrderNo', type: 'string', required: false, desc: '商户订单号【mchOrderNo 和 payOrderId 二选一传入，不要同时为空；最大长度 64】' },
+      { name: 'payOrderId', type: 'string', required: false, desc: '支付系统订单号【mchOrderNo 和 payOrderId 二选一；格式：字母开头 + 恰好 19 位数字；传了但格式非法会直接报错】' },
       { name: 'reqTime', type: 'long', required: true, desc: '13位请求时间戳' },
       { name: 'amount', type: 'integer', required: true, desc: '订单金额 (单位: 分)', descHtml: '订单金额 (<span class="param-required">单位: 分</span>)' },
       { name: 'sign', type: 'string', required: true, desc: '签名值，详见 签名算法', descHtml: '签名值，详见 <span class="param-required">签名算法</span>' },
     ],
     requestExample: {
-      payOrderId: 'P202106181104177050002',
+      payOrderId: 'P2609241754144531004',
       amount: 1000,
       reqTime: '1622016572190',
       mchNo: 'M1623984572',
@@ -206,7 +206,7 @@ const apis: ApiPage[] = [
             { name: 'ifCode', type: 'string', required: true, desc: '支付接口' },
             { name: 'mchNo', type: 'string', required: true, desc: '商户号' },
             { name: 'mchOrderNo', type: 'string', required: true, desc: '商户订单号' },
-            { name: 'payOrderId', type: 'string', required: true, desc: '支付系统订单号' },
+            { name: 'payOrderId', type: 'string', required: true, desc: '支付系统订单号（字母开头 + 恰好 19 位数字）' },
             {
               name: 'state',
               type: 'integer',
@@ -243,18 +243,19 @@ const apis: ApiPage[] = [
     menu: 'refund',
     title: '支付通知',
     url: '',
-    contentType: 'application/x-www-form-urlencoded',
+    contentType: 'application/x-www-form-urlencoded; charset=utf-8',
     notify: true,
     paramsTitle: '通知参数',
     params: [
-      { name: 'ifCode', type: 'string', required: true, desc: '支付接口' },
-      { name: 'createdAt', type: 'String', required: true, desc: '下单时间' },
+      // 外发顺序：业务字段 ASCII 字典序，reqTime/sign 追加尾部（与网关真实报文一致）
       { name: 'amount', type: 'integer', required: true, desc: '支付金额 (单位: 分)', descHtml: '支付金额 (<span class="param-required">单位: 分</span>)' },
-      { name: 'payOrderId', type: 'string', required: true, desc: '支付系统订单号' },
-      { name: 'mchOrderNo', type: 'string', required: true, desc: '商户订单号' },
       { name: 'clientIp', type: 'String', required: true, desc: '客户端 IPV4 地址' },
-      { name: 'successTime', type: 'long', required: false, desc: '成功时间' },
-      { name: 'sign', type: 'string', required: true, desc: '签名值，详见 签名算法', descHtml: '签名值，详见 <span class="param-required">签名算法</span>' },
+      { name: 'createdAt', type: 'String', required: true, desc: '下单时间（13 位毫秒时间戳）' },
+      { name: 'extParam', type: 'string', required: false, desc: '扩展参数（下单原样回传；含 &/= 不转义，验签用原始值）', descHtml: '扩展参数（<span class="param-required">下单原样回传；含 &amp;/= 不转义</span>）' },
+      { name: 'ifCode', type: 'string', required: true, desc: '支付接口' },
+      { name: 'mchNo', type: 'string', required: true, desc: '商户号' },
+      { name: 'mchOrderNo', type: 'string', required: true, desc: '商户订单号' },
+      { name: 'payOrderId', type: 'string', required: true, desc: '支付系统订单号（字母开头 + 恰好 19 位数字）' },
       {
         name: 'state',
         type: 'integer',
@@ -262,22 +263,22 @@ const apis: ApiPage[] = [
         desc: '订单状态：1=支付中，2=支付成功，3=支付失败，5=测试冲正，6=订单关闭，7=出码失败（2, 5 均为支付成功）',
         descHtml: '订单状态：1=支付中，2=支付成功，3=支付失败，5=测试冲正，6=订单关闭，7=出码失败（<span class="param-required">2, 5 均为支付成功</span>）',
       },
-      { name: 'reqTime', type: 'long', required: true, desc: '通知时间' },
-      { name: 'mchNo', type: 'string', required: true, desc: '商户号' },
-      { name: 'extParam', type: 'string', required: false, desc: '扩展参数 (回调时原样返回)', descHtml: '扩展参数 (<span class="param-required">回调时原样返回</span>)' },
+      { name: 'successTime', type: 'long', required: false, desc: '成功时间（13 位毫秒时间戳）' },
+      { name: 'reqTime', type: 'long', required: true, desc: '通知时间（13 位毫秒时间戳，追加在业务字段之后）' },
+      { name: 'sign', type: 'string', required: true, desc: '签名值，详见 签名算法', descHtml: '签名值，详见 <span class="param-required">签名算法</span>' },
     ],
     requestExample: {
-      ifCode: 'dashi',
-      createdAt: '1748506067266',
       amount: 258000,
-      payOrderId: 'P1928000302412279810',
-      mchOrderNo: '20250529160746479761',
       clientIp: '127.0.0.1',
-      successTime: 1748506080000,
-      sign: '1152A2725FAA414BD2DF5A009F7BD611',
-      state: 2,
-      reqTime: 1748506079790,
+      createdAt: '1748506067266',
+      ifCode: 'dashi',
       mchNo: 'M1746863481',
+      mchOrderNo: '20250529160746479761',
+      payOrderId: 'P1928000302412279810',
+      state: 2,
+      successTime: 1748506080000,
+      reqTime: 1748506079790,
+      sign: '1152A2725FAA414BD2DF5A009F7BD611',
     },
   },
   {
@@ -455,6 +456,8 @@ function openMenu(id: string, menu: string) {
             <li>接口请求方式：<code>POST JSON</code>，请求头类型：<code>Content-Type: application/json</code>，请求提交参数格式为 JSON 字符串</li>
             <li>交易金额：默认为人民币交易，单位为<code>分</code>，参数值不能带小数</li>
             <li>时间参数：所有涉及时间参数均使用精确到<code>毫秒的13位数值</code>，如：1622016572190</li>
+            <li>支付系统订单号 <code>payOrderId</code>：格式为<code>字母开头 + 恰好 19 位数字</code>（正则 <code>^[A-Za-z]+\d{19}$</code>），如：P2609241754144531004；查单传了但格式非法会报「支付订单号格式错误」</li>
+            <li>商户订单号 <code>mchOrderNo</code>：最大长度 <code>64</code></li>
           </ol>
         </div>
         <h2>签名算法</h2>
@@ -513,8 +516,9 @@ function openMenu(id: string, menu: string) {
             <h3>注意事项</h3>
             <li><code>商户收到通知需做幂等性处理，判断本地订单状态，防止重复上分。返回 success则不再通知</code></li>
             <li>请求URL：该URL是通过<code>【统一下单API】中提交的参数 notifyUrl 设置</code>，如果链接无法访问，商户将无法接收到通知</li>
-            <li>请求方式：<code>POST Content-Type: application/x-www-form-urlencoded</code></li>
+            <li>请求方式：<code>POST Content-Type: application/x-www-form-urlencoded; charset=utf-8</code>（表单值不 URL 编码；extParam 含 &amp;/= 时原样参与验签）</li>
             <li><code>回调请求参数不完全固定，请动态获取参数，详见 <span class="param-required">签名算法</span></code></li>
+            <li>业务字段按 ASCII 字典序排列，<code>reqTime</code> 与 <code>sign</code> 追加在尾部</li>
           </div>
         </div>
 
