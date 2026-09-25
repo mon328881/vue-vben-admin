@@ -49,6 +49,7 @@ const query = reactive({
   passageOrderNo: '',
   mchNo: '',
   state: 3 as number | undefined,
+  orderType: undefined as number | undefined,
 });
 const detailOpen = ref(false);
 const detailLoading = ref(false);
@@ -75,6 +76,21 @@ function orderTypeLabel(orderType?: number | null) {
   if (orderType === 2) return '代付';
   if (orderType === 3) return '提现';
   return '未知';
+}
+
+const ORDER_TYPE_OPTIONS = [
+  { label: '支付', value: 1 },
+  { label: '代付', value: 2 },
+  { label: '提现', value: 3 },
+];
+
+function notifyLimitText(row: Record<string, unknown>) {
+  const count = Number(row.notifyCount ?? 0);
+  const limit =
+    row.notifyCountLimit == null
+      ? Math.max(4, count)
+      : Number(row.notifyCountLimit);
+  return `${count}/${limit}`;
 }
 
 function buildParams() {
@@ -109,6 +125,7 @@ function onReset() {
   query.passageOrderNo = '';
   query.mchNo = '';
   query.state = 3;
+  query.orderType = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
 }
@@ -209,6 +226,15 @@ onMounted(() => {
             :options="NOTIFY_STATE_OPTIONS"
           />
         </Form.Item>
+        <Form.Item>
+          <Select
+            v-model:value="query.orderType"
+            allow-clear
+            placeholder="订单类型"
+            style="width: 120px"
+            :options="ORDER_TYPE_OPTIONS"
+          />
+        </Form.Item>
         <Form.Item class="ap-filter-actions">
           <FilterActions @search="onSearch" @reset="onReset" />
         </Form.Item>
@@ -244,7 +270,7 @@ onMounted(() => {
             </Tag>
           </template>
           <template v-else-if="column.dataIndex === 'notifyCount'">
-            {{ record.notifyCount ?? 0 }}/{{ record.notifyCountLimit ?? 4 }}
+            {{ notifyLimitText(record as Record<string, unknown>) }}
           </template>
           <template v-else-if="column.dataIndex === 'orderType'">
             {{ orderTypeLabel(record.orderType as number) }}
@@ -296,7 +322,7 @@ onMounted(() => {
           </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="通知次数">
-          {{ detail.notifyCount ?? 0 }}/{{ detail.notifyCountLimit ?? 4 }}
+          {{ notifyLimitText(detail) }}
         </Descriptions.Item>
         <Descriptions.Item label="订单类型">
           {{ orderTypeLabel(detail.orderType as number) }}

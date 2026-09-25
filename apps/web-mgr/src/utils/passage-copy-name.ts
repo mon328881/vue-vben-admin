@@ -56,6 +56,11 @@ export function clonePassageForCreate(
   row: Record<string, unknown>,
   newName: string,
 ) {
+  const rawConfig = row.payInterfaceConfig;
+  const config =
+    rawConfig == null || String(rawConfig).trim() === ''
+      ? null
+      : String(rawConfig);
   return {
     payPassageName: stripCopyName(newName),
     productId: row.productId,
@@ -71,7 +76,9 @@ export function clonePassageForCreate(
     balance: 0,
     timeLimit: row.timeLimit ?? 0,
     timeRules: row.timeRules ?? '',
-    openLimit: row.openLimit ?? 0,
-    payInterfaceConfig: row.payInterfaceConfig ?? '',
+    // 契约：create 忽略 openLimit，仅 isBindAll 写入 open_limit 列
+    isBindAll: row.isBindAll ?? row.openLimit ?? 0,
+    // 空串会触发「通道配置无效」；缺省用 null（不传校验）
+    payInterfaceConfig: config,
   };
 }

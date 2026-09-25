@@ -13,7 +13,6 @@ import {
   Input,
   RangePicker,
   Table,
-  Tag,
   message,
 } from 'ant-design-vue';
 
@@ -27,10 +26,6 @@ import ListStatCards, {
   type ListStatCardItem,
 } from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
-import {
-  payOrderStateColor,
-  payOrderStateLabel,
-} from '#/constants/order';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime, formatYuan } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
@@ -78,7 +73,6 @@ const columns: TableColumnsType = [
   { dataIndex: 'orderNo', title: '商户订单号（点击复制）', width: 200 },
   { dataIndex: 'amount', title: '支付金额', width: 110 },
   { dataIndex: 'productName', ellipsis: true, title: '支付产品', width: 140 },
-  { dataIndex: 'state', title: '支付状态', width: 100 },
   { dataIndex: 'createdAt', title: '创建时间', width: 170 },
   { dataIndex: 'action', fixed: 'right', title: '操作', width: 100 },
 ];
@@ -224,11 +218,6 @@ onMounted(() => {
           <template v-else-if="column.dataIndex === 'productName'">
             {{ record.productName || '-' }}
           </template>
-          <template v-else-if="column.dataIndex === 'state'">
-            <Tag :color="payOrderStateColor(record.state as number)">
-              {{ payOrderStateLabel(record.state as number) }}
-            </Tag>
-          </template>
           <template v-else-if="column.dataIndex === 'createdAt'">
             {{ formatDateTime(record.createdAt as string) }}
           </template>
@@ -264,14 +253,6 @@ onMounted(() => {
         </Descriptions.Item>
         <Descriptions.Item label="商户订单号">
           {{ detail.mchOrderNo }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付产品">
-          {{ detail.productName || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付状态">
-          <Tag :color="payOrderStateColor(detail.state as number)">
-            {{ payOrderStateLabel(detail.state as number) }}
-          </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="创建时间">
           {{ formatDateTime(detail.createdAt as string) }}

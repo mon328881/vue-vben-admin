@@ -239,9 +239,17 @@ async function loadData(resetPage = false) {
       pageSize: pagination.pageSize,
       payPassageId: query.payPassageId || undefined,
       productId: query.productId || undefined,
-      enabledFirst: enabledFirst.value ? 1 : 0,
+      // 契约：enabledFirst 仅做 Byte 校验，不影响服务端排序——前端本地启用优先
     });
-    dataSource.value = page?.records ?? [];
+    let rows = page?.records ?? [];
+    if (enabledFirst.value) {
+      rows = [...rows].sort((a, b) => {
+        const ae = Number(a.state) === 1 ? 0 : 1;
+        const be = Number(b.state) === 1 ? 0 : 1;
+        return ae - be;
+      });
+    }
+    dataSource.value = rows;
     total.value = page?.total ?? 0;
   } finally {
     loading.value = false;
@@ -294,8 +302,8 @@ async function toggleState(row: PayPassage, checked: boolean | string | number) 
   stateBusy.value[key] = true;
   try {
     const payload: Record<string, unknown> = { state: next };
+    // 契约：关闭时关定时限制；openLimit 入参已被忽略，勿再传
     if (next === 0) payload.timeLimit = 0;
-    else payload.openLimit = 1;
     await updateMchAppApi(row.payPassageId, payload);
     row.state = next;
     message.success('操作成功');
@@ -515,9 +523,7 @@ onMounted(() => {
             <Button size="small" @click="openHourlyReport">
               成率报表
             </Button>
-            <Tooltip
-              title="打开后，会先按当前排序规则排序，再将已启用通道优先排列到前面。"
-            >
+            <Tooltip title="打开后，当前页结果中已启用通道会排到前面（本地排序）。">
               <span class="inline-flex items-center gap-2">
                 <span class="text-muted-foreground text-sm">启用优先</span>
                 <Switch
