@@ -211,9 +211,9 @@ function canForce(row: PayOrder) {
   return canEdit.value && [1, 3, 5, 6, 8].includes(Number(row.state));
 }
 
-/** 调额可操作态 {1,3,5,6}——state=8 为调额终态不可再调 */
+/** 调额可操作态 {1,3,6}——state=5 冲正不可调；state=8 为调额终态 */
 function canChange(row: PayOrder) {
-  return canEdit.value && [1, 3, 5, 6].includes(Number(row.state));
+  return canEdit.value && [1, 3, 6].includes(Number(row.state));
 }
 
 function canRedo(row: PayOrder) {

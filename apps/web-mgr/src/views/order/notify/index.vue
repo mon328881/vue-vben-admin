@@ -22,6 +22,7 @@ import {
 } from 'ant-design-vue';
 
 import {
+  fetchMchNotifyDetailApi,
   fetchMchNotifyListApi,
   resendAllMchNotifyApi,
   resendMchNotifyApi,
@@ -50,7 +51,10 @@ const query = reactive({
   state: 3 as number | undefined,
 });
 const detailOpen = ref(false);
+const detailLoading = ref(false);
 const detail = ref<Record<string, unknown> | null>(null);
+/** 列表行含 payPassageName，详情契约无此键——保留作展示兜底 */
+const detailPassageName = ref('');
 
 const canResend = computed(() => hasEnt('ENT_MCH_NOTIFY_RESEND'));
 
@@ -58,6 +62,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'orderId', ellipsis: true, title: '订单号', width: 200 },
   { dataIndex: 'passageOrderNo', ellipsis: true, title: '通道订单号', width: 160 },
   { dataIndex: 'state', title: '通知状态', width: 110 },
+  { dataIndex: 'notifyCount', title: '通知次数', width: 100 },
   { dataIndex: 'orderType', title: '订单类型', width: 100 },
   { dataIndex: 'mchNo', title: '商户号', width: 130 },
   { dataIndex: 'payPassageName', ellipsis: true, title: '通道', width: 140 },
@@ -114,9 +119,28 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
   void loadData();
 }
 
-function openDetail(row: Record<string, unknown>) {
-  detail.value = row;
+async function openDetail(row: Record<string, unknown>) {
+  const notifyId = row.notifyId;
+  if (notifyId == null) {
+    message.error('通知 ID 无效');
+    return;
+  }
+  detailPassageName.value = String(row.payPassageName ?? '');
   detailOpen.value = true;
+  detailLoading.value = true;
+  detail.value = null;
+  try {
+    detail.value =
+      ((await fetchMchNotifyDetailApi(String(notifyId))) as Record<
+        string,
+        unknown
+      >) ?? null;
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '加载详情失败');
+    detailOpen.value = false;
+  } finally {
+    detailLoading.value = false;
+  }
 }
 
 function confirmResend(row: Record<string, unknown>) {
@@ -219,6 +243,9 @@ onMounted(() => {
               {{ notifyStateLabel(record.state as number) }}
             </Tag>
           </template>
+          <template v-else-if="column.dataIndex === 'notifyCount'">
+            {{ record.notifyCount ?? 0 }}/{{ record.notifyCountLimit ?? 4 }}
+          </template>
           <template v-else-if="column.dataIndex === 'orderType'">
             {{ orderTypeLabel(record.orderType as number) }}
           </template>
@@ -250,7 +277,13 @@ onMounted(() => {
     </Card>
 
     <Drawer v-model:open="detailOpen" title="通知详情" width="640">
-      <Descriptions v-if="detail" :column="1" bordered size="small">
+      <div v-if="detailLoading" class="py-8 text-center text-gray-400">
+        加载中…
+      </div>
+      <Descriptions v-else-if="detail" :column="1" bordered size="small">
+        <Descriptions.Item label="通知 ID">
+          {{ detail.notifyId }}
+        </Descriptions.Item>
         <Descriptions.Item label="订单号">
           {{ detail.orderId }}
         </Descriptions.Item>
@@ -262,18 +295,30 @@ onMounted(() => {
             {{ notifyStateLabel(detail.state as number) }}
           </Tag>
         </Descriptions.Item>
+        <Descriptions.Item label="通知次数">
+          {{ detail.notifyCount ?? 0 }}/{{ detail.notifyCountLimit ?? 4 }}
+        </Descriptions.Item>
         <Descriptions.Item label="订单类型">
           {{ orderTypeLabel(detail.orderType as number) }}
         </Descriptions.Item>
         <Descriptions.Item label="商户号">{{ detail.mchNo }}</Descriptions.Item>
+        <Descriptions.Item label="代理号">
+          {{ detail.agentNo || '-' }}
+        </Descriptions.Item>
         <Descriptions.Item label="通道">
-          {{ detail.payPassageName || '-' }}
+          {{ detail.payPassageName || detailPassageName || '-' }}
         </Descriptions.Item>
         <Descriptions.Item label="通知地址">
           {{ detail.notifyUrl || '-' }}
         </Descriptions.Item>
         <Descriptions.Item label="响应结果">
           {{ detail.resResult || '-' }}
+        </Descriptions.Item>
+        <Descriptions.Item label="最近通知">
+          {{ formatDateTime(detail.lastNotifyTime as string) }}
+        </Descriptions.Item>
+        <Descriptions.Item label="创建时间">
+          {{ formatDateTime(detail.createdAt as string) }}
         </Descriptions.Item>
         <Descriptions.Item label="更新日期">
           {{ formatDateTime(detail.updatedAt as string) }}
