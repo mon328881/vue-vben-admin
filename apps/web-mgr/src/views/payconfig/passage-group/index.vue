@@ -2,13 +2,23 @@
 import type { TableColumnsType } from 'ant-design-vue';
 import type { Key } from 'ant-design-vue/es/table/interface';
 
+import type { PassageStatInfo } from '#/api';
+import type {
+  PassageGroupInfo,
+  PassageGroupStat,
+} from '#/api/modules/passage-group';
+import type { ListStatCardItem } from '#/components/list/ListStatCards.vue';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
+
 import {
   Button,
   Card,
   Form,
+  message,
   Modal,
   Popconfirm,
   Space,
@@ -16,9 +26,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  message,
 } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
 
 import {
   allPassageGroupPrepaidResetApi,
@@ -30,18 +38,12 @@ import {
   multiplePassageGroupSettleApi,
   setPassageGroupStateApi,
   settlePassageGroupApi,
-  type PassageStatInfo,
 } from '#/api';
-import type {
-  PassageGroupInfo,
-  PassageGroupStat,
-} from '#/api/modules/passage-group';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
+import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import { usePassageGroupExport } from '#/composables/use-async-export';
 import {
   passageGroupSettleModeLabel,
@@ -49,7 +51,6 @@ import {
 } from '#/constants/merchant';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime, formatRateDecimal, formatYuan } from '#/utils/format';
-import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 
 import PassageAutoCleanDialog from './components/PassageAutoCleanDialog.vue';
 import PassageGroupBatchDrawer from './components/PassageGroupBatchDrawer.vue';
@@ -123,8 +124,7 @@ const listStatItems = computed<ListStatCardItem[]>(() => {
     },
     {
       title: '差额汇总',
-      value:
-        (Number(s.totalPrepaid ?? 0) - Number(s.totalBalance ?? 0)) / 100,
+      value: (Number(s.totalPrepaid ?? 0) - Number(s.totalBalance ?? 0)) / 100,
       decimals: 2,
       prefix: '¥',
       icon: 'lucide:scale',
@@ -222,13 +222,15 @@ function onFormSuccess(toFirst: boolean) {
   void loadData(toFirst);
 }
 
-async function toggleState(row: PassageGroupInfo, checked: boolean | string | number) {
+async function toggleState(
+  row: PassageGroupInfo,
+  checked: boolean | number | string,
+) {
   const next = checked ? 1 : 0;
   const ok = await new Promise<boolean>((resolve) => {
     Modal.confirm({
       title: '二次确认',
-      content:
-        next === 1 ? '确认【开启】该供应商？' : '确认【关闭】该供应商？',
+      content: next === 1 ? '确认【开启】该供应商？' : '确认【关闭】该供应商？',
       okText: '确认',
       cancelText: '取消',
       onOk: () => resolve(true),
@@ -277,7 +279,7 @@ async function confirmSettle(row: PassageGroupInfo) {
 
 async function confirmBatchPrepaid() {
   if (!canEdit.value) return;
-  if (!selectedRowKeys.value.length) {
+  if (selectedRowKeys.value.length === 0) {
     message.error('请先选择要批量操作的供应商');
     return;
   }
@@ -288,7 +290,7 @@ async function confirmBatchPrepaid() {
 
 async function confirmBatchSettle() {
   if (!canEdit.value) return;
-  if (!selectedRowKeys.value.length) {
+  if (selectedRowKeys.value.length === 0) {
     message.error('请先选择要批量操作的供应商');
     return;
   }
@@ -331,7 +333,7 @@ function confirmAllSettle() {
 
 function openBatch() {
   if (!canEdit.value) return;
-  if (!selectedRowKeys.value.length) {
+  if (selectedRowKeys.value.length === 0) {
     message.error('请先勾选需要进行批量操作的供应商');
     return;
   }
@@ -339,9 +341,10 @@ function openBatch() {
   const rows = dataSource.value.filter((row) =>
     ids.includes(String(row.passageGroupName)),
   );
-  const labels = rows.length
-    ? rows.map((row) => String(row.passageGroupName ?? ''))
-    : ids;
+  const labels =
+    rows.length > 0
+      ? rows.map((row) => String(row.passageGroupName ?? ''))
+      : ids;
   batchRef.value?.show(ids, labels);
 }
 
@@ -393,277 +396,269 @@ onMounted(async () => {
 <template>
   <Page auto-content-height title="通道供应商">
     <div class="ap-page-stack">
-    <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <PassageGroupSelector
-            v-model="query.passageGroupName"
-            placeholder="供应商名称"
-            style="width: 240px"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
-
-    <ListStatCards :items="listStatItems" />
-
-    <Card>
-      <div class="ap-table-toolbar">
-        <Space wrap>
-          <Button v-if="canEdit" type="primary" @click="formRef?.show()">
-            新建
-          </Button>
-          <Popconfirm
-            v-if="canEdit"
-            title="确认批量清零么?"
-            @confirm="confirmBatchPrepaid"
-          >
-            <Button>预付批量清零</Button>
-          </Popconfirm>
-          <Popconfirm
-            v-if="canEdit"
-            title="确认批量结算么?"
-            @confirm="confirmBatchSettle"
-          >
-            <Button>供应商批量结算</Button>
-          </Popconfirm>
-          <Button v-if="canEdit" danger ghost @click="confirmAllPrepaid">
-            预付全部清零
-          </Button>
-          <Button v-if="canEdit" danger ghost @click="confirmAllSettle">
-            供应商全部结算
-          </Button>
-          <Button v-if="canEdit" danger ghost @click="openAutoClean">
-            通道自动日切设置
-          </Button>
-          <Button v-if="canEdit" @click="openBatch">批量操作供应商</Button>
-          <AsyncExportButtons
-            :loading="exportLoading"
-            :progress="exportProgress"
-            :has-report-downloads="hasReportDownloads"
-            @export="onExport"
-            @open-report-list="openReportList"
-          />
-        </Space>
-        <Tag
-          :color="stat.payPassageAutoClean === 1 ? 'success' : 'default'"
-        >
-          {{ autoCleanTagText() }}
-        </Tag>
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-selection="rowSelection"
-        row-key="passageGroupName"
-        :scroll="{ x: 2000 }"
-        size="middle"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'state'">
-            <Switch
-              :checked="record.state === 1"
-              :disabled="!canEdit"
-              :loading="!!stateBusy[record.passageGroupName as string]"
-              @change="
-                (c) => toggleState(record as PassageGroupInfo, c)
-              "
+      <Card class="ap-page-filter">
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <PassageGroupSelector
+              v-model="query.passageGroupName"
+              placeholder="供应商名称"
+              style="width: 240px"
             />
-          </template>
-          <template v-else-if="column.dataIndex === 'featureFlags'">
-            <PassageGroupFeatureFlagsCell
-              :row="record as PassageGroupInfo"
-            />
-          </template>
-          <template v-else-if="column.dataIndex === 'prepaid'">
-            <div class="inline-action-cell">
-              <Button
-                v-if="canEdit"
-                size="small"
-                type="primary"
-                class="inline-action-cell__action"
-                @click="prepaidRef?.show(record as PassageGroupInfo)"
-              >
-                调额
-              </Button>
-              <b class="inline-action-cell__value">{{
-                formatYuan(record.prepaid as number)
-              }}</b>
-            </div>
-          </template>
-          <template v-else-if="column.dataIndex === 'balance'">
-            <b
-              :class="
-                (record.balance as number) > 0
-                  ? 'amount-positive'
-                  : 'amount-negative'
-              "
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
+
+      <ListStatCards :items="listStatItems" />
+
+      <Card>
+        <div class="ap-table-toolbar">
+          <Space wrap>
+            <Button v-if="canEdit" type="primary" @click="formRef?.show()">
+              新建
+            </Button>
+            <Popconfirm
+              v-if="canEdit"
+              title="确认批量清零么?"
+              @confirm="confirmBatchPrepaid"
             >
-              {{ formatYuan(record.balance as number) }}
-            </b>
-          </template>
-          <template v-else-if="column.dataIndex === 'diff'">
-            <div class="inline-action-cell">
-              <Popconfirm
-                v-if="canEdit && (record.balance as number) !== 0"
-                title="[结算]操作将清空余额并从预付中扣除，确认结算么?"
-                @confirm="confirmSettle(record as PassageGroupInfo)"
-              >
+              <Button>预付批量清零</Button>
+            </Popconfirm>
+            <Popconfirm
+              v-if="canEdit"
+              title="确认批量结算么?"
+              @confirm="confirmBatchSettle"
+            >
+              <Button>供应商批量结算</Button>
+            </Popconfirm>
+            <Button v-if="canEdit" danger ghost @click="confirmAllPrepaid">
+              预付全部清零
+            </Button>
+            <Button v-if="canEdit" danger ghost @click="confirmAllSettle">
+              供应商全部结算
+            </Button>
+            <Button v-if="canEdit" danger ghost @click="openAutoClean">
+              通道自动日切设置
+            </Button>
+            <Button v-if="canEdit" @click="openBatch">批量操作供应商</Button>
+            <AsyncExportButtons
+              :loading="exportLoading"
+              :progress="exportProgress"
+              :has-report-downloads="hasReportDownloads"
+              @export="onExport"
+              @open-report-list="openReportList"
+            />
+          </Space>
+          <Tag :color="stat.payPassageAutoClean === 1 ? 'success' : 'default'">
+            {{ autoCleanTagText() }}
+          </Tag>
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          :row-selection="rowSelection"
+          row-key="passageGroupName"
+          :scroll="{ x: 2000 }"
+          size="middle"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'state'">
+              <Switch
+                :checked="record.state === 1"
+                :disabled="!canEdit"
+                :loading="!!stateBusy[record.passageGroupName as string]"
+                @change="(c) => toggleState(record as PassageGroupInfo, c)"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'featureFlags'">
+              <PassageGroupFeatureFlagsCell :row="record as PassageGroupInfo" />
+            </template>
+            <template v-else-if="column.dataIndex === 'prepaid'">
+              <div class="inline-action-cell">
                 <Button
+                  v-if="canEdit"
                   size="small"
                   type="primary"
                   class="inline-action-cell__action"
+                  @click="prepaidRef?.show(record as PassageGroupInfo)"
                 >
-                  结算
+                  调额
                 </Button>
-              </Popconfirm>
-              <span
-                class="inline-action-cell__value"
+                <b class="inline-action-cell__value">{{
+                  formatYuan(record.prepaid as number)
+                }}</b>
+              </div>
+            </template>
+            <template v-else-if="column.dataIndex === 'balance'">
+              <b
                 :class="
-                  Number(record.prepaid ?? 0) - Number(record.balance ?? 0) >= 0
-                    ? ''
-                    : 'text-error'
+                  (record.balance as number) > 0
+                    ? 'amount-positive'
+                    : 'amount-negative'
                 "
               >
+                {{ formatYuan(record.balance as number) }}
+              </b>
+            </template>
+            <template v-else-if="column.dataIndex === 'diff'">
+              <div class="inline-action-cell">
+                <Popconfirm
+                  v-if="canEdit && (record.balance as number) !== 0"
+                  title="[结算]操作将清空余额并从预付中扣除，确认结算么?"
+                  @confirm="confirmSettle(record as PassageGroupInfo)"
+                >
+                  <Button
+                    size="small"
+                    type="primary"
+                    class="inline-action-cell__action"
+                  >
+                    结算
+                  </Button>
+                </Popconfirm>
+                <span
+                  class="inline-action-cell__value"
+                  :class="
+                    Number(record.prepaid ?? 0) - Number(record.balance ?? 0) >=
+                    0
+                      ? ''
+                      : 'text-error'
+                  "
+                >
+                  {{
+                    formatYuan(
+                      (record.diff as number | undefined) ??
+                        Number(record.prepaid ?? 0) -
+                          Number(record.balance ?? 0),
+                    )
+                  }}
+                </span>
+              </div>
+            </template>
+            <template v-else-if="column.dataIndex === 'quota'">
+              <div class="inline-action-cell">
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__icon-btn"
+                  @click="quotaRef?.show(record as PassageGroupInfo)"
+                >
+                  <template #icon>
+                    <IconifyIcon
+                      class="inline-action-cell__icon"
+                      icon="ant-design:setting-outlined"
+                    />
+                  </template>
+                </Button>
+                <Tooltip
+                  :title="
+                    Number(record.quotaLimitState) === 1
+                      ? '授信已启用'
+                      : '授信已禁用'
+                  "
+                >
+                  <span
+                    class="quota-dot"
+                    :class="
+                      Number(record.quotaLimitState) === 1
+                        ? 'quota-dot--on'
+                        : 'quota-dot--off'
+                    "
+                  ></span>
+                </Tooltip>
+                <span
+                  :class="
+                    Number(record.quotaLimitState) === 0
+                      ? 'quota-value--disabled'
+                      : ''
+                  "
+                >
+                  {{ creditText(record as PassageGroupInfo) }}
+                </span>
+              </div>
+            </template>
+            <template v-else-if="column.dataIndex === 'successAmount'">
+              <span class="text-brand">
                 {{
-                  formatYuan(
-                    (record.diff as number | undefined) ??
-                      Number(record.prepaid ?? 0) -
-                        Number(record.balance ?? 0),
-                  )
+                  record.successAmount != null
+                    ? formatYuan(record.successAmount as number)
+                    : '-'
                 }}
               </span>
-            </div>
-          </template>
-          <template v-else-if="column.dataIndex === 'quota'">
-            <div class="inline-action-cell">
-              <Button
-                v-if="canEdit"
-                size="small"
-                type="primary"
-                shape="square"
-                class="inline-action-cell__icon-btn"
-                @click="quotaRef?.show(record as PassageGroupInfo)"
-              >
-                <template #icon>
-                  <IconifyIcon
-                    class="inline-action-cell__icon"
-                    icon="ant-design:setting-outlined"
-                  />
-                </template>
-              </Button>
-              <Tooltip
-                :title="
-                  Number(record.quotaLimitState) === 1
-                    ? '授信已启用'
-                    : '授信已禁用'
+            </template>
+            <template v-else-if="column.dataIndex === 'successRate'">
+              {{ formatRateDecimal(record.successRate as number) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'isAutoSettle'">
+              <Tag
+                :color="
+                  passageGroupSettleModeTagColor(record.isAutoSettle as number)
                 "
               >
-                <span
-                  class="quota-dot"
-                  :class="
-                    Number(record.quotaLimitState) === 1
-                      ? 'quota-dot--on'
-                      : 'quota-dot--off'
-                  "
-                />
-              </Tooltip>
-              <span
-                :class="
-                  Number(record.quotaLimitState) === 0
-                    ? 'quota-value--disabled'
-                    : ''
-                "
-              >
-                {{ creditText(record as PassageGroupInfo) }}
-              </span>
-            </div>
-          </template>
-          <template v-else-if="column.dataIndex === 'successAmount'">
-            <span class="text-brand">
+                {{ passageGroupSettleModeLabel(record.isAutoSettle as number) }}
+              </Tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'autoSettleTime'">
               {{
-                record.successAmount != null
-                  ? formatYuan(record.successAmount as number)
-                  : '-'
+                record.isAutoSettle === 1 && record.autoSettleTime
+                  ? record.autoSettleTime
+                  : '--'
               }}
-            </span>
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt as string) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <div class="ap-table-ops">
+                <Button
+                  size="small"
+                  type="link"
+                  class="ap-table-ops__link"
+                  @click="
+                    historyRef?.show(
+                      (record as PassageGroupInfo).passageGroupName,
+                    )
+                  "
+                >
+                  预付记录
+                </Button>
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="link"
+                  class="ap-table-ops__link"
+                  @click="
+                    formRef?.show((record as PassageGroupInfo).passageGroupName)
+                  "
+                >
+                  修改
+                </Button>
+                <Button
+                  v-if="canEdit"
+                  danger
+                  size="small"
+                  type="link"
+                  class="ap-table-ops__link"
+                  @click="confirmDelete(record as PassageGroupInfo)"
+                >
+                  删除
+                </Button>
+              </div>
+            </template>
           </template>
-          <template v-else-if="column.dataIndex === 'successRate'">
-            {{ formatRateDecimal(record.successRate as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'isAutoSettle'">
-            <Tag
-              :color="
-                passageGroupSettleModeTagColor(record.isAutoSettle as number)
-              "
-            >
-              {{ passageGroupSettleModeLabel(record.isAutoSettle as number) }}
-            </Tag>
-          </template>
-          <template v-else-if="column.dataIndex === 'autoSettleTime'">
-            {{
-              record.isAutoSettle === 1 && record.autoSettleTime
-                ? record.autoSettleTime
-                : '--'
-            }}
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'action'">
-            <div class="ap-table-ops">
-              <Button
-                size="small"
-                type="link"
-                class="ap-table-ops__link"
-                @click="
-                  historyRef?.show(
-                    (record as PassageGroupInfo).passageGroupName,
-                  )
-                "
-              >
-                预付记录
-              </Button>
-              <Button
-                v-if="canEdit"
-                size="small"
-                type="link"
-                class="ap-table-ops__link"
-                @click="
-                  formRef?.show(
-                    (record as PassageGroupInfo).passageGroupName,
-                  )
-                "
-              >
-                修改
-              </Button>
-              <Button
-                v-if="canEdit"
-                danger
-                size="small"
-                type="link"
-                class="ap-table-ops__link"
-                @click="confirmDelete(record as PassageGroupInfo)"
-              >
-                删除
-              </Button>
-            </div>
-          </template>
-        </template>
-      </Table>
-    </Card>
+        </Table>
+      </Card>
     </div>
 
     <PassageGroupFormDrawer ref="formRef" @success="onFormSuccess" />
@@ -691,10 +686,10 @@ onMounted(async () => {
 <style scoped>
 .quota-dot {
   display: inline-block;
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .quota-dot--on {

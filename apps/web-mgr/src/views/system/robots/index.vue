@@ -1,7 +1,10 @@
 <script lang="ts" setup>
+import type { SysConfigItem } from '#/api/modules/system';
+
 import { computed, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Alert,
   Button,
@@ -10,16 +13,15 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Row,
   Switch,
   Tabs,
   Textarea,
-  message,
 } from 'ant-design-vue';
 
 import { fetchSysConfigsApi, updateSysConfigsApi } from '#/api';
-import type { SysConfigItem } from '#/api/modules/system';
 
 defineOptions({ name: 'RobotsConfigPage' });
 
@@ -42,8 +44,8 @@ const WALLET_KEYS = [
   ADDRESS_DESC_KEY,
 ];
 const THRESHOLD_WARN_KEYS = new Set([
-  'forceOrderWarnConfig',
   'errorOrderWarnConfig',
+  'forceOrderWarnConfig',
 ]);
 /** 关闭后再次打开时恢复的默认阈值 */
 const DEFAULT_WARN_THRESHOLD = 1;
@@ -62,42 +64,84 @@ const docSections: DocSection[] = [
   {
     heading: '基础',
     rows: [
-      { dt: '群信息', dd: '格式 [群信息]，管理员/操作员发送，快捷查询当前群绑定信息。' },
+      {
+        dt: '群信息',
+        dd: '格式 [群信息]，管理员/操作员发送，快捷查询当前群绑定信息。',
+      },
       { dt: '群ID', dd: '格式 [群ID]，管理员/操作员发送，获取飞机群的群 ID。' },
     ],
   },
   {
     heading: '管理群与操作员',
     rows: [
-      { dt: '绑定管理群', dd: '管理员发送；在不同群重复发送可换绑。管理群用于接收预警相关提醒。' },
-      { dt: '设置操作员', dd: ' 格式 [设置操作员 @xxx]（如 设置操作员 @test，@ 后为用户名）。管理员发送；各群通用，只需设置一次。预付、记账需操作员权限。 ' },
-      { dt: '删除操作员', dd: '格式 [删除操作员 @xxx]（如 删除操作员 @test）。管理员发送。' },
-      { dt: '操作员名单', dd: '格式 [操作员名单]，管理员发送，查看操作员名单。' },
-      { dt: '查询四方余额', dd: '格式 [查询四方余额]，管理员发送，查看系统余额。' },
+      {
+        dt: '绑定管理群',
+        dd: '管理员发送；在不同群重复发送可换绑。管理群用于接收预警相关提醒。',
+      },
+      {
+        dt: '设置操作员',
+        dd: ' 格式 [设置操作员 @xxx]（如 设置操作员 @test，@ 后为用户名）。管理员发送；各群通用，只需设置一次。预付、记账需操作员权限。 ',
+      },
+      {
+        dt: '删除操作员',
+        dd: '格式 [删除操作员 @xxx]（如 删除操作员 @test）。管理员发送。',
+      },
+      {
+        dt: '操作员名单',
+        dd: '格式 [操作员名单]，管理员发送，查看操作员名单。',
+      },
+      {
+        dt: '查询四方余额',
+        dd: '格式 [查询四方余额]，管理员发送，查看系统余额。',
+      },
     ],
   },
   {
     heading: '商户',
     rows: [
-      { dt: '绑定商户', dd: ' 格式 [绑定商户 XXXXXXXX]（如 绑定商户 M10000000）。管理员/操作员发送，重复发送可换绑。 ' },
-      { dt: '解绑商户', dd: ' 格式 [解绑商户 XXXXXXXX]（如 解绑商户 M10000000）。管理员/操作员发送。 ' },
-      { dt: '全部商户', dd: '格式 [全部商户]，管理员/操作员发送，查询当前群绑定的商户。' },
-      { dt: '解绑全部商户', dd: '格式 [解绑全部商户]，管理员/操作员发送，解绑当前群全部商户。' },
+      {
+        dt: '绑定商户',
+        dd: ' 格式 [绑定商户 XXXXXXXX]（如 绑定商户 M10000000）。管理员/操作员发送，重复发送可换绑。 ',
+      },
+      {
+        dt: '解绑商户',
+        dd: ' 格式 [解绑商户 XXXXXXXX]（如 解绑商户 M10000000）。管理员/操作员发送。 ',
+      },
+      {
+        dt: '全部商户',
+        dd: '格式 [全部商户]，管理员/操作员发送，查询当前群绑定的商户。',
+      },
+      {
+        dt: '解绑全部商户',
+        dd: '格式 [解绑全部商户]，管理员/操作员发送，解绑当前群全部商户。',
+      },
     ],
   },
   {
     heading: '供应商',
     rows: [
-      { dt: '绑定供应商', dd: ' 格式 [绑定供应商 供应商名字]（如 绑定供应商 供应商1）。管理员/操作员发送，重复发送可换绑。 ' },
+      {
+        dt: '绑定供应商',
+        dd: ' 格式 [绑定供应商 供应商名字]（如 绑定供应商 供应商1）。管理员/操作员发送，重复发送可换绑。 ',
+      },
       { dt: '解绑供应商', dd: '格式 [解绑供应商]，管理员/操作员发送。' },
     ],
   },
   {
     heading: '通道',
     rows: [
-      { dt: '绑定通道', dd: ' 格式 [绑定通道 通道ID]（如 绑定通道 1000 或 绑定通道 1000,2000,3000）。管理员/操作员发送，重复发送可换绑。 ' },
-      { dt: '解绑通道', dd: '格式 [解绑通道 通道ID]（支持多个 ID，逗号分隔）。管理员/操作员发送。' },
-      { dt: '全部通道', dd: '格式 [全部通道]，管理员/操作员发送，查看当前群绑定的通道。' },
+      {
+        dt: '绑定通道',
+        dd: ' 格式 [绑定通道 通道ID]（如 绑定通道 1000 或 绑定通道 1000,2000,3000）。管理员/操作员发送，重复发送可换绑。 ',
+      },
+      {
+        dt: '解绑通道',
+        dd: '格式 [解绑通道 通道ID]（支持多个 ID，逗号分隔）。管理员/操作员发送。',
+      },
+      {
+        dt: '全部通道',
+        dd: '格式 [全部通道]，管理员/操作员发送，查看当前群绑定的通道。',
+      },
       { dt: '解绑全部通道', dd: '格式 [解绑全部通道]，管理员/操作员发送。' },
     ],
   },
@@ -107,56 +151,116 @@ const docSections: DocSection[] = [
     rows: [
       { dt: '添加预付', dd: '格式 [+金额]（如 +1000）。预付金额累加不清空。' },
       { dt: '扣减预付', dd: '格式 [-金额]（如 -1000）。' },
-      { dt: '多商户预付', dd: ' 格式 [+金额 商户号]（如 +500 M1691231000）。群内绑定多个商户时使用。 ' },
-      { dt: '记账', dd: ' 格式 [记账 金额]（如 记账 1000、记账 -1000）。群内临时记账，仅保留当日记录，隔日自动清理。 ' },
-      { dt: '撤销记账', dd: '格式 [撤销记账]，删除最后一笔记账记录。管理员/操作员发送。' },
-      { dt: '清除记账', dd: '格式 [清除记账]，删除当天全部记账记录。管理员/操作员发送。' },
-      { dt: '今日账单', dd: '格式 [今日账单]，查看今日账单（预付与群内临时记账汇总）。' },
-      { dt: '昨日账单', dd: '格式 [昨日账单]，查看昨日账单（含群内临时记账）。' },
+      {
+        dt: '多商户预付',
+        dd: ' 格式 [+金额 商户号]（如 +500 M1691231000）。群内绑定多个商户时使用。 ',
+      },
+      {
+        dt: '记账',
+        dd: ' 格式 [记账 金额]（如 记账 1000、记账 -1000）。群内临时记账，仅保留当日记录，隔日自动清理。 ',
+      },
+      {
+        dt: '撤销记账',
+        dd: '格式 [撤销记账]，删除最后一笔记账记录。管理员/操作员发送。',
+      },
+      {
+        dt: '清除记账',
+        dd: '格式 [清除记账]，删除当天全部记账记录。管理员/操作员发送。',
+      },
+      {
+        dt: '今日账单',
+        dd: '格式 [今日账单]，查看今日账单（预付与群内临时记账汇总）。',
+      },
+      {
+        dt: '昨日账单',
+        dd: '格式 [昨日账单]，查看昨日账单（含群内临时记账）。',
+      },
     ],
   },
   {
     heading: '结算',
     rows: [
-      { dt: '今日结算（群内）', dd: ' 格式 [今日结算]，在商户群或通道供应商群发送，查看当日结算信息。管理员/操作员发送；提示后可在 10 分钟内发送 [确认结算] 执行结算。 ' },
-      { dt: '昨日结算（群内）', dd: '格式 [昨日结算]，查看昨日结算信息。管理员/操作员发送。' },
-      { dt: '确认结算', dd: ' 格式 [确认结算]，在发送 [今日结算] 后于群内执行。管理员/操作员发送。 ' },
-      { dt: '批量结算（私聊）', dd: ' 私聊机器人发送 [今日结算] 或 [昨日结算]，再回复该消息发送 [确认执行]，向所有商户群及供应商群推送结算消息。管理员/操作员操作。 ' },
+      {
+        dt: '今日结算（群内）',
+        dd: ' 格式 [今日结算]，在商户群或通道供应商群发送，查看当日结算信息。管理员/操作员发送；提示后可在 10 分钟内发送 [确认结算] 执行结算。 ',
+      },
+      {
+        dt: '昨日结算（群内）',
+        dd: '格式 [昨日结算]，查看昨日结算信息。管理员/操作员发送。',
+      },
+      {
+        dt: '确认结算',
+        dd: ' 格式 [确认结算]，在发送 [今日结算] 后于群内执行。管理员/操作员发送。 ',
+      },
+      {
+        dt: '批量结算（私聊）',
+        dd: ' 私聊机器人发送 [今日结算] 或 [昨日结算]，再回复该消息发送 [确认执行]，向所有商户群及供应商群推送结算消息。管理员/操作员操作。 ',
+      },
     ],
   },
   {
     heading: '群发',
     rows: [
-      { dt: '群发全部', dd: '格式 [群发全部]。先私发机器人内容，再回复该内容：群发全部。' },
+      {
+        dt: '群发全部',
+        dd: '格式 [群发全部]。先私发机器人内容，再回复该内容：群发全部。',
+      },
       { dt: '群发商户', dd: '格式 [群发商户]，同上流程。' },
-      { dt: '群发分组', dd: ' 格式 [群发分组 分组名称]（如 群发分组 测试分组）。同上流程，仅向该分组下的商户群发送。 ' },
+      {
+        dt: '群发分组',
+        dd: ' 格式 [群发分组 分组名称]（如 群发分组 测试分组）。同上流程，仅向该分组下的商户群发送。 ',
+      },
       { dt: '群发通道', dd: '格式 [群发通道]，同上流程。' },
     ],
   },
   {
     heading: '其他',
     rows: [
-      { dt: '删除', dd: '回复需删除的机器人消息。管理员/操作员发送，可删除机器人发出的消息。' },
+      {
+        dt: '删除',
+        dd: '回复需删除的机器人消息。管理员/操作员发送，可删除机器人发出的消息。',
+      },
     ],
   },
   {
     heading: '提醒名单',
     rows: [
-      { dt: '设置提醒', dd: ' 格式 [设置提醒 @xxx]（如 设置提醒 @test）。管理员/操作员发送；每群单独设置，群发时对名单 @。 ' },
+      {
+        dt: '设置提醒',
+        dd: ' 格式 [设置提醒 @xxx]（如 设置提醒 @test）。管理员/操作员发送；每群单独设置，群发时对名单 @。 ',
+      },
       { dt: '删除提醒', dd: '格式 [删除提醒 @xxx]，管理员/操作员发送。' },
       { dt: '查询提醒', dd: '格式 [查询提醒]，管理员/操作员发送。' },
       { dt: '删除全部提醒', dd: '格式 [删除全部提醒]，管理员/操作员发送。' },
-      { dt: '所有人', dd: '格式 [所有人]，管理员/操作员发送，@ 已设置提醒的所有人。' },
+      {
+        dt: '所有人',
+        dd: '格式 [所有人]，管理员/操作员发送，@ 已设置提醒的所有人。',
+      },
     ],
   },
   {
     heading: '上浮与对接',
     rows: [
-      { dt: '上浮', dd: '格式 [上浮 0.1]，设置当前群 U 价上浮比例（仅管理员/操作员）。' },
-      { dt: '清除上浮', dd: '格式 [清除上浮]，清除群内已设置的上浮比例（仅管理员/操作员）。' },
-      { dt: '对接信息', dd: ' 格式 [对接信息] 或 [对接资料]，管理员/操作员在商户群发送，自动下发开户对接资料。 ' },
-      { dt: '设置费率', dd: ' 格式 [设置费率 1000/5.3]（产品编码/费率，如 5.3 表示 5.3%），支持多条：[设置费率 1000/5.3 1001/8.3]。多商户群可在前面加商户号，如 [设置费率 M1691231000 1000/5.3]；单商户群可省略商户号，未指定时对该群全部绑定商户生效。管理员或操作员在商户群发送：无商户产品记录则新建并绑定，已有记录则设为绑定并更新费率；不存在的产品编码会跳过。在通道供应商群发送时，与「修改费率」相同，按三方编码修改通道费率。 ' },
-      { dt: '修改费率', dd: ' 格式 [修改费率 1000/5.3]，支持多条如 [修改费率 1000/5.3 1001/8.3]；多商户群可加商户号 [修改费率 M1691231000 1000/5.3]。管理员或操作员发送。在商户群：仅修改已绑定的商户产品费率；无记录或已解绑的产品会跳过，需改用「设置费率」。在通道供应商群：按三方编码修改通道费率。 ' },
+      {
+        dt: '上浮',
+        dd: '格式 [上浮 0.1]，设置当前群 U 价上浮比例（仅管理员/操作员）。',
+      },
+      {
+        dt: '清除上浮',
+        dd: '格式 [清除上浮]，清除群内已设置的上浮比例（仅管理员/操作员）。',
+      },
+      {
+        dt: '对接信息',
+        dd: ' 格式 [对接信息] 或 [对接资料]，管理员/操作员在商户群发送，自动下发开户对接资料。 ',
+      },
+      {
+        dt: '设置费率',
+        dd: ' 格式 [设置费率 1000/5.3]（产品编码/费率，如 5.3 表示 5.3%），支持多条：[设置费率 1000/5.3 1001/8.3]。多商户群可在前面加商户号，如 [设置费率 M1691231000 1000/5.3]；单商户群可省略商户号，未指定时对该群全部绑定商户生效。管理员或操作员在商户群发送：无商户产品记录则新建并绑定，已有记录则设为绑定并更新费率；不存在的产品编码会跳过。在通道供应商群发送时，与「修改费率」相同，按三方编码修改通道费率。 ',
+      },
+      {
+        dt: '修改费率',
+        dd: ' 格式 [修改费率 1000/5.3]，支持多条如 [修改费率 1000/5.3 1001/8.3]；多商户群可加商户号 [修改费率 M1691231000 1000/5.3]。管理员或操作员发送。在商户群：仅修改已绑定的商户产品费率；无记录或已解绑的产品会跳过，需改用「设置费率」。在通道供应商群：按三方编码修改通道费率。 ',
+      },
     ],
   },
   {
@@ -164,7 +268,10 @@ const docSections: DocSection[] = [
     rows: [
       { dt: 'udz', dd: '格式 [udz]，发出钱包地址。' },
       { dt: '地址', dd: '格式 [地址]，发出钱包地址。' },
-      { dt: '地址统计', dd: '格式 [地址统计]，发出群组中所有 TRC20 地址统计信息。' },
+      {
+        dt: '地址统计',
+        dd: '格式 [地址统计]，发出群组中所有 TRC20 地址统计信息。',
+      },
     ],
   },
 ];
@@ -189,25 +296,31 @@ const docCollapseKeys = ref<string[]>([...DEFAULT_DOC_KEYS]);
 const warnThresholdCache = ref<Record<string, number>>({});
 
 const warnItems = computed(() =>
-  WARN_KEYS.map((key) => items.value.find((item) => item.configKey === key))
-    .filter((item): item is SysConfigItem => item != null),
+  WARN_KEYS.map((key) =>
+    items.value.find((item) => item.configKey === key),
+  ).filter(
+    (item): item is SysConfigItem => item !== null && item !== undefined,
+  ),
 );
 
 const walletItems = computed(() =>
-  WALLET_KEYS.map((key) => items.value.find((item) => item.configKey === key))
-    .filter((item): item is SysConfigItem => item != null),
+  WALLET_KEYS.map((key) =>
+    items.value.find((item) => item.configKey === key),
+  ).filter(
+    (item): item is SysConfigItem => item !== null && item !== undefined,
+  ),
 );
 
-const botUserName = computed(
-  () => String(formModel.value[ROBOTS_USER_NAME_KEY] ?? '').trim(),
+const botUserName = computed(() =>
+  String(formModel.value[ROBOTS_USER_NAME_KEY] ?? '').trim(),
 );
 
-const botAdmin = computed(
-  () => String(formModel.value[ROBOTS_ADMIN_KEY] ?? '').trim(),
+const botAdmin = computed(() =>
+  String(formModel.value[ROBOTS_ADMIN_KEY] ?? '').trim(),
 );
 
-const hasBotConfigured = computed(
-  () => Boolean(botUserName.value || formModel.value[ROBOTS_TOKEN_KEY]),
+const hasBotConfigured = computed(() =>
+  Boolean(botUserName.value || formModel.value[ROBOTS_TOKEN_KEY]),
 );
 
 const botTelegramHandle = computed(() => {
@@ -237,18 +350,17 @@ function warnThreshold(key: string) {
   return num > 0 ? num : DEFAULT_WARN_THRESHOLD;
 }
 
-function onPassageWarnSwitch(checked: boolean | string | number, key: string) {
+function onPassageWarnSwitch(checked: boolean | number | string, key: string) {
   formModel.value[key] = checked ? '1' : '0';
 }
 
 function onThresholdWarnSwitch(
-  checked: boolean | string | number,
+  checked: boolean | number | string,
   key: string,
 ) {
   if (checked) {
     const cached = warnThresholdCache.value[key];
-    const restored =
-      cached && cached > 0 ? cached : DEFAULT_WARN_THRESHOLD;
+    const restored = cached && cached > 0 ? cached : DEFAULT_WARN_THRESHOLD;
     formModel.value[key] = String(restored);
     return;
   }
@@ -259,10 +371,12 @@ function onThresholdWarnSwitch(
   formModel.value[key] = '0';
 }
 
-function onThresholdWarnChange(value: null | number, key: string) {
-  if (value == null || value < 1) return;
-  formModel.value[key] = String(Math.floor(value));
-  warnThresholdCache.value[key] = Math.floor(value);
+function onThresholdWarnChange(value: null | number | string, key: string) {
+  if (value === null || value === undefined || value === '') return;
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num) || num < 1) return;
+  formModel.value[key] = String(Math.floor(num));
+  warnThresholdCache.value[key] = Math.floor(num);
 }
 
 function openAccountModal() {
@@ -292,7 +406,9 @@ async function load() {
     const model: Record<string, string> = {};
     for (const item of list) {
       model[item.configKey] =
-        item.configVal != null ? String(item.configVal) : '';
+        item.configVal === null || item.configVal === undefined
+          ? ''
+          : String(item.configVal);
       if (isThresholdWarnKey(item.configKey)) {
         const num = Number(item.configVal ?? 0);
         if (num > 0) {
@@ -329,10 +445,7 @@ async function submit() {
   if (!validate()) return;
   const formData = new FormData();
   for (const item of items.value) {
-    formData.append(
-      item.configKey,
-      formModel.value[item.configKey] ?? '',
-    );
+    formData.append(item.configKey, formModel.value[item.configKey] ?? '');
   }
   saving.value = true;
   try {
@@ -386,9 +499,7 @@ onMounted(() => {
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
-                  <path
-                    d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
-                  />
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                 </svg>
               </div>
 
@@ -410,7 +521,9 @@ onMounted(() => {
                 </p>
               </template>
               <template v-else>
-                <h3 class="bot-profile-card__title bot-profile-card__title--muted">
+                <h3
+                  class="bot-profile-card__title bot-profile-card__title--muted"
+                >
                   未配置机器人
                 </h3>
                 <p class="bot-profile-card__hint">
@@ -500,11 +613,7 @@ onMounted(() => {
                 <div v-if="loading" class="robots-main-panel__loading">
                   加载中…
                 </div>
-                <Form
-                  v-else
-                  layout="vertical"
-                  class="config-form"
-                >
+                <Form v-else layout="vertical" class="config-form">
                   <div class="config-section-head">
                     <h4 class="config-section-head__title">USDT 与钱包</h4>
                     <p class="config-section-head__desc">
@@ -520,7 +629,9 @@ onMounted(() => {
                     >
                       <Form.Item
                         :label="item.configName"
-                        :help="isAddressDesc(item) ? undefined : item.configDesc"
+                        :help="
+                          isAddressDesc(item) ? undefined : item.configDesc
+                        "
                       >
                         <Input
                           v-if="!isAddressDesc(item)"

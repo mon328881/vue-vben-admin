@@ -1,9 +1,13 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PayWay } from '#/api';
+import type { BatchRateAction } from '#/constants/payWays';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Alert,
   Button,
@@ -11,6 +15,7 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Popconfirm,
   Radio,
@@ -19,7 +24,6 @@ import {
   Switch,
   Table,
   Textarea,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -30,21 +34,19 @@ import {
   queryPayWayBatchRateKeyApi,
   updatePayWayApi,
   verifyPayWayBatchRateAuthApi,
-  type PayWay,
 } from '#/api';
 import FilterActions from '#/components/list/FilterActions.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
+import { GOOGLE_CODE_ERROR, isGoogleCode } from '#/constants/merchant';
 import {
   BATCH_RATE_ACTIONS,
+  parseCommandRate,
   PRODUCT_RATE_PRECISION,
   PRODUCT_STATE_OPTIONS,
-  parseCommandRate,
   productPollMode,
   toProductRate,
   validateProductRate,
-  type BatchRateAction,
 } from '#/constants/payWays';
-import { GOOGLE_CODE_ERROR, isGoogleCode } from '#/constants/merchant';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime } from '#/utils/format';
 
@@ -89,7 +91,7 @@ const commandSaving = ref(false);
 const batchSaving = ref(false);
 const googleCode = ref('');
 const commandText = ref('');
-const pendingOpen = ref<'form' | 'command'>('form');
+const pendingOpen = ref<'command' | 'form'>('form');
 
 const batchForm = reactive({
   action: 'setMchRate' as BatchRateAction,
@@ -99,13 +101,13 @@ const batchForm = reactive({
   adjustValue: undefined as number | undefined,
 });
 const rateItems = ref<
-  Array<{ productId: number; productName: string; rateValue?: string | number }>
+  Array<{ productId: number; productName: string; rateValue?: number | string }>
 >([]);
 const previewSkipped = ref<
   Array<{
+    previewValue: string;
     productId: number;
     productName: string;
-    previewValue: string;
     status: string;
   }>
 >([]);
@@ -159,7 +161,7 @@ const previewRows = computed(() => {
 const previewBlocked = computed(
   () =>
     previewRows.value.some((row) => row.status === 'error') ||
-    !previewSelectedIds.value.length,
+    previewSelectedIds.value.length === 0,
 );
 
 const columns: TableColumnsType<PayWay> = [
@@ -176,7 +178,7 @@ const rowSelection = computed(() =>
   canEdit.value
     ? {
         selectedRowKeys: selectedIds.value,
-        onChange: (keys: (string | number)[]) => {
+        onChange: (keys: (number | string)[]) => {
           selectedIds.value = keys;
         },
       }
@@ -229,7 +231,7 @@ function onFormSuccess(toFirstPage: boolean) {
   void loadData(toFirstPage);
 }
 
-async function toggleState(row: PayWay, checked: boolean | string | number) {
+async function toggleState(row: PayWay, checked: boolean | number | string) {
   const key = String(row.productId);
   const next = checked ? 1 : 0;
   const ok = await new Promise<boolean>((resolve) => {
@@ -253,7 +255,7 @@ async function toggleState(row: PayWay, checked: boolean | string | number) {
   }
 }
 
-async function toggleLimit(row: PayWay, checked: boolean | string | number) {
+async function toggleLimit(row: PayWay, checked: boolean | number | string) {
   const key = String(row.productId);
   const next = checked ? 1 : 0;
   const ok = await new Promise<boolean>((resolve) => {
@@ -305,7 +307,7 @@ function selectedRateItems() {
     return {
       productId,
       productName: cached?.productName ?? '',
-      rateValue: undefined as string | number | undefined,
+      rateValue: undefined as number | string | undefined,
     };
   });
 }
@@ -324,9 +326,9 @@ function openCommandDialog() {
   commandVisible.value = true;
 }
 
-async function ensureBatchAuth(next: 'form' | 'command') {
+async function ensureBatchAuth(next: 'command' | 'form') {
   pendingOpen.value = next;
-  if (next === 'form' && !selectedIds.value.length) {
+  if (next === 'form' && selectedIds.value.length === 0) {
     message.error('请先勾选要批量设置费率的产品');
     return;
   }
@@ -346,7 +348,7 @@ async function ensureBatchAuth(next: 'form' | 'command') {
 async function submitGoogle() {
   if (!isGoogleCode(googleCode.value)) {
     message.error(GOOGLE_CODE_ERROR);
-    return Promise.reject(new Error(GOOGLE_CODE_ERROR));
+    throw new Error(GOOGLE_CODE_ERROR);
   }
   googleSaving.value = true;
   try {
@@ -354,8 +356,6 @@ async function submitGoogle() {
     message.success('验证通过');
     googleVisible.value = false;
     pendingOpen.value === 'command' ? openCommandDialog() : openBatchForm();
-  } catch (err) {
-    return Promise.reject(err);
   } finally {
     googleSaving.value = false;
   }
@@ -378,25 +378,25 @@ function parseCommand() {
   let rest = text;
   if (text.startsWith('设置费率')) {
     batchForm.bindIfAbsent = true;
-    rest = rest.substring(4).trim();
+    rest = rest.slice(4).trim();
   } else if (text.startsWith('修改费率')) {
     batchForm.bindIfAbsent = false;
-    rest = rest.substring(4).trim();
+    rest = rest.slice(4).trim();
   } else {
     return COMMAND_ERROR;
   }
   const tokens = rest.split(/\s+/).filter(Boolean);
-  if (!tokens.length) return COMMAND_ERROR;
+  if (tokens.length === 0) return COMMAND_ERROR;
   const parsed: Array<{ productId: number; rateValue: string }> = [];
   const seen = new Set<string>();
   for (const token of tokens) {
     const match = COMMAND_TOKEN.exec(token);
     if (!match) return COMMAND_ERROR;
-    const productIdText = match[1];
+    const productIdText = match[1] ?? '';
     if (!/^\d+$/.test(productIdText)) return COMMAND_ERROR;
     const productId = Number(productIdText);
     const { value: rate, error } = parseCommandRate(
-      match[2],
+      match[2] ?? '',
       `产品${productId}商户费率`,
     );
     if (error || !rate) return COMMAND_ERROR;
@@ -411,9 +411,9 @@ function parseCommand() {
     rateValue: string;
   }> = [];
   const skipped: Array<{
+    previewValue: string;
     productId: number;
     productName: string;
-    previewValue: string;
     status: string;
   }> = [];
   for (const item of parsed) {
@@ -446,9 +446,9 @@ async function previewCommand() {
       fetchProductListShortApi(),
       new Promise((resolve) => window.setTimeout(resolve, 1000)),
     ]);
-    Object.keys(productCache).forEach((key) => {
-      delete productCache[key];
-    });
+    for (const key of Object.keys(productCache)) {
+      productCache[key] = undefined as never;
+    }
     (shorts ?? []).forEach((item) => {
       productCache[String(item.productId)] = {
         productId: item.productId,
@@ -460,11 +460,11 @@ async function previewCommand() {
     const error = parseCommand();
     if (error) {
       message.error(error);
-      return Promise.reject(new Error(error));
+      throw new Error(error);
     }
     batchPreviewVisible.value = true;
     // keep command dialog open under preview (align old mgr-web)
-    return Promise.reject(new Error('preview'));
+    throw new Error('preview');
   } finally {
     commandSaving.value = false;
   }
@@ -526,23 +526,23 @@ function openBatchPreview() {
   const error = validateBatchForm();
   if (error) {
     message.error(error);
-    return Promise.reject(new Error(error));
+    throw new Error(error);
   }
-  if (!previewSelectedIds.value.length) {
+  if (previewSelectedIds.value.length === 0) {
     const msg = '请先选中需要批量设置费率的产品';
     message.error(msg);
-    return Promise.reject(new Error(msg));
+    throw new Error(msg);
   }
   batchPreviewVisible.value = true;
   // keep batch form open under preview (align old mgr-web)
-  return Promise.reject(new Error('preview'));
+  throw new Error('preview');
 }
 
 async function submitBatchRate() {
   if (previewBlocked.value) {
     const msg = '当前预览存在错误或无可执行产品，请返回修改';
     message.error(msg);
-    return Promise.reject(new Error(msg));
+    throw new Error(msg);
   }
   batchSaving.value = true;
   try {
@@ -553,9 +553,9 @@ async function submitBatchRate() {
     commandVisible.value = false;
     selectedIds.value = [];
     void loadData();
-  } catch (err) {
-    message.error(err instanceof Error ? err.message : '操作失败');
-    return Promise.reject(err);
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '操作失败');
+    throw error;
   } finally {
     batchSaving.value = false;
   }
@@ -620,10 +620,7 @@ onMounted(() => {
           <Button v-if="canEdit" @click="ensureBatchAuth('command')">
             粘贴命令修改
           </Button>
-          <span
-            v-if="selectedIds.length"
-            class="text-sm text-muted-foreground"
-          >
+          <span v-if="selectedIds.length" class="text-sm text-muted-foreground">
             当前已选择 {{ selectedIds.length }} 个产品
           </span>
         </div>
@@ -736,7 +733,10 @@ onMounted(() => {
           placeholder="请输入谷歌验证码"
           :maxlength="6"
           @update:value="
-            (v) => (googleCode = String(v ?? '').replace(/\D/g, '').slice(0, 6))
+            (v) =>
+              (googleCode = String(v ?? '')
+                .replace(/\D/g, '')
+                .slice(0, 6))
           "
         />
       </Modal>
@@ -789,7 +789,10 @@ onMounted(() => {
         />
         <Form layout="vertical" :model="batchForm">
           <Form.Item label="操作类型">
-            <Radio.Group v-model:value="batchForm.action" class="batch-rate-action-group">
+            <Radio.Group
+              v-model:value="batchForm.action"
+              class="batch-rate-action-group"
+            >
               <Radio.Button
                 v-for="item in BATCH_RATE_ACTIONS"
                 :key="item.value"
@@ -825,7 +828,8 @@ onMounted(() => {
                 />
               </div>
               <p class="mt-1 text-sm text-muted-foreground">
-                开启后为全部已选产品设置相同费率，范围 -100 到 100，最多六位小数。
+                开启后为全部已选产品设置相同费率，范围 -100 到
+                100，最多六位小数。
               </p>
             </Form.Item>
             <div class="batch-rate-product-table">
@@ -940,8 +944,8 @@ onMounted(() => {
 <style scoped>
 .product-name-cell {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
   min-width: 0;
 }
 
@@ -959,8 +963,8 @@ onMounted(() => {
 
 .batch-rate-product-table {
   max-height: 340px;
-  overflow: auto;
   margin-top: 8px;
+  overflow: auto;
   border: 1px solid hsl(var(--border));
   border-radius: 6px;
 }

@@ -2,26 +2,37 @@
 import type { TableColumnsType } from 'ant-design-vue';
 import type { Dayjs } from 'dayjs';
 
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import type { PayOrder, PayRealTimeStat } from '#/api/types/business';
+import type { ListStatCardItem } from '#/components/list/ListStatCards.vue';
+import type { TableActionItem } from '#/components/table/TableActionLinks.vue';
+
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
+
 import {
-  Button,
   Card,
   Col,
   Form,
   Input,
+  message,
   Modal,
   RangePicker,
   Row,
   Select,
   Slider,
-  Space,
   Switch,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -33,27 +44,22 @@ import {
   fetchProductListShortApi,
   forcePayOrderRedoApi,
 } from '#/api';
-import type { PayOrder, PayRealTimeStat } from '#/api/types/business';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
-import TableActionLinks, {
-  type TableActionItem,
-} from '#/components/table/TableActionLinks.vue';
+import TableActionLinks from '#/components/table/TableActionLinks.vue';
 import { usePayOrderExport } from '#/composables/use-async-export';
 import {
   FORCE_CHANGE_OPTIONS,
   NOTIFY_STATE_OPTIONS,
-  PAY_STATE_OPTIONS,
-  TIME_RANGE_OPTIONS,
   notifyStateColor,
   notifyStateLabel,
+  PAY_STATE_OPTIONS,
   payOrderStateColor,
   payOrderStateLabel,
+  TIME_RANGE_OPTIONS,
 } from '#/constants/order';
 import { hasEnt } from '#/utils/access';
 import { defaultTodayRange } from '#/utils/date-range';
@@ -113,12 +119,12 @@ const passageGroupOptions = ref<{ label: string; value: string }[]>([]);
 const stat = ref<PayRealTimeStat>({});
 const detailOpen = ref(false);
 const detailLoading = ref(false);
-const detail = ref<PayOrder | null>(null);
+const detail = ref<null | PayOrder>(null);
 const showStat = ref(true);
 const autoRefresh = ref(false);
 const refreshTimeSec = ref(30);
 const countdown = ref(30);
-let refreshTimer: ReturnType<typeof setInterval> | null = null;
+let refreshTimer: null | ReturnType<typeof setInterval> = null;
 let pageVisible = true;
 
 const forceRef = ref<InstanceType<typeof PayOrderForceDialog>>();
@@ -257,15 +263,15 @@ function buildParams() {
   return params;
 }
 
-function onCreatedRangeChange(
-  value: [string, string] | [Dayjs, Dayjs] | null,
-) {
+function onCreatedRangeChange(value: [Dayjs, Dayjs] | [string, string] | null) {
   const arr = Array.isArray(value) ? value.map(String) : [];
   if (arr.length >= 2) {
+    const start = arr[0] ?? '';
+    const end = arr[1] ?? '';
     query.timeRange = undefined;
-    query.createdStart = arr[0]!;
-    query.createdEnd = arr[1]!;
-    createdRange.value = [arr[0]!, arr[1]!];
+    query.createdStart = start;
+    query.createdEnd = end;
+    createdRange.value = [start, end];
   } else {
     query.createdStart = '';
     query.createdEnd = '';
@@ -274,20 +280,20 @@ function onCreatedRangeChange(
 }
 
 function onTimeRangeChange() {
-  if (query.timeRange == null) return;
+  if (query.timeRange === null || query.timeRange === undefined) return;
   query.createdStart = '';
   query.createdEnd = '';
   createdRange.value = undefined;
 }
 
-function onSuccessRangeChange(
-  value: [string, string] | [Dayjs, Dayjs] | null,
-) {
+function onSuccessRangeChange(value: [Dayjs, Dayjs] | [string, string] | null) {
   const arr = Array.isArray(value) ? value.map(String) : [];
   if (arr.length >= 2) {
-    query.successTimeStart = arr[0]!;
-    query.successTimeEnd = arr[1]!;
-    successRange.value = [arr[0]!, arr[1]!];
+    const start = arr[0] ?? '';
+    const end = arr[1] ?? '';
+    query.successTimeStart = start;
+    query.successTimeEnd = end;
+    successRange.value = [start, end];
   } else {
     query.successTimeStart = '';
     query.successTimeEnd = '';
@@ -488,21 +494,21 @@ function startTimer() {
   }, 1000);
 }
 
-function onAutoRefreshToggle(checked: boolean | string | number) {
+function onAutoRefreshToggle(checked: boolean | number | string) {
   autoRefresh.value = !!checked;
   if (autoRefresh.value) startTimer();
   else stopTimer();
   writeStoredUi();
 }
 
-function onRefreshTimeSecChange(value: number | [number, number]) {
+function onRefreshTimeSecChange(value: [number, number] | number) {
   const v = Array.isArray(value) ? (value[0] ?? 30) : value;
   refreshTimeSec.value = v;
   if (autoRefresh.value) countdown.value = v;
   writeStoredUi();
 }
 
-function onStatToggle(checked: boolean | string | number) {
+function onStatToggle(checked: boolean | number | string) {
   showStat.value = !!checked;
   if (showStat.value) void loadStat();
   writeStoredUi();
@@ -524,12 +530,9 @@ function cleanUnionOrderId() {
 watch(
   () => route.query.unionOrderId,
   (value) => {
-    const id =
-      typeof value === 'string'
-        ? value.trim()
-        : Array.isArray(value)
-          ? String(value[0] ?? '').trim()
-          : '';
+    let id = '';
+    if (typeof value === 'string') id = value.trim();
+    else if (Array.isArray(value)) id = String(value[0] ?? '').trim();
     if (!id) return;
     if (query.mchOrderNo === id) {
       cleanUnionOrderId();
@@ -763,10 +766,7 @@ onUnmounted(() => {
         </Form>
       </Card>
 
-      <ListStatCards
-        v-if="showStat && canCount"
-        :items="listStatItems"
-      />
+      <ListStatCards v-if="showStat && canCount" :items="listStatItems" />
 
       <Card>
         <div class="ap-table-toolbar">
@@ -898,7 +898,9 @@ onUnmounted(() => {
             <template v-else-if="column.dataIndex === 'createdAt'">
               <div>{{ formatDateTime(record.createdAt) }}</div>
               <div class="text-muted-foreground text-xs">
-                {{ record.successTime ? formatDateTime(record.successTime) : '--' }}
+                {{
+                  record.successTime ? formatDateTime(record.successTime) : '--'
+                }}
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'passageName'">
@@ -945,7 +947,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-width: 36px;
-  color: hsl(var(--primary));
   font-variant-numeric: tabular-nums;
+  color: hsl(var(--primary));
 }
 </style>

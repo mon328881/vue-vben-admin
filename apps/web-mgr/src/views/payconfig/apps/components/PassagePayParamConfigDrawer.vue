@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { reactive, ref } from 'vue';
 
 import {
@@ -7,27 +9,23 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Radio,
   Space,
   Spin,
-  message,
 } from 'ant-design-vue';
 
-import {
-  fetchPayIfDefineApi,
-  updateMchAppApi,
-  type PayPassage,
-} from '#/api';
+import { fetchPayIfDefineApi, updateMchAppApi } from '#/api';
 import { isValidWhiteList } from '#/constants/merchant';
 import { hasEnt } from '#/utils/access';
 
 type ParamDef = {
-  name: string;
   desc: string;
-  type: 'text' | 'textarea' | 'radio';
-  verify?: string;
+  name: string;
   star?: string;
-  values: { value: string | number; title: string }[];
+  type: 'radio' | 'text' | 'textarea';
+  values: { title: string; value: number | string }[];
+  verify?: string;
 };
 
 const emit = defineEmits<{ success: [] }>();
@@ -38,7 +36,7 @@ const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
 const formRef = ref();
-const passage = ref<PayPassage | null>(null);
+const passage = ref<null | PayPassage>(null);
 const defs = ref<ParamDef[]>([]);
 const values = reactive<Record<string, unknown>>({});
 /** 打开时是否已有支付参数（敏感项 star=1 时可留空保留原值） */
@@ -56,11 +54,14 @@ function isRequired(item: ParamDef) {
 function fieldRules(item: ParamDef) {
   if (!isRequired(item)) return undefined;
   if (item.star === '1' && hasExistingConfig.value) return undefined;
+  const trigger =
+    item.type === 'radio' ? ('change' as const) : ('blur' as const);
   return [
     {
+      type: 'string' as const,
       required: true,
       message: `请输入${item.desc}`,
-      trigger: item.type === 'radio' ? 'change' : 'blur',
+      trigger,
     },
   ];
 }
@@ -81,12 +82,12 @@ function parseDefs(raw: string): ParamDef[] {
     for (const item of parsed) {
       const type = item.type;
       if (type !== 'text' && type !== 'textarea' && type !== 'radio') continue;
-      const options: { value: string | number; title: string }[] = [];
+      const options: { title: string; value: number | string }[] = [];
       if (type === 'radio' && item.values && item.titles) {
         const vals = String(item.values).split(',');
         const titles = String(item.titles).split(',');
         vals.forEach((value, index) => {
-          let next: string | number = value.trim();
+          let next: number | string = value.trim();
           if (next !== '' && !Number.isNaN(Number(next))) next = Number(next);
           if (next !== '') {
             options.push({ value: next, title: titles[index] ?? String(next) });
@@ -110,7 +111,11 @@ function parseDefs(raw: string): ParamDef[] {
 
 function convertWhiteList() {
   const current = values.whiteList;
-  if (current == null || String(current).trim() === '') {
+  if (
+    current === null ||
+    current === undefined ||
+    String(current).trim() === ''
+  ) {
     message.warning('请先输入 IP 白名单');
     return;
   }
@@ -120,10 +125,10 @@ function convertWhiteList() {
     return;
   }
   values.whiteList = text
-    .replace(/[\n\r]+/g, '|')
-    .replace(/[,，]/g, '|')
-    .replace(/\|+/g, '|')
-    .replace(/^\||\|$/g, '');
+    .replaceAll(/[\n\r]+/g, '|')
+    .replaceAll(/[,，]/g, '|')
+    .replaceAll(/\|+/g, '|')
+    .replaceAll(/^\||\|$/g, '');
   message.success('转换成功');
 }
 
@@ -137,7 +142,9 @@ async function show(row: PayPassage) {
     return;
   }
   passage.value = { ...row };
-  Object.keys(values).forEach((key) => delete values[key]);
+  for (const key of Object.keys(values)) {
+    values[key] = undefined;
+  }
   defs.value = [];
   hasExistingConfig.value = false;
   visible.value = true;
@@ -178,7 +185,7 @@ async function save() {
     return;
   }
   const filled = Object.entries(values).some(
-    ([, v]) => v != null && String(v).trim() !== '',
+    ([, v]) => v !== null && v !== undefined && String(v).trim() !== '',
   );
   if (!filled) {
     message.error('参数不能为空！');
@@ -186,11 +193,15 @@ async function save() {
   }
   saving.value = true;
   try {
-    if (values.secret != null && String(values.secret).length) {
-      values.secret = String(values.secret).replace(/\s+/g, '');
+    if (
+      values.secret !== null &&
+      values.secret !== undefined &&
+      String(values.secret).length > 0
+    ) {
+      values.secret = String(values.secret).replaceAll(/\s+/g, '');
     }
     if (Object.prototype.hasOwnProperty.call(values, 'whiteList')) {
-      values.whiteList = String(values.whiteList ?? '').replace(/\s+/g, '');
+      values.whiteList = String(values.whiteList ?? '').replaceAll(/\s+/g, '');
       if (
         String(values.whiteList).trim() !== '' &&
         !isValidWhiteList(String(values.whiteList))
@@ -203,7 +214,7 @@ async function save() {
     }
     if (!passage.value) return;
     const passageId = passage.value.payPassageId;
-    if (passageId == null) {
+    if (passageId === null || passageId === undefined) {
       message.error('通道 ID 无效');
       return;
     }

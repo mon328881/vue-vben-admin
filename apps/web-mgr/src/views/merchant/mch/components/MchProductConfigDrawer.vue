@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { MchInfo, MchProductInfo } from '#/api/types/business';
+
 import { computed, nextTick, reactive, ref } from 'vue';
 
 import {
@@ -10,6 +12,7 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Popconfirm,
   Radio,
@@ -17,7 +20,6 @@ import {
   Table,
   Tag,
   Textarea,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -29,10 +31,9 @@ import {
   setMchProductBatchRateApi,
   updateMchProductInfoApi,
 } from '#/api';
-import type { MchInfo, MchProductInfo } from '#/api/types/business';
 import {
-  PRODUCT_RATE_PRECISION,
   percentFromRate,
+  PRODUCT_RATE_PRECISION,
   toProductRate,
   validateProductRate,
 } from '#/constants/payWays';
@@ -200,7 +201,7 @@ function resetBatch() {
 }
 
 function openBatch() {
-  if (!selectedIds.value.length) {
+  if (selectedIds.value.length === 0) {
     message.error('请先勾选要配置的产品');
     return;
   }
@@ -216,7 +217,7 @@ function openAll() {
 }
 
 /** 固定设置与增量调整按商户/代理维度互斥（对齐旧端） */
-function onSetEnableChange(values: Array<number | string>) {
+function onSetEnableChange(values: Array<boolean | number | string>) {
   const next = values.map(String);
   batchForm.setEnableItem = next;
   if (next.includes('1')) {
@@ -233,7 +234,7 @@ function onSetEnableChange(values: Array<number | string>) {
   }
 }
 
-function onAdjustEnableChange(values: Array<number | string>) {
+function onAdjustEnableChange(values: Array<boolean | number | string>) {
   const next = values.map(String);
   batchForm.adjustEnableItem = next;
   if (next.includes('3')) {
@@ -262,9 +263,9 @@ function normalizeRateCommand(raw: string): string {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (!lines.length) return text;
+  if (lines.length === 0) return text;
 
-  let mode: 'set' | 'edit' | null = null;
+  let mode: 'edit' | 'set' | null = null;
   const tokens: string[] = [];
 
   for (const line of lines) {
@@ -281,7 +282,7 @@ function normalizeRateCommand(raw: string): string {
       }
       mode = 'edit';
       rest = rest.slice('修改费率'.length).trim();
-    } else if (mode == null) {
+    } else if (mode === null || mode === undefined) {
       throw new Error(
         '命令须以「设置费率」或「修改费率」开头，如：修改费率 1000/5.3',
       );
@@ -295,7 +296,7 @@ function normalizeRateCommand(raw: string): string {
     }
   }
 
-  if (!mode || !tokens.length) {
+  if (!mode || tokens.length === 0) {
     throw new Error(
       '未解析到有效的产品编码/费率，格式如：修改费率 1000/5.3 1001/8.3',
     );
@@ -342,7 +343,7 @@ async function saveBatch() {
       ? validateRateField(batchForm.setAllAgentRateAdjust, '代理费率调整')
       : '',
   ].filter(Boolean);
-  if (errors.length) {
+  if (errors.length > 0) {
     message.error(errors[0]);
     return;
   }
@@ -360,14 +361,12 @@ async function saveBatch() {
 
   batchSaving.value = true;
   try {
-    if (batchMode.value === 'batch') {
-      await setMchProductBatchRateApi(mch.value.mchNo, {
-        ...payload,
-        selectedIds: [...selectedIds.value],
-      });
-    } else {
-      await setMchProductAllRateApi(mch.value.mchNo, payload);
-    }
+    await (batchMode.value === 'batch'
+      ? setMchProductBatchRateApi(mch.value.mchNo, {
+          ...payload,
+          selectedIds: [...selectedIds.value],
+        })
+      : setMchProductAllRateApi(mch.value.mchNo, payload));
     message.success('操作成功');
     batchVisible.value = false;
     void loadData();
@@ -387,8 +386,7 @@ async function execCommand() {
   try {
     command = normalizeRateCommand(raw);
   } catch (error) {
-    cmdResult.value =
-      error instanceof Error ? error.message : '命令格式错误';
+    cmdResult.value = error instanceof Error ? error.message : '命令格式错误';
     return;
   }
   if (MCH_NO_RE.test(command)) {
@@ -625,7 +623,8 @@ defineExpose({ show });
           <Checkbox value="2">代理费率</Checkbox>
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
-          将选中产品的费率覆盖为固定值，范围 -100~100，最多六位小数。与下方增量调整互斥。
+          将选中产品的费率覆盖为固定值，范围
+          -100~100，最多六位小数。与下方增量调整互斥。
         </p>
       </Form.Item>
       <Form.Item
@@ -657,7 +656,8 @@ defineExpose({ show });
           <Checkbox value="4">代理费率</Checkbox>
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
-          在现有费率基础上加减，正数上调，负数下调，范围 -100~100，最多六位小数。与上方固定设置互斥。
+          在现有费率基础上加减，正数上调，负数下调，范围
+          -100~100，最多六位小数。与上方固定设置互斥。
         </p>
       </Form.Item>
       <Form.Item
