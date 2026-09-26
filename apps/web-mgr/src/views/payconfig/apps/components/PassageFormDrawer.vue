@@ -8,21 +8,26 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Select,
   Space,
   Textarea,
-  message,
 } from 'ant-design-vue';
 
 import {
   createMchAppApi,
+  fetchIsvListApi,
   fetchMchAppApi,
+  fetchPassageGroupListApi,
   fetchPayIfCodeApi,
   fetchPayWaysApi,
-  fetchPassageGroupListApi,
-  fetchIsvListApi,
   updateMchAppApi,
 } from '#/api';
+import {
+  percentFromRate,
+  PRODUCT_RATE_PRECISION,
+  toProductRate,
+} from '#/constants/payWays';
 
 const emit = defineEmits<{ success: [] }>();
 
@@ -38,7 +43,7 @@ const ifLoading = ref(false);
 const productLoading = ref(false);
 const groupLoading = ref(false);
 const agentLoading = ref(false);
-const editingId = ref<string | null>(null);
+const editingId = ref<null | string>(null);
 const formRef = ref();
 
 const ifOptions = ref<{ label: string; value: string }[]>([]);
@@ -123,7 +128,7 @@ const rules = computed(() => ({
     ? [
         {
           required: true,
-          message: '请输入通道费率（可为负，最多两位小数）',
+          message: '请输入通道费率（可为负，最多六位小数）',
           trigger: 'blur' as const,
         },
       ]
@@ -172,11 +177,12 @@ function resetForm() {
 }
 
 async function show(payPassageId?: number | string) {
-  creating.value = payPassageId == null || payPassageId === '';
+  creating.value =
+    payPassageId === null || payPassageId === undefined || payPassageId === '';
   saving.value = false;
   resetForm();
   await loadSelectors();
-  if (!creating.value && payPassageId != null) {
+  if (!creating.value && payPassageId !== null && payPassageId !== undefined) {
     editingId.value = String(payPassageId);
     const detail = await fetchMchAppApi(payPassageId);
     if (detail) {
@@ -188,8 +194,8 @@ async function show(payPassageId?: number | string) {
       form.passageGroup =
         detail.passageGroup || detail.passageGroupName || undefined;
       form.agentNo = detail.agentNo || undefined;
-      form.agentRate = Number(detail.agentRate ?? 0) * 100;
-      form.rate = Number(detail.rate ?? 0) * 100;
+      form.agentRate = Number(percentFromRate(detail.agentRate) || 0);
+      form.rate = Number(percentFromRate(detail.rate) || 0);
     }
   } else {
     editingId.value = null;
@@ -222,11 +228,11 @@ async function save() {
       const payload: Record<string, unknown> = {
         ...form,
         productId: form.productId,
-        rate: Number(form.rate || 0) / 100,
+        rate: toProductRate(form.rate),
         passageGroup: form.passageGroup ?? '',
       };
       if (form.agentNo) {
-        payload.agentRate = Number(form.agentRate || 0) / 100;
+        payload.agentRate = toProductRate(form.agentRate);
       } else {
         payload.agentNo = '';
         payload.agentRate = 0;
@@ -316,8 +322,8 @@ defineExpose({ show });
           v-model:value="form.rate"
           :max="200"
           :min="-200"
-          :precision="2"
-          :step="0.01"
+          :precision="PRODUCT_RATE_PRECISION"
+          :step="0.000001"
           addon-after="%"
           style="width: 260px"
           placeholder="请输入通道费率"
@@ -352,8 +358,8 @@ defineExpose({ show });
             v-model:value="form.agentRate"
             :max="200"
             :min="-200"
-            :precision="2"
-            :step="0.01"
+            :precision="PRODUCT_RATE_PRECISION"
+            :step="0.000001"
             addon-after="%"
             style="width: 260px"
             placeholder="请输入代理费率"

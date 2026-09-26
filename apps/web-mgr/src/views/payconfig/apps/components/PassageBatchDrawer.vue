@@ -10,6 +10,7 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Popconfirm,
   Radio,
@@ -19,15 +20,22 @@ import {
   Tag,
   Textarea,
   TimePicker,
-  message,
 } from 'ant-design-vue';
 
-import {
-  fetchPayIfCodeApi,
-  postMchAppsMultipleSetApi,
-} from '#/api';
+import { fetchPayIfCodeApi, postMchAppsMultipleSetApi } from '#/api';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
+import {
+  PRODUCT_RATE_PRECISION,
+  PRODUCT_RATE_RE,
+  toProductRate,
+} from '#/constants/payWays';
+
+const emit = defineEmits<{
+  batchCopy: [];
+  deleted: [];
+  success: [];
+}>();
 
 const PAY_TYPE_OPTIONS = [
   { value: 1, label: '区间范围 [例如:10-50000]' },
@@ -35,32 +43,26 @@ const PAY_TYPE_OPTIONS = [
 ];
 
 type DialogKey =
-  | 'state'
-  | 'product'
-  | 'ifCode'
-  | 'rate'
-  | 'payRules'
-  | 'weights'
   | 'gate'
+  | 'ifCode'
   | 'ip'
   | 'mchNo'
+  | 'passageGroup'
+  | 'payRules'
+  | 'product'
+  | 'rate'
   | 'secret'
-  | 'timeLimitState'
+  | 'state'
   | 'timeLimitRules'
-  | 'passageGroup';
-
-const emit = defineEmits<{
-  success: [];
-  'batch-copy': [];
-  deleted: [];
-}>();
+  | 'timeLimitState'
+  | 'weights';
 
 const visible = ref(false);
 const saving = ref(false);
 const selectedIds = ref<number[]>([]);
 const labels = ref<string[]>([]);
 const summaryText = computed(() => labels.value.join('\n'));
-const ifOptions = ref<{ value: string; label: string }[]>([]);
+const ifOptions = ref<{ label: string; value: string }[]>([]);
 const ifLoading = ref(false);
 
 const dialogs = reactive<Record<DialogKey, boolean>>({
@@ -123,8 +125,8 @@ function closeDialogs() {
   });
 }
 
-function show(ids: Array<string | number>, names: string[]) {
-  selectedIds.value = ids.map((id) => Number(id));
+function show(ids: Array<number | string>, names: string[]) {
+  selectedIds.value = ids.map(Number);
   labels.value = names;
   resetForm();
   closeDialogs();
@@ -179,9 +181,7 @@ function isValidGate(value: string) {
   const gate = value.trim();
   if (!gate || !gate.startsWith('http')) return false;
   try {
-    // eslint-disable-next-line no-new
-    new URL(gate);
-    return true;
+    return Boolean(new URL(gate));
   } catch {
     return false;
   }
@@ -209,7 +209,7 @@ function isNumberLike(value: string) {
   return /^\d+(?:\.\d+)?$/.test(value.trim());
 }
 
-function validatePayRules(payType: number, rules: unknown): string | null {
+function validatePayRules(payType: number, rules: unknown): null | string {
   const text = String(rules ?? '').trim();
   if (!text) return '请输入收款规则';
   if (payType === 1) {
@@ -236,11 +236,13 @@ async function run(
   action: string,
   payload: Record<string, unknown>,
   options?: {
-    validate?: () => string | null;
-    successMsg?: string;
-    closeKey?: DialogKey;
-    closeDrawer?: boolean;
     afterSuccess?: () => void;
+    closeDrawer?: boolean;
+    closeKey?: DialogKey;
+    /** 业务失败时仍刷新列表（批量清零部分提交后中断） */
+    reloadOnError?: boolean;
+    successMsg?: string;
+    validate?: () => null | string;
   },
 ) {
   const blocked = options?.validate?.();
@@ -265,6 +267,12 @@ async function run(
     }
     emit('success');
     return true;
+  } catch (error) {
+    if (options?.reloadOnError) {
+      emit('success');
+      return false;
+    }
+    throw error;
   } finally {
     saving.value = false;
   }
@@ -276,7 +284,8 @@ async function submitState() {
     { state: form.state },
     {
       closeKey: 'state',
-      validate: () => (form.state == null ? '请先选择状态' : null),
+      validate: () =>
+        form.state === null || form.state === undefined ? '请先选择状态' : null,
     },
   );
 }
@@ -287,7 +296,7 @@ async function submitProduct() {
     { productId: form.productId },
     {
       closeKey: 'product',
-      validate: () => (!form.productId ? '请选择所属产品' : null),
+      validate: () => (form.productId ? null : '请选择所属产品'),
     },
   );
 }
@@ -298,7 +307,7 @@ async function submitIfCode() {
     { ifCode: form.ifCode },
     {
       closeKey: 'ifCode',
-      validate: () => (!form.ifCode ? '请选择所属接口' : null),
+      validate: () => (form.ifCode ? null : '请选择所属接口'),
     },
   );
 }
@@ -306,13 +315,14 @@ async function submitIfCode() {
 async function submitRate() {
   await run(
     'multipleSetRate',
-    { rate: Number(form.rate || 0) / 100 },
+    { rate: toProductRate(form.rate) },
     {
       closeKey: 'rate',
       validate: () => {
-        if (form.rate == null) return '请输入通道费率';
-        if (!/^-?\d+(?:\.\d{1,2})?$/.test(String(form.rate))) {
-          return '费率格式错误（可为负，最多两位小数）';
+        if (form.rate === null || form.rate === undefined)
+          return '请输入通道费率';
+        if (!PRODUCT_RATE_RE.test(String(form.rate))) {
+          return '费率格式错误（可为负，最多六位小数）';
         }
         return null;
       },
@@ -341,9 +351,10 @@ async function submitWeights() {
     {
       closeKey: 'weights',
       validate: () => {
-        if (form.weights == null) return '请输入轮询权重';
+        if (form.weights === null || form.weights === undefined)
+          return '请输入轮询权重';
         const n = Math.trunc(Number(form.weights));
-        if (!Number.isFinite(n) || n < 1 || n > 10000) {
+        if (!Number.isFinite(n) || n < 1 || n > 10_000) {
           return '请输入 1-10000 的整数';
         }
         return null;
@@ -359,7 +370,7 @@ async function submitGate() {
     {
       closeKey: 'gate',
       validate: () =>
-        !isValidGate(form.gate) ? '下单地址格式错误，请核实' : null,
+        isValidGate(form.gate) ? null : '下单地址格式错误，请核实',
     },
   );
 }
@@ -371,7 +382,7 @@ async function submitIp() {
     {
       closeKey: 'ip',
       validate: () =>
-        !isValidCallbackIp(form.ip) ? '回调 IP 格式错误，请核实' : null,
+        isValidCallbackIp(form.ip) ? null : '回调 IP 格式错误，请核实',
     },
   );
 }
@@ -382,7 +393,7 @@ async function submitMchNo() {
     { mchNo: form.mchNo.trim() },
     {
       closeKey: 'mchNo',
-      validate: () => (!form.mchNo.trim() ? '商户号为空，请核实' : null),
+      validate: () => (form.mchNo.trim() ? null : '商户号为空，请核实'),
     },
   );
 }
@@ -393,7 +404,7 @@ async function submitSecret() {
     { secret: form.secret.trim() },
     {
       closeKey: 'secret',
-      validate: () => (!form.secret.trim() ? '密钥为空，请核实' : null),
+      validate: () => (form.secret.trim() ? null : '密钥为空，请核实'),
     },
   );
 }
@@ -405,9 +416,7 @@ async function submitTimeLimitState() {
     {
       closeKey: 'timeLimitState',
       validate: () =>
-        form.timeLimit !== 0 && form.timeLimit !== 1
-          ? '请先选择状态'
-          : null,
+        form.timeLimit !== 0 && form.timeLimit !== 1 ? '请先选择状态' : null,
     },
   );
 }
@@ -440,19 +449,23 @@ async function submitPassageGroup() {
 }
 
 async function clearBalance() {
-  await run('multipleSetBalanceZero', {});
+  await run('multipleSetBalanceZero', {}, { reloadOnError: true });
 }
 
 async function deleteSelected() {
-  const ok = await run('multipleSetDelete', {}, {
-    successMsg: '删除成功',
-    closeDrawer: true,
-  });
+  const ok = await run(
+    'multipleSetDelete',
+    {},
+    {
+      successMsg: '删除成功',
+      closeDrawer: true,
+    },
+  );
   if (ok) emit('deleted');
 }
 
 function copySelected() {
-  emit('batch-copy');
+  emit('batchCopy');
 }
 
 defineExpose({ show, closeAndReset });
@@ -619,7 +632,9 @@ defineExpose({ show, closeAndReset });
     title="批量开关通道"
     :width="640"
     :confirm-loading="saving"
-    :ok-button-props="{ disabled: form.state == null }"
+    :ok-button-props="{
+      disabled: form.state === null || form.state === undefined,
+    }"
     ok-text="确定"
     cancel-text="取消"
     destroy-on-close
@@ -692,18 +707,13 @@ defineExpose({ show, closeAndReset });
     destroy-on-close
     @ok="submitRate"
   >
-    <Alert
-      type="warning"
-      show-icon
-      message="请先核对后谨慎操作"
-      class="mb-3"
-    />
+    <Alert type="warning" show-icon message="请先核对后谨慎操作" class="mb-3" />
     <Form layout="vertical">
       <Form.Item label="通道费率（%）">
         <InputNumber
           v-model:value="form.rate"
-          :precision="2"
-          :step="0.01"
+          :precision="PRODUCT_RATE_PRECISION"
+          :step="0.000001"
           :min="-200"
           :max="200"
           addon-after="%"
@@ -784,12 +794,7 @@ defineExpose({ show, closeAndReset });
     destroy-on-close
     @ok="submitGate"
   >
-    <Alert
-      type="warning"
-      show-icon
-      message="请先核对后谨慎操作"
-      class="mb-3"
-    />
+    <Alert type="warning" show-icon message="请先核对后谨慎操作" class="mb-3" />
     <Form layout="vertical">
       <Form.Item label="下单网关（需 http 开头）">
         <Input v-model:value="form.gate" placeholder="请输入完整 URL" />
@@ -995,8 +1000,8 @@ defineExpose({ show, closeAndReset });
 /* ant default ghost = 白字白边，浅色抽屉里等于看不见 */
 .pbd-section :deep(.ant-btn-default.ant-btn-background-ghost) {
   color: hsl(var(--foreground));
-  border-color: hsl(var(--border));
   background: transparent;
+  border-color: hsl(var(--border));
 }
 
 .pbd-section :deep(.ant-btn-default.ant-btn-background-ghost:hover) {
@@ -1015,15 +1020,15 @@ defineExpose({ show, closeAndReset });
 }
 
 .pbd-section--risk :deep(.ant-divider) {
-  width: 100%;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .pbd-risk-hint {
   margin: -8px 0 12px;
   font-size: 12px;
-  color: var(--ant-color-text-secondary, #64748b);
   line-height: 1.45;
+  color: var(--ant-color-text-secondary, #64748b);
 }
 
 .pbd-warn-btn {
@@ -1038,8 +1043,8 @@ defineExpose({ show, closeAndReset });
 
 .pbd-dialog-footer-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-top: 16px;
 }
 

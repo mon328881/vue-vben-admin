@@ -1,26 +1,32 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { computed, reactive, ref, watch } from 'vue';
 
-import { Form, InputNumber, Modal, Select, message } from 'ant-design-vue';
+import { Form, InputNumber, message, Modal, Select } from 'ant-design-vue';
 
-import { fetchIsvListApi, updateMchAppApi, type PayPassage } from '#/api';
+import { fetchIsvListApi, updateMchAppApi } from '#/api';
+import {
+  percentFromRate,
+  PRODUCT_RATE_PRECISION,
+  PRODUCT_RATE_RE,
+  toProductRate,
+} from '#/constants/payWays';
 
 const emit = defineEmits<{ success: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
 const agentLoading = ref(false);
-const row = ref<PayPassage | null>(null);
-const agentOptions = ref<{ value: string; label: string }[]>([]);
+const row = ref<null | PayPassage>(null);
+const agentOptions = ref<{ label: string; value: string }[]>([]);
 const form = reactive({
   agentNo: undefined as string | undefined,
   agentRate: undefined as number | undefined,
 });
 
 const header = computed(() =>
-  row.value
-    ? `设置通道[代理] - ${row.value.payPassageName}`
-    : '设置通道[代理]',
+  row.value ? `设置通道[代理] - ${row.value.payPassageName}` : '设置通道[代理]',
 );
 
 watch(
@@ -46,10 +52,8 @@ async function loadAgents() {
 function open(target: PayPassage) {
   row.value = target;
   form.agentNo = target.agentNo ? String(target.agentNo) : undefined;
-  form.agentRate =
-    target.agentRate != null
-      ? Number((Number(target.agentRate) * 100).toFixed(2))
-      : undefined;
+  const pct = percentFromRate(target.agentRate);
+  form.agentRate = pct === '' ? undefined : Number(pct);
   saving.value = false;
   visible.value = true;
   void loadAgents();
@@ -62,8 +66,8 @@ async function submit() {
       message.error('请输入代理费率');
       return;
     }
-    if (!/^-?\d+(?:\.\d{1,2})?$/.test(String(form.agentRate))) {
-      message.error('代理费率格式错误（可为负，最多两位小数）');
+    if (!PRODUCT_RATE_RE.test(String(form.agentRate))) {
+      message.error('代理费率格式错误（可为负，最多六位小数）');
       return;
     }
   }
@@ -72,7 +76,7 @@ async function submit() {
     await updateMchAppApi(row.value.payPassageId, {
       payPassageId: row.value.payPassageId,
       agentNo: form.agentNo || '',
-      agentRate: form.agentNo ? Number(form.agentRate || 0) / 100 : 0,
+      agentRate: form.agentNo ? toProductRate(form.agentRate) : 0,
     });
     message.success('代理配置修改成功');
     visible.value = false;
@@ -116,8 +120,8 @@ defineExpose({ open });
           v-model:value="form.agentRate"
           :min="-200"
           :max="200"
-          :precision="2"
-          :step="0.01"
+          :precision="PRODUCT_RATE_PRECISION"
+          :step="0.000001"
           addon-after="%"
           style="width: 300px"
           placeholder="请输入代理费率"

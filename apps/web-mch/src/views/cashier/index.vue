@@ -1,23 +1,23 @@
 <script lang="ts" setup>
+import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context';
+
+import type { CashierProduct } from '#/api/modules/cashier';
+
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { IconifyIcon } from '@vben/icons';
+
 import {
+  theme as antTheme,
   Button,
   ConfigProvider,
   InputNumber,
-  Select,
   message,
-  theme as antTheme,
+  Select,
 } from 'ant-design-vue';
-import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context';
 
-import {
-  fetchCashierProductListApi,
-  placeCashierOrderRawApi,
-} from '#/api';
-import type { CashierProduct } from '#/api/modules/cashier';
+import { fetchCashierProductListApi, placeCashierOrderRawApi } from '#/api';
 import { formatYuanWithSymbol } from '#/utils/format';
 
 defineOptions({ name: 'CashierPage' });
@@ -26,14 +26,16 @@ const route = useRoute();
 
 const mchNoFromUrl = computed(() => String(route.query.mchNo || '').trim());
 const secretFromUrl = computed(() => String(route.query.secret || '').trim());
-const publicMode = computed(() => !!mchNoFromUrl.value && !!secretFromUrl.value);
+const publicMode = computed(
+  () => !!mchNoFromUrl.value && !!secretFromUrl.value,
+);
 
 const loading = ref(false);
 const paying = ref(false);
 const loadError = ref('');
 
 const products = ref<CashierProduct[]>([]);
-const amountYuan = ref<null | number>(null);
+const amountYuan = ref<number | undefined>(undefined);
 const productId = ref<number>();
 const payType = ref<1 | 2 | 3>(1);
 const created = ref(false);
@@ -98,8 +100,10 @@ const payModes = [
 
 const canSubmit = computed(
   () =>
-    productId.value != null &&
-    amountYuan.value != null &&
+    productId.value !== null &&
+    productId.value !== undefined &&
+    amountYuan.value !== null &&
+    amountYuan.value !== undefined &&
     Number(amountYuan.value) > 0 &&
     !Number.isNaN(Number(amountYuan.value)),
 );
@@ -123,7 +127,11 @@ const productPlaceholder = computed(() => {
 });
 
 const amountLabel = computed(() => {
-  if (amountYuan.value == null || Number.isNaN(Number(amountYuan.value))) {
+  if (
+    amountYuan.value === null ||
+    amountYuan.value === undefined ||
+    Number.isNaN(Number(amountYuan.value))
+  ) {
     return '¥0.00';
   }
   return formatYuanWithSymbol(Math.round(Number(amountYuan.value) * 100));
@@ -146,7 +154,7 @@ function absolutePayUrl(raw: string) {
 }
 
 function yuanToCent(value?: number) {
-  if (value == null) return 0;
+  if (value === null || value === undefined) return 0;
   return Math.round(Number.parseFloat(String(value)) * 100);
 }
 
@@ -181,7 +189,12 @@ async function loadProducts() {
 }
 
 async function createPay() {
-  if (!canSubmit.value || productId.value == null) return;
+  if (
+    !canSubmit.value ||
+    productId.value === null ||
+    productId.value === undefined
+  )
+    return;
   paying.value = true;
   try {
     const n = await placeCashierOrderRawApi({
@@ -229,7 +242,7 @@ async function copyPayData() {
 }
 
 function resetCreated() {
-  amountYuan.value = null;
+  amountYuan.value = undefined;
   if (products.value.length !== 1) productId.value = undefined;
   created.value = false;
   payData.value = '';
@@ -257,7 +270,9 @@ onUnmounted(() => {
               <div>
                 <h1 id="cashier-title" class="cashier__title">收银台</h1>
                 <p class="cashier__sub">
-                  <template v-if="mchNoFromUrl">商户 {{ mchNoFromUrl }}</template>
+                  <template v-if="mchNoFromUrl">
+                    商户 {{ mchNoFromUrl }}
+                  </template>
                   <template v-else>亚洲支付</template>
                 </p>
               </div>
@@ -268,11 +283,16 @@ onUnmounted(() => {
             </p>
           </header>
 
-          <div v-if="loading" class="cashier__body" aria-busy="true" aria-live="polite">
-            <div class="cashier__skeleton cashier__skeleton--lg" />
-            <div class="cashier__skeleton" />
-            <div class="cashier__skeleton" />
-            <div class="cashier__skeleton cashier__skeleton--btn" />
+          <div
+            v-if="loading"
+            class="cashier__body"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div class="cashier__skeleton cashier__skeleton--lg"></div>
+            <div class="cashier__skeleton"></div>
+            <div class="cashier__skeleton"></div>
+            <div class="cashier__skeleton cashier__skeleton--btn"></div>
             <p class="cashier__hint">正在加载支付产品…</p>
           </div>
 
@@ -285,7 +305,10 @@ onUnmounted(() => {
           </div>
 
           <div v-else-if="loadError" class="cashier__empty" role="alert">
-            <IconifyIcon icon="lucide:circle-alert" class="cashier__empty-icon" />
+            <IconifyIcon
+              icon="lucide:circle-alert"
+              class="cashier__empty-icon"
+            />
             <h2 class="cashier__empty-title">暂时无法收款</h2>
             <p class="cashier__empty-text">{{ loadError }}</p>
             <Button type="primary" @click="loadProducts">重新加载</Button>
@@ -333,7 +356,11 @@ onUnmounted(() => {
 
             <fieldset class="cashier__field">
               <legend class="cashier__label">支付方式</legend>
-              <div class="cashier__modes" role="radiogroup" aria-label="支付方式">
+              <div
+                class="cashier__modes"
+                role="radiogroup"
+                aria-label="支付方式"
+              >
                 <button
                   v-for="mode in payModes"
                   :key="mode.value"
@@ -384,7 +411,13 @@ onUnmounted(() => {
             </dl>
 
             <div v-if="payType === 2" class="cashier__qr">
-              <img v-if="qrSrc" :src="qrSrc" width="180" height="180" alt="付款二维码" />
+              <img
+                v-if="qrSrc"
+                :src="qrSrc"
+                width="180"
+                height="180"
+                alt="付款二维码"
+              />
               <p class="cashier__hint">请使用手机扫描二维码完成支付</p>
             </div>
 
@@ -409,7 +442,12 @@ onUnmounted(() => {
                 打开付款页面
               </Button>
               <Button size="large" block @click="copyPayData">复制链接</Button>
-              <Button type="link" block class="cashier__again" @click="resetCreated">
+              <Button
+                type="link"
+                block
+                class="cashier__again"
+                @click="resetCreated"
+              >
                 再下一单
               </Button>
             </div>
@@ -432,12 +470,17 @@ onUnmounted(() => {
   --cashier-primary: #0052d9;
   --cashier-primary-soft: rgb(0 82 217 / 8%);
   --cashier-ok: #0f766e;
-  color: var(--cashier-ink);
-  color-scheme: light;
+
   min-height: 100vh;
   min-height: 100dvh;
+  color: var(--cashier-ink);
+  color-scheme: light;
   background:
-    radial-gradient(1200px 420px at 50% -80px, rgb(0 82 217 / 12%), transparent 60%),
+    radial-gradient(
+      1200px 420px at 50% -80px,
+      rgb(0 82 217 / 12%),
+      transparent 60%
+    ),
     var(--cashier-bg);
 }
 
@@ -460,14 +503,16 @@ onUnmounted(() => {
   background: var(--cashier-card);
   border: 1px solid var(--cashier-line);
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 4%), 0 12px 32px rgb(15 23 42 / 6%);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 4%),
+    0 12px 32px rgb(15 23 42 / 6%);
 }
 
 .cashier__header {
   display: flex;
+  gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
   padding-bottom: 20px;
   margin-bottom: 8px;
   border-bottom: 1px solid var(--cashier-line);
@@ -487,9 +532,9 @@ onUnmounted(() => {
   justify-content: center;
   width: 36px;
   height: 36px;
-  color: #fff;
   font-size: 16px;
   font-weight: 700;
+  color: #fff;
   background: var(--cashier-primary);
   border-radius: 8px;
 }
@@ -505,10 +550,10 @@ onUnmounted(() => {
 .cashier__sub {
   margin: 2px 0 0;
   overflow: hidden;
-  color: var(--cashier-muted);
+  text-overflow: ellipsis;
   font-size: 12px;
   line-height: 1.4;
-  text-overflow: ellipsis;
+  color: var(--cashier-muted);
   white-space: nowrap;
 }
 
@@ -518,9 +563,9 @@ onUnmounted(() => {
   gap: 4px;
   align-items: center;
   margin: 0;
-  color: var(--cashier-ok);
   font-size: 12px;
   font-weight: 500;
+  color: var(--cashier-ok);
 }
 
 .cashier__secure-icon {
@@ -544,8 +589,8 @@ onUnmounted(() => {
 
 .cashier__amount-label {
   margin: 0 0 4px;
-  color: var(--cashier-muted);
   font-size: 12px;
+  color: var(--cashier-muted);
   letter-spacing: 0.04em;
 }
 
@@ -553,9 +598,9 @@ onUnmounted(() => {
   margin: 0;
   font-size: 32px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   line-height: 1.15;
   letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
 }
 
 .cashier__amount-value--sm {
@@ -566,15 +611,15 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0;
   padding: 0;
+  margin: 0;
   border: 0;
 }
 
 .cashier__label {
-  color: var(--cashier-ink);
   font-size: 13px;
   font-weight: 600;
+  color: var(--cashier-ink);
 }
 
 .cashier__amount-input {
@@ -600,9 +645,9 @@ onUnmounted(() => {
 
 .cashier__hint {
   margin: 0;
-  color: var(--cashier-muted);
   font-size: 12px;
   line-height: 1.5;
+  color: var(--cashier-muted);
 }
 
 .cashier__modes {
@@ -614,8 +659,8 @@ onUnmounted(() => {
 .cashier__mode {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 4px;
+  align-items: center;
   min-height: 76px;
   padding: 10px 6px;
   color: var(--cashier-ink);
@@ -658,9 +703,9 @@ onUnmounted(() => {
 }
 
 .cashier__mode-hint {
-  color: var(--cashier-muted);
   font-size: 11px;
   line-height: 1.3;
+  color: var(--cashier-muted);
 }
 
 .cashier__cta {
@@ -672,8 +717,8 @@ onUnmounted(() => {
 .cashier__empty {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
+  align-items: center;
   padding: 24px 8px 8px;
   text-align: center;
 }
@@ -691,11 +736,11 @@ onUnmounted(() => {
 }
 
 .cashier__empty-text {
-  margin: 0 0 8px;
   max-width: 32ch;
-  color: var(--cashier-muted);
+  margin: 0 0 8px;
   font-size: 13px;
   line-height: 1.55;
+  color: var(--cashier-muted);
 }
 
 .cashier__ok {
@@ -717,23 +762,23 @@ onUnmounted(() => {
 
 .cashier__result-title {
   margin: 0;
-  text-align: center;
   font-size: 18px;
   font-weight: 650;
+  text-align: center;
 }
 
 .cashier__meta {
   display: grid;
   gap: 12px;
-  margin: 0;
   padding: 12px 0 0;
+  margin: 0;
   border-top: 1px solid var(--cashier-line);
 }
 
 .cashier__meta div {
   display: flex;
-  justify-content: space-between;
   gap: 12px;
+  justify-content: space-between;
   font-size: 13px;
 }
 
@@ -751,8 +796,8 @@ onUnmounted(() => {
 .cashier__qr {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
+  align-items: center;
   padding: 16px;
   background: #f8fafc;
   border: 1px solid var(--cashier-line);
@@ -767,9 +812,9 @@ onUnmounted(() => {
 }
 
 .cashier__link {
-  color: var(--cashier-primary);
   font-size: 12px;
   line-height: 1.5;
+  color: var(--cashier-primary);
   word-break: break-all;
 }
 
@@ -785,8 +830,8 @@ onUnmounted(() => {
 
 .cashier__foot {
   margin: 16px 0 0;
-  color: var(--cashier-muted);
   font-size: 12px;
+  color: var(--cashier-muted);
 }
 
 .cashier__skeleton {
@@ -809,6 +854,7 @@ onUnmounted(() => {
   0% {
     background-position: 100% 0;
   }
+
   100% {
     background-position: 0 0;
   }

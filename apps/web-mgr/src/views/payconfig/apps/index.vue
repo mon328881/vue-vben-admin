@@ -1,15 +1,21 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PassageStatInfo, PayPassage } from '#/api';
+import type { ListStatCardItem } from '#/components/list/ListStatCards.vue';
+import type { TableActionItem } from '#/components/table/TableActionLinks.vue';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
+
 import {
   Button,
   Card,
   Form,
   Input,
+  message,
   Modal,
   Select,
   Space,
@@ -17,7 +23,6 @@ import {
   Table,
   Tag,
   Tooltip,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -28,22 +33,16 @@ import {
   openRecentlyMchAppsApi,
   resetAllMchAppBalanceApi,
   updateMchAppApi,
-  type PassageStatInfo,
-  type PayPassage,
 } from '#/api';
 import GoogleDangerConfirmDialog from '#/components/common/GoogleDangerConfirmDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
-import TableActionLinks, {
-  type TableActionItem,
-} from '#/components/table/TableActionLinks.vue';
-import { hasEnt } from '#/utils/access';
-import { formatRateDecimal, formatYuan } from '#/utils/format';
+import TableActionLinks from '#/components/table/TableActionLinks.vue';
+import { hasEnt, isAdmin } from '#/utils/access';
+import { formatFeeRate, formatRateDecimal, formatYuan } from '#/utils/format';
 
 import PassageAgentConfigDialog from './components/PassageAgentConfigDialog.vue';
 import PassageAutoCleanDialog from './components/PassageAutoCleanDialog.vue';
@@ -73,7 +72,7 @@ const loading = ref(false);
 const dataSource = ref<PayPassage[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
-const selectedIds = ref<(string | number)[]>([]);
+const selectedIds = ref<(number | string)[]>([]);
 const enabledFirst = ref(true);
 const query = reactive({
   payInterfaceConfig: '',
@@ -121,6 +120,8 @@ function openHourlyReport() {
 
 const canAdd = computed(() => hasEnt('ENT_MCH_APP_ADD'));
 const canEdit = computed(() => hasEnt('ENT_MCH_APP_EDIT'));
+/** resetAll / closeAll 后端非 admin → 403/5004，与 ENT_MCH_APP_EDIT 解耦 */
+const canAdminDanger = computed(() => isAdmin());
 
 const listStatItems = computed<ListStatCardItem[]>(() => {
   const s = stat.value;
@@ -154,8 +155,7 @@ const canConfig = computed(() => hasEnt('ENT_MCH_PAY_PASSAGE_CONFIG'));
 const autoCleanTagText = computed(() => {
   if (stat.value.payPassageAutoClean === 1) {
     const time = stat.value.payPassageAutoCleanTime;
-    const suffix =
-      time && time !== '--:--' ? `（每日 ${time}）` : '';
+    const suffix = time && time !== '--:--' ? `（每日 ${time}）` : '';
     return `自动日切开启${suffix}`;
   }
   return '自动日切关闭';
@@ -188,19 +188,28 @@ const columns: TableColumnsType<PayPassage> = [
 
 function parseConfig(row: PayPassage) {
   const raw = row.payInterfaceConfig;
-  if (raw == null || String(raw).trim() === '') return { mchNo: '-', payType: '-' };
+  if (raw === null || raw === undefined || String(raw).trim() === '')
+    return { mchNo: '-', payType: '-' };
   try {
     const parsed = JSON.parse(String(raw));
-    if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
       return { mchNo: '-', payType: '-' };
     }
     return {
       mchNo:
-        parsed.mchNo != null && String(parsed.mchNo).trim() !== ''
+        parsed.mchNo !== null &&
+        parsed.mchNo !== undefined &&
+        String(parsed.mchNo).trim() !== ''
           ? String(parsed.mchNo)
           : '-',
       payType:
-        parsed.payType != null && String(parsed.payType).trim() !== ''
+        parsed.payType !== null &&
+        parsed.payType !== undefined &&
+        String(parsed.payType).trim() !== ''
           ? String(parsed.payType)
           : '-',
     };
@@ -243,7 +252,7 @@ async function loadData(resetPage = false) {
     });
     let rows = page?.records ?? [];
     if (enabledFirst.value) {
-      rows = [...rows].sort((a, b) => {
+      rows = [...rows].toSorted((a, b) => {
         const ae = Number(a.state) === 1 ? 0 : 1;
         const be = Number(b.state) === 1 ? 0 : 1;
         return ae - be;
@@ -282,7 +291,10 @@ function onFormSuccess() {
   void loadData(true);
 }
 
-async function toggleState(row: PayPassage, checked: boolean | string | number) {
+async function toggleState(
+  row: PayPassage,
+  checked: boolean | number | string,
+) {
   const next = checked ? 1 : 0;
   const ok = await new Promise<boolean>((resolve) => {
     Modal.confirm({
@@ -367,9 +379,10 @@ function openBatch() {
   const rows = dataSource.value.filter((r) =>
     selectedIds.value.includes(r.payPassageId),
   );
-  const names = rows.length
-    ? rows.map((row) => `[${row.payPassageId}] ${row.payPassageName}`)
-    : selectedIds.value.map((id) => String(id));
+  const names =
+    rows.length > 0
+      ? rows.map((row) => `[${row.payPassageId}] ${row.payPassageName}`)
+      : selectedIds.value.map(String);
   batchRef.value?.show(selectedIds.value, names);
 }
 
@@ -449,10 +462,7 @@ onMounted(() => {
             />
           </Form.Item>
           <Form.Item>
-            <ProductSelector
-              v-model="query.productId"
-              placeholder="对应产品"
-            />
+            <ProductSelector v-model="query.productId" placeholder="对应产品" />
           </Form.Item>
           <Form.Item>
             <PassageGroupSelector
@@ -491,7 +501,7 @@ onMounted(() => {
               新建
             </Button>
             <Button
-              v-if="canEdit"
+              v-if="canAdminDanger"
               danger
               ghost
               @click="resetVisible = true"
@@ -507,7 +517,7 @@ onMounted(() => {
               通道自动日切设置
             </Button>
             <Button
-              v-if="canEdit"
+              v-if="canAdminDanger"
               danger
               ghost
               @click="closeAllVisible = true"
@@ -520,10 +530,10 @@ onMounted(() => {
             <Button v-if="canEdit" @click="openBatch">批量操作通道</Button>
           </Space>
           <Space wrap>
-            <Button size="small" @click="openHourlyReport">
-              成率报表
-            </Button>
-            <Tooltip title="打开后，当前页结果中已启用通道会排到前面（本地排序）。">
+            <Button size="small" @click="openHourlyReport"> 成率报表 </Button>
+            <Tooltip
+              title="打开后，当前页结果中已启用通道会排到前面（本地排序）。"
+            >
               <span class="inline-flex items-center gap-2">
                 <span class="text-muted-foreground text-sm">启用优先</span>
                 <Switch
@@ -532,7 +542,9 @@ onMounted(() => {
                 />
               </span>
             </Tooltip>
-            <Tag :color="stat.payPassageAutoClean === 1 ? 'success' : 'default'">
+            <Tag
+              :color="stat.payPassageAutoClean === 1 ? 'success' : 'default'"
+            >
               {{ autoCleanTagText }}
             </Tag>
           </Space>
@@ -563,7 +575,10 @@ onMounted(() => {
                 class="passage-cell"
                 @click="detailRef?.show(record as PayPassage)"
               >
-                <div class="passage-cell__name" :title="`[${record.payPassageId}] ${record.payPassageName}`">
+                <div
+                  class="passage-cell__name"
+                  :title="`[${record.payPassageId}] ${record.payPassageName}`"
+                >
                   [{{ record.payPassageId }}] {{ record.payPassageName }}
                 </div>
                 <div class="passage-cell__product">
@@ -616,7 +631,6 @@ onMounted(() => {
                 <Button
                   v-if="canEdit"
                   size="small"
-                  shape="square"
                   class="inline-action-cell__icon-btn"
                   @click="weightsRef?.show(record as PayPassage)"
                 >
@@ -647,7 +661,7 @@ onMounted(() => {
                 class="!px-0"
                 @click="rateRef?.show(record as PayPassage)"
               >
-                {{ formatRateDecimal(record.rate) }}
+                {{ formatFeeRate(record.rate) }}
               </Button>
             </template>
             <template v-else-if="column.dataIndex === 'successRate'">
@@ -668,9 +682,7 @@ onMounted(() => {
                 class="!px-0"
                 @click="agentRef?.open(record as PayPassage)"
               >
-                {{
-                  record.agentNo ? formatRateDecimal(record.agentRate) : '--'
-                }}
+                {{ record.agentNo ? formatFeeRate(record.agentRate) : '--' }}
               </Button>
             </template>
             <template v-else-if="column.dataIndex === 'payInterfaceConfig'">
@@ -718,7 +730,7 @@ onMounted(() => {
     <GoogleDangerConfirmDialog
       v-model:open="resetVisible"
       header="一键清空通道余额"
-      warning="此操作后将清空通道余额，请谨慎操作"
+      warning="仅清空已启用通道余额（软删/禁用通道不受影响），请谨慎操作"
       :saving="resetSaving"
       @confirm="submitResetAll"
     />
@@ -734,29 +746,29 @@ onMounted(() => {
 
 <style scoped>
 .passage-cell {
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  cursor: pointer;
 }
 
 .passage-cell__name {
-  color: hsl(var(--primary));
-  font-weight: 600;
-  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
+  line-height: 1.4;
+  color: hsl(var(--primary));
   white-space: nowrap;
 }
 
 .passage-cell__product {
-  align-items: center;
-  color: hsl(var(--muted-foreground));
   display: flex;
-  font-size: 12px;
   gap: 4px;
+  align-items: center;
   min-width: 0;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
 }
 
 .passage-cell__product-text {

@@ -1,17 +1,19 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { ref } from 'vue';
 
 import {
   Alert,
   Descriptions,
   Input,
+  message,
   Modal,
   Tag,
-  message,
 } from 'ant-design-vue';
 
-import { createMchAppApi, fetchMchAppApi, type PayPassage } from '#/api';
-import { formatRateDecimal } from '#/utils/format';
+import { createMchAppApi, fetchMchAppApi } from '#/api';
+import { formatFeeRate } from '#/utils/format';
 import {
   clonePassageForCreate,
   defaultCopyName,
@@ -22,25 +24,34 @@ const emit = defineEmits<{ success: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const source = ref<PayPassage | null>(null);
+const source = ref<null | PayPassage>(null);
 const newName = ref('');
 
-function parseConfig(row: PayPassage | null) {
+function parseConfig(row: null | PayPassage) {
   if (!row) return { mchNo: '-', payType: '-' };
   const raw = row.payInterfaceConfig;
-  if (raw == null || String(raw).trim() === '') return { mchNo: '-', payType: '-' };
+  if (raw === null || raw === undefined || String(raw).trim() === '')
+    return { mchNo: '-', payType: '-' };
   try {
     const parsed = JSON.parse(String(raw));
-    if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
       return { mchNo: '-', payType: '-' };
     }
     return {
       mchNo:
-        parsed.mchNo != null && String(parsed.mchNo).trim() !== ''
+        parsed.mchNo !== null &&
+        parsed.mchNo !== undefined &&
+        String(parsed.mchNo).trim() !== ''
           ? String(parsed.mchNo)
           : '-',
       payType:
-        parsed.payType != null && String(parsed.payType).trim() !== ''
+        parsed.payType !== null &&
+        parsed.payType !== undefined &&
+        String(parsed.payType).trim() !== ''
           ? String(parsed.payType)
           : '-',
     };
@@ -49,7 +60,7 @@ function parseConfig(row: PayPassage | null) {
   }
 }
 
-function timeLimitText(row: PayPassage | null) {
+function timeLimitText(row: null | PayPassage) {
   if (!row || row.timeLimit !== 1) return '未启用';
   const rules = String(row.timeRules ?? '').trim();
   if (!rules || rules === '|' || !rules.includes('|')) {
@@ -59,7 +70,7 @@ function timeLimitText(row: PayPassage | null) {
   return `已启用 ${start?.trim() || '--'} ~ ${end?.trim() || '--'}`;
 }
 
-function payRulesType(row: PayPassage | null) {
+function payRulesType(row: null | PayPassage) {
   const rules = String(row?.payRules ?? '').trim();
   if (!rules) return '--';
   if (rules.includes('-')) return '区间范围';
@@ -139,7 +150,7 @@ defineExpose({ show });
           {{ source.ifCode || '--' }}
         </Descriptions.Item>
         <Descriptions.Item label="通道费率">
-          {{ formatRateDecimal(source.rate) }}
+          {{ formatFeeRate(source.rate) }}
         </Descriptions.Item>
         <Descriptions.Item label="收款规则类型">
           {{ payRulesType(source) }}
@@ -157,9 +168,7 @@ defineExpose({ show });
           {{ source.agentNo || '无' }}
         </Descriptions.Item>
         <Descriptions.Item label="代理费率">
-          {{
-            source.agentNo ? formatRateDecimal(source.agentRate) : '--'
-          }}
+          {{ source.agentNo ? formatFeeRate(source.agentRate) : '--' }}
         </Descriptions.Item>
         <Descriptions.Item label="通道定时">
           {{ timeLimitText(source) }}
@@ -181,15 +190,15 @@ defineExpose({ show });
 }
 
 .copy-passage-dialog__name-section {
-  border-left: 3px solid hsl(var(--primary));
-  margin-bottom: 16px;
   padding-left: 12px;
+  margin-bottom: 16px;
+  border-left: 3px solid hsl(var(--primary));
 }
 
 .copy-passage-dialog__name-panel {
-  align-items: center;
   display: flex;
   gap: 8px;
+  align-items: center;
   margin-bottom: 8px;
 }
 
@@ -198,13 +207,13 @@ defineExpose({ show });
 }
 
 .copy-passage-dialog__hint {
-  color: hsl(var(--muted-foreground));
-  font-size: 12px;
   margin: 8px 0 0;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
 }
 
 .copy-passage-dialog__section-title {
-  font-weight: 500;
   margin: 4px 0 12px;
+  font-weight: 500;
 }
 </style>

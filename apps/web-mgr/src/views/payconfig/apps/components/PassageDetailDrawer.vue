@@ -1,19 +1,20 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { computed, ref } from 'vue';
 
 import { Descriptions, Drawer } from 'ant-design-vue';
 
-import type { PayPassage } from '#/api';
-import { formatDateTime, formatRateDecimal } from '#/utils/format';
+import { formatDateTime, formatFeeRate } from '#/utils/format';
 
 defineOptions({ name: 'PassageDetailDrawer' });
 
 const visible = ref(false);
-const row = ref<PayPassage | null>(null);
+const row = ref<null | PayPassage>(null);
 
 const hasAgent = computed(() => !!row.value?.agentNo);
 
-function payTypeText(value?: number | null) {
+function payTypeText(value?: null | number) {
   if (value === 1) return '区间范围';
   if (value === 2) return '固定金额';
   return '--';
@@ -31,7 +32,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     title="支付通道详情"
-    :width="'50%'"
+    width="50%"
     :destroy-on-close="true"
     :footer="false"
   >
@@ -69,13 +70,13 @@ defineExpose({ show });
           {{ row.ifCode ?? '--' }}
         </Descriptions.Item>
         <Descriptions.Item label="通道费率">
-          <b>{{ formatRateDecimal(row.rate) }}</b>
+          <b>{{ formatFeeRate(row.rate) }}</b>
         </Descriptions.Item>
         <Descriptions.Item label="代理商商户号">
           {{ hasAgent ? row.agentNo : '无通道代理' }}
         </Descriptions.Item>
         <Descriptions.Item label="代理费率">
-          <b>{{ hasAgent ? formatRateDecimal(row.agentRate) : '--' }}</b>
+          <b>{{ hasAgent ? formatFeeRate(row.agentRate) : '--' }}</b>
         </Descriptions.Item>
         <Descriptions.Item label="轮询权重" :span="2">
           <b>{{ row.weights ?? '--' }}</b>
@@ -101,23 +102,24 @@ defineExpose({ show });
 
 .passage-detail-config__label {
   margin-bottom: 8px;
-  color: hsl(var(--muted-foreground));
   font-size: 14px;
+  color: hsl(var(--muted-foreground));
 }
 
 .passage-detail-config__body {
-  margin: 0;
   min-height: 160px;
   max-height: 360px;
-  overflow: auto;
   padding: 12px 14px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
-  background: hsl(var(--muted) / 35%);
+  margin: 0;
+  overflow: auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   line-height: 1.55;
+  word-break: normal;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
-  word-break: break-word;
+  background: hsl(var(--muted) / 35%);
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
 }
 </style>

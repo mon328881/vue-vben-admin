@@ -1,15 +1,17 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { reactive, ref } from 'vue';
 
-import { Form, InputNumber, Modal, Textarea, message } from 'ant-design-vue';
+import { Form, InputNumber, message, Modal, Textarea } from 'ant-design-vue';
 
-import { changeMchAppBalanceApi, type PayPassage } from '#/api';
+import { changeMchAppBalanceApi } from '#/api';
 
 const emit = defineEmits<{ success: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const row = ref<PayPassage | null>(null);
+const row = ref<null | PayPassage>(null);
 const form = reactive({
   changeAmount: undefined as number | undefined,
   changeRemark: '',
@@ -36,6 +38,10 @@ async function submit() {
     message.error('请输入调整备注');
     return;
   }
+  if (form.changeRemark.trim().length > 128) {
+    message.error('备注最多 128 个字符');
+    return;
+  }
   saving.value = true;
   try {
     await changeMchAppBalanceApi(row.value.payPassageId, {
@@ -56,9 +62,7 @@ defineExpose({ show });
 <template>
   <Modal
     v-model:open="visible"
-    :title="
-      row ? `调整通道[余额] - ${row.payPassageName}` : '调整通道[余额]'
-    "
+    :title="row ? `调整通道[余额] - ${row.payPassageName}` : '调整通道[余额]'"
     width="600px"
     :confirm-loading="saving"
     ok-text="确定"
@@ -88,7 +92,9 @@ defineExpose({ show });
         <Textarea
           v-model:value="form.changeRemark"
           :rows="3"
-          placeholder="请输入本次调整的原因说明"
+          :maxlength="128"
+          show-count
+          placeholder="请输入本次调整的原因说明（最多 128 字）"
         />
       </Form.Item>
     </Form>
