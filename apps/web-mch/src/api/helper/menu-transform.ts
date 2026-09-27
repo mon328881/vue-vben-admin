@@ -49,7 +49,7 @@ const ICON_MAP: Record<string, string> = {
 function onlyMl(nodes: MenuNode[] | undefined): MenuNode[] {
   return [...(nodes ?? [])]
     .filter((n) => n.entType === 'ML')
-    .sort((a, b) => (a.entSort ?? 0) - (b.entSort ?? 0));
+    .toSorted((a, b) => (a.entSort ?? 0) - (b.entSort ?? 0));
 }
 
 function normalizeUri(uri: string): string {
@@ -68,8 +68,22 @@ function resolveComponent(uri: string): string {
 }
 
 /**
- * 将 mgr-api allMenuRouteTree（仅 ML）转为 Vben 后端路由结构。
- * 目录节点无 component；叶子用 menuUri，未迁移页面走 coming-soon。
+ * 叶子路由：menuUri 优先；为空时用 componentName 兜底（XxxPage → /xxx）。
+ * 对齐运营端：生产库偶发空 menuUri，避免侧栏直接丢叶子。
+ */
+function leafRoute(node: MenuNode): string {
+  const uri = normalizeUri((node.menuUri || '').trim());
+  if (uri) return uri;
+  const comp = (node.componentName || '').trim();
+  if (!comp || comp === 'RouteView') return '';
+  const stripped = comp.replace(/Page$/, '');
+  if (!stripped) return '';
+  return `/${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}`;
+}
+
+/**
+ * 将 mch-api allMenuRouteTree（仅 ML）转为 Vben 后端路由结构。
+ * 目录节点无 component；叶子用 menuUri（或缺省 componentName），未迁移页面走 coming-soon。
  */
 export function transformMenuTree(
   nodes: MenuNode[],
@@ -102,7 +116,7 @@ function transformLevel(
       continue;
     }
 
-    const uri = normalizeUri((node.menuUri || '').trim());
+    const uri = leafRoute(node);
     if (!uri) continue;
 
     result.push({
