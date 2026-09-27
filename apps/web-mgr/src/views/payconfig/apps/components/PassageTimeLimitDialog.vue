@@ -1,44 +1,77 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { reactive, ref } from 'vue';
 
 import {
   Alert,
   Button,
   Form,
+  message,
   Modal,
   Radio,
   Space,
   TimePicker,
-  message,
 } from 'ant-design-vue';
 
-import { updateMchAppApi, type PayPassage } from '#/api';
+import { updateMchAppApi } from '#/api';
 
 const emit = defineEmits<{ success: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const row = ref<PayPassage | null>(null);
+const row = ref<null | PayPassage>(null);
+/** 后端 timeRules 原样落库；未编辑时回写原始串，避免 trim 改写历史值 */
+const rawTimeRules = ref('');
+const initialDisplay = reactive({ timeLimit: 0, start: '', end: '' });
 const form = reactive({ timeLimit: 0, start: '', end: '' });
 
 function show(target: PayPassage) {
   row.value = target;
   form.timeLimit = target.timeLimit === 1 ? 1 : 0;
-  const rules = String(target.timeRules ?? '');
-  const [start, end] = rules.includes('|') ? rules.split('|') : ['', ''];
+  rawTimeRules.value = String(target.timeRules ?? '');
+  const [start, end] = rawTimeRules.value.includes('|')
+    ? rawTimeRules.value.split('|')
+    : ['', ''];
+  // TimePicker 需要干净 HH:mm；展示用 trim，提交未改动时仍用 rawTimeRules
   form.start = start?.trim() ?? '';
   form.end = end?.trim() ?? '';
+  initialDisplay.timeLimit = form.timeLimit;
+  initialDisplay.start = form.start;
+  initialDisplay.end = form.end;
   saving.value = false;
   visible.value = true;
 }
 
+function isEdited() {
+  return (
+    form.timeLimit !== initialDisplay.timeLimit ||
+    form.start !== initialDisplay.start ||
+    form.end !== initialDisplay.end
+  );
+}
+
 async function submit() {
   if (!row.value?.payPassageId) return;
+  if (form.timeLimit === 1) {
+    if (!form.start || !form.end) {
+      message.error('请选择开启、关闭时间');
+      return;
+    }
+    if (form.start === form.end) {
+      message.error('开启、关闭时间不能相同');
+      return;
+    }
+  }
+  let timeRules = '';
+  if (form.timeLimit === 1) {
+    timeRules = isEdited() ? `${form.start}|${form.end}` : rawTimeRules.value;
+  }
   saving.value = true;
   try {
     await updateMchAppApi(row.value.payPassageId, {
       timeLimit: form.timeLimit,
-      timeRules: form.timeLimit === 1 ? `${form.start}|${form.end}` : '',
+      timeRules,
     });
     message.success('修改成功');
     visible.value = false;

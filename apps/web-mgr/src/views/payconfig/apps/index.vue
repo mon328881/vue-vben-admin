@@ -281,7 +281,8 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
 }
 
 function onFormSuccess() {
-  void loadData(true);
+  // 对齐 demo：弹窗成功刷新留在当前页，不强制回到第 1 页
+  void loadData(false);
 }
 
 async function toggleState(
@@ -384,6 +385,12 @@ function onBatchCopy() {
     selectedIds.value.includes(r.payPassageId),
   );
   batchCopyRef.value?.open(rows);
+}
+
+function onBatchCopied() {
+  // 对齐 demo：复制成功后关掉批量抽屉并刷新列表
+  batchRef.value?.closeAndReset();
+  onFormSuccess();
 }
 
 function onBatchDeleted() {
@@ -590,12 +597,14 @@ onMounted(() => {
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'state'">
-              <Switch
-                :checked="record.state === 1"
-                :disabled="!canEdit"
-                :loading="!!stateBusy[String(record.payPassageId)]"
-                @change="(c) => toggleState(record as PayPassage, c)"
-              />
+              <Space size="small" align="center">
+                <Switch
+                  :checked="record.state === 1"
+                  :disabled="!canEdit"
+                  :loading="!!stateBusy[String(record.payPassageId)]"
+                  @change="(c) => toggleState(record as PayPassage, c)"
+                />
+              </Space>
             </template>
             <template v-else-if="column.dataIndex === 'balance'">
               <div class="inline-action-cell">
@@ -709,7 +718,7 @@ onMounted(() => {
       @batch-copy="onBatchCopy"
       @deleted="onBatchDeleted"
     />
-    <PassageBatchCopyDialog ref="batchCopyRef" @copied="onFormSuccess" />
+    <PassageBatchCopyDialog ref="batchCopyRef" @copied="onBatchCopied" />
     <PassageBalanceAdjustDialog ref="balanceRef" @success="onFormSuccess" />
     <PassageRateAdjustDialog ref="rateRef" @success="onFormSuccess" />
     <PassageAgentConfigDialog ref="agentRef" @success="onFormSuccess" />

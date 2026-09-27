@@ -6,8 +6,9 @@ export interface PayPassage {
   payPassageId: number;
   payPassageName: string;
   productId?: number;
+  /** 列表字段；GET /mchApps/{id} 详情契约不含此键 */
   productName?: string;
-  /** 所属产品图标文件名（接口字段为 icon，对齐旧端） */
+  /** 所属产品图标文件名（列表字段；详情契约不含） */
   icon?: string;
   ifCode?: string;
   payType?: number;
@@ -20,13 +21,17 @@ export interface PayPassage {
   agentRate?: number;
   weights?: number;
   balance?: number;
+  /** 通道日限额（分）；详情契约字段 */
+  quota?: number;
+  /** 限额开关：0 关 / 1 开 */
+  quotaLimitState?: number;
   state: number;
   timeLimit?: number;
   timeRules?: string;
   openLimit?: number;
   isBindAll?: number;
   timeLimitState?: number;
-  payInterfaceConfig?: string;
+  payInterfaceConfig?: null | string;
   successRate?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -50,6 +55,10 @@ export interface PassageHourlyPoint {
 }
 
 export interface PassageHourlyStat {
+  /** 请求回显 */
+  payPassageId?: number | string;
+  /** 请求回显（非法 date 时后端回落为今日） */
+  date?: string;
   points: PassageHourlyPoint[];
   summary: null | {
     successCount: number;
@@ -63,6 +72,15 @@ export interface PassageHourlyArchive {
   statDate: string;
   rowCount: number;
   url?: string;
+  fileName?: string;
+  createdAt?: string;
+}
+
+/** GET /passageHourlyStat/archives 新契约 */
+export interface PassageHourlyArchivesResult {
+  records: PassageHourlyArchive[];
+  maxCount?: number;
+  totalCoverageDays?: number;
 }
 
 export interface PassageMchBind {
@@ -117,7 +135,8 @@ export async function fetchPassageRealTimeStatApi(params: MchAppsListParams) {
 
 export async function changeMchAppBalanceApi(
   payPassageId: number | string,
-  payload: { changeAmount: number; changeRemark: string },
+  // demo 实发：changeAmount 为字符串（后端 yuanToCent 接受串/数）
+  payload: { changeAmount: number | string; changeRemark: string },
 ) {
   return requestClient.put(`/mchAppsBalance/${payPassageId}`, payload);
 }
@@ -174,25 +193,40 @@ export async function fetchPassageHourlyStatApi(params: {
   return requestClient.get<PassageHourlyStat>('/passageHourlyStat', { params });
 }
 
-export async function fetchPassageHourlyArchivesApi() {
+export async function fetchPassageHourlyArchivesApi(): Promise<PassageHourlyArchivesResult> {
   const page = await requestClient.get<
-    PageResult<PassageHourlyArchive> | PassageHourlyArchive[]
+    | PageResult<PassageHourlyArchive>
+    | PassageHourlyArchive[]
+    | PassageHourlyArchivesResult
   >('/passageHourlyStat/archives');
-  // 兼容：直接数组 / PageResult.records / 偶发多包一层 data
-  if (Array.isArray(page)) return page;
+  // 兼容：新契约 {records,maxCount,totalCoverageDays} / 直接数组 / 偶发多包一层 data
+  if (Array.isArray(page)) return { records: page };
   if (page && typeof page === 'object') {
-    if (Array.isArray(page.records)) return page.records;
+    if (Array.isArray(page.records)) {
+      return {
+        records: page.records,
+        maxCount: (page as PassageHourlyArchivesResult).maxCount,
+        totalCoverageDays: (page as PassageHourlyArchivesResult)
+          .totalCoverageDays,
+      };
+    }
     const nested = (page as { data?: unknown }).data;
-    if (Array.isArray(nested)) return nested as PassageHourlyArchive[];
+    if (Array.isArray(nested))
+      return { records: nested as PassageHourlyArchive[] };
     if (
       nested &&
       typeof nested === 'object' &&
-      Array.isArray((nested as PageResult<PassageHourlyArchive>).records)
+      Array.isArray((nested as PassageHourlyArchivesResult).records)
     ) {
-      return (nested as PageResult<PassageHourlyArchive>).records;
+      const body = nested as PassageHourlyArchivesResult;
+      return {
+        records: body.records,
+        maxCount: body.maxCount,
+        totalCoverageDays: body.totalCoverageDays,
+      };
     }
   }
-  return [];
+  return { records: [] };
 }
 
 export async function fetchPassageMchInfoApi(params: Record<string, unknown>) {

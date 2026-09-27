@@ -1,25 +1,34 @@
 <script lang="ts" setup>
 import type { TableColumnsType, TablePaginationConfig } from 'ant-design-vue';
 
-import { reactive, ref } from 'vue';
+import type { PassageHourlyArchive } from '#/api';
+
+import { computed, reactive, ref } from 'vue';
 
 import { useAccessStore } from '@vben/stores';
 
-import { Alert, Modal, Table, message } from 'ant-design-vue';
+import { Alert, message, Modal, Table } from 'ant-design-vue';
 
-import {
-  fetchPassageHourlyArchivesApi,
-  type PassageHourlyArchive,
-} from '#/api';
+import { fetchPassageHourlyArchivesApi } from '#/api';
 
 const accessStore = useAccessStore();
 const visible = ref(false);
 const loading = ref(false);
 const records = ref<PassageHourlyArchive[]>([]);
+const archiveMeta = reactive({
+  maxCount: 5,
+  totalCoverageDays: 7,
+});
 const pagination = reactive({
   current: 1,
   pageSize: 10,
   total: 0,
+});
+
+const alertMessage = computed(() => {
+  const days = archiveMeta.totalCoverageDays || 7;
+  const archived = archiveMeta.maxCount || 5;
+  return `每日 00:30 归档前天分时成率（例：6-26 00:30 归档 6-24），列表中展示今日、昨日，此处提供更早 ${archived} 天报表，合计 ${days} 天。报表为 Excel 透视表。`;
 });
 
 const columns: TableColumnsType<PassageHourlyArchive> = [
@@ -44,31 +53,15 @@ function downloadHref(row: PassageHourlyArchive) {
   return `${base}${sep}iToken=${encodeURIComponent(token)}`;
 }
 
-function normalizeArchives(raw: unknown): PassageHourlyArchive[] {
-  if (Array.isArray(raw)) return raw as PassageHourlyArchive[];
-  if (raw && typeof raw === 'object') {
-    const obj = raw as Record<string, unknown>;
-    if (Array.isArray(obj.records)) {
-      return obj.records as PassageHourlyArchive[];
-    }
-    if (obj.data && typeof obj.data === 'object') {
-      const data = obj.data as Record<string, unknown>;
-      if (Array.isArray(data.records)) {
-        return data.records as PassageHourlyArchive[];
-      }
-      if (Array.isArray(obj.data)) {
-        return obj.data as PassageHourlyArchive[];
-      }
-    }
-  }
-  return [];
-}
-
 async function loadData() {
   loading.value = true;
   try {
     const raw = await fetchPassageHourlyArchivesApi();
-    records.value = normalizeArchives(raw);
+    records.value = raw.records ?? [];
+    if (raw.maxCount !== undefined) archiveMeta.maxCount = raw.maxCount;
+    if (raw.totalCoverageDays !== undefined) {
+      archiveMeta.totalCoverageDays = raw.totalCoverageDays;
+    }
     pagination.total = records.value.length;
     pagination.current = 1;
   } catch {
@@ -106,7 +99,7 @@ defineExpose({ open });
         class="hourly-report-dialog__alert"
         type="info"
         show-icon
-        message="每日 00:30 归档前天分时成率（例：6-26 00:30 归档 6-24），列表中展示今日、昨日，此处提供更早 5 天报表，合计 7 天。报表为 Excel 透视表。"
+        :message="alertMessage"
       />
       <Table
         :columns="columns"
@@ -121,7 +114,10 @@ defineExpose({ open });
           total: pagination.total,
         }"
         bordered
-        row-key="objectKey"
+        :row-key="
+          (r: PassageHourlyArchive) =>
+            r.objectKey || r.statDate || r.fileName || String(r.createdAt ?? '')
+        "
         size="small"
         table-layout="fixed"
         @change="onTableChange"

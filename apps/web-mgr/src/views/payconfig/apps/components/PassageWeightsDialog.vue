@@ -1,34 +1,47 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { reactive, ref } from 'vue';
 
-import { Form, InputNumber, Modal, message } from 'ant-design-vue';
+import { Form, InputNumber, message, Modal } from 'ant-design-vue';
 
-import { updateMchAppApi, type PayPassage } from '#/api';
+import { updateMchAppApi } from '#/api';
 
 const emit = defineEmits<{ success: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const row = ref<PayPassage | null>(null);
-const form = reactive({ weightsNum: 1 });
+const row = ref<null | PayPassage>(null);
+const form = reactive({ weightsNum: undefined as number | undefined });
 
 function show(target: PayPassage) {
   row.value = target;
-  form.weightsNum = Number(target.weights ?? 1) || 1;
+  // 对齐 demo：weights 非 null 才 Number()，null → 空输入框
+  form.weightsNum =
+    target.weights === null || target.weights === undefined
+      ? undefined
+      : Number(target.weights);
   saving.value = false;
   visible.value = true;
 }
 
 async function submit() {
-  if (!row.value?.payPassageId) return;
-  const weights = Number(form.weightsNum);
-  if (!Number.isInteger(weights) || weights < 1 || weights > 10000) {
+  const value = form.weightsNum;
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    message.error('请输入轮询权重');
+    return;
+  }
+  // 对齐 demo：Math.trunc 截断小数后判 1-10000（3.9 → 3 放行）
+  const weights = Math.trunc(Number(value));
+  if (weights < 1 || weights > 10_000) {
     message.error('请输入 1-10000 的整数');
     return;
   }
+  const payPassageId = row.value?.payPassageId;
+  if (payPassageId === null || payPassageId === undefined || !row.value) return;
   saving.value = true;
   try {
-    await updateMchAppApi(row.value.payPassageId, { weights });
+    await updateMchAppApi(payPassageId, { payPassageId, weights });
     message.success('修改成功');
     visible.value = false;
     emit('success');

@@ -205,15 +205,36 @@ function validatePayRules(payType: number, rules: unknown): null | string {
   return null;
 }
 
+/** 对齐 demo K()：全量重置表单（成功后 X() 会调用） */
+function resetFormState() {
+  form.state = undefined;
+  form.productId = undefined;
+  form.ifCode = undefined;
+  form.timeLimit = undefined;
+  form.passageGroup = undefined;
+  form.payType = 1;
+  form.payRules = '';
+  form.rate = undefined;
+  form.weights = undefined;
+  form.gate = '';
+  form.ip = '';
+  form.mchNo = '';
+  form.secret = '';
+  form.start = '';
+  form.end = '';
+}
+
+/** 对齐 demo X()：重置表单 + 关全部弹窗 + emit success */
+function resetAllAndEmitSuccess() {
+  resetFormState();
+  closeDialogs();
+  emit('success');
+}
+
 async function run(
   action: string,
   payload: Record<string, unknown>,
   options?: {
-    afterSuccess?: () => void;
-    closeDrawer?: boolean;
-    closeKey?: DialogKey;
-    /** 业务失败时仍刷新列表（批量清零部分提交后中断） */
-    reloadOnError?: boolean;
     successMsg?: string;
     validate?: () => null | string;
   },
@@ -230,20 +251,9 @@ async function run(
       selectedIds: selectedIds.value,
     });
     message.success(options?.successMsg ?? '操作成功');
-    if (options?.closeKey) dialogs[options.closeKey] = false;
-    options?.afterSuccess?.();
-    if (options?.closeDrawer) {
-      closeAndReset();
-    }
-    // 对齐 demo：成功只关当前弹窗，不关其它弹窗、不清表单
-    emit('success');
+    // 对齐 demo X()：成功后全量重置表单 + 关全部弹窗 + emit success
+    resetAllAndEmitSuccess();
     return true;
-  } catch (error) {
-    if (options?.reloadOnError) {
-      emit('success');
-      return false;
-    }
-    throw error;
   } finally {
     saving.value = false;
   }
@@ -254,7 +264,6 @@ async function submitState() {
     'multipleSetState',
     { state: form.state },
     {
-      closeKey: 'state',
       validate: () =>
         form.state === null || form.state === undefined ? '请先选择状态' : null,
     },
@@ -266,7 +275,6 @@ async function submitProduct() {
     'multipleSetProduct',
     { productId: form.productId },
     {
-      closeKey: 'product',
       validate: () => (form.productId ? null : '请选择所属产品'),
     },
   );
@@ -277,7 +285,6 @@ async function submitIfCode() {
     'multipleSetIfCode',
     { ifCode: form.ifCode },
     {
-      closeKey: 'ifCode',
       validate: () => (form.ifCode ? null : '请选择所属接口'),
     },
   );
@@ -288,7 +295,6 @@ async function submitRate() {
     'multipleSetRate',
     { rate: toProductRate(form.rate) },
     {
-      closeKey: 'rate',
       validate: () => {
         if (form.rate === null || form.rate === undefined)
           return '请输入通道费率';
@@ -306,7 +312,6 @@ async function submitPayRules() {
     'multipleSetPayRules',
     { payType: form.payType, payRules: String(form.payRules ?? '').trim() },
     {
-      closeKey: 'payRules',
       validate: () => {
         if (form.payType !== 1 && form.payType !== 2) return '请选择收款方式';
         return validatePayRules(form.payType, form.payRules);
@@ -316,18 +321,19 @@ async function submitPayRules() {
 }
 
 async function submitWeights() {
+  const n =
+    form.weights === null ||
+    form.weights === undefined ||
+    !Number.isFinite(Number(form.weights))
+      ? null
+      : Math.trunc(Number(form.weights));
   await run(
     'multipleSetWeights',
-    { weights: Math.trunc(Number(form.weights)) },
+    { weights: n },
     {
-      closeKey: 'weights',
       validate: () => {
-        if (form.weights === null || form.weights === undefined)
-          return '请输入轮询权重';
-        const n = Math.trunc(Number(form.weights));
-        if (!Number.isFinite(n) || n < 1 || n > 10_000) {
-          return '请输入 1-10000 的整数';
-        }
+        if (n === null) return '请输入轮询权重';
+        if (n < 1 || n > 10_000) return '请输入 1-10000 的整数';
         return null;
       },
     },
@@ -339,7 +345,6 @@ async function submitGate() {
     'multipleSetGate',
     { payGate: form.gate.trim() },
     {
-      closeKey: 'gate',
       validate: () =>
         isValidGate(form.gate) ? null : '下单地址格式错误，请核实',
     },
@@ -351,7 +356,6 @@ async function submitIp() {
     'multipleSetIP',
     { ip: form.ip.trim() },
     {
-      closeKey: 'ip',
       validate: () =>
         isValidCallbackIp(form.ip) ? null : '回调 IP 格式错误，请核实',
     },
@@ -363,7 +367,6 @@ async function submitMchNo() {
     'multipleSetMchNo',
     { mchNo: form.mchNo.trim() },
     {
-      closeKey: 'mchNo',
       validate: () => (form.mchNo.trim() ? null : '商户号为空，请核实'),
     },
   );
@@ -374,7 +377,6 @@ async function submitSecret() {
     'multipleSetSecret',
     { secret: form.secret.trim() },
     {
-      closeKey: 'secret',
       validate: () => (form.secret.trim() ? null : '密钥为空，请核实'),
     },
   );
@@ -385,7 +387,6 @@ async function submitTimeLimitState() {
     'multipleSetTimeLimitState',
     { timeLimit: form.timeLimit },
     {
-      closeKey: 'timeLimitState',
       validate: () =>
         form.timeLimit !== 0 && form.timeLimit !== 1 ? '请先选择状态' : null,
     },
@@ -397,7 +398,6 @@ async function submitTimeLimitRules() {
     'multipleSetTimeLimitRules',
     { timeRules: `${form.start}|${form.end}` },
     {
-      closeKey: 'timeLimitRules',
       validate: () => {
         if (!form.start || !form.end) return '请选择开启、关闭时间';
         if (form.start === form.end) return '开启、关闭时间不能相同';
@@ -431,24 +431,35 @@ async function submitPassageGroup() {
           ? form.passageGroup.trim()
           : form.passageGroup,
     },
-    { closeKey: 'passageGroup' },
   );
 }
 
 async function clearBalance() {
-  await run('multipleSetBalanceZero', {}, { reloadOnError: true });
+  // 对齐 demo：无 loading、静默 catch、成功 toast + X()
+  try {
+    await postMchAppsMultipleSetApi('multipleSetBalanceZero', {
+      selectedIds: selectedIds.value,
+    });
+    message.success('操作成功');
+    resetAllAndEmitSuccess();
+  } catch {
+    // demo catch{} 静默
+  }
 }
 
 async function deleteSelected() {
-  const ok = await run(
-    'multipleSetDelete',
-    {},
-    {
-      successMsg: '删除成功',
-      closeDrawer: true,
-    },
-  );
-  if (ok) emit('deleted');
+  // 对齐 demo：无 loading、静默 catch、成功关抽屉 + 重置表单 + emit deleted
+  try {
+    await postMchAppsMultipleSetApi('multipleSetDelete', {
+      selectedIds: selectedIds.value,
+    });
+    message.success('删除成功');
+    closeAndReset();
+    resetFormState();
+    emit('deleted');
+  } catch {
+    // demo catch{} 静默
+  }
 }
 
 function copySelected() {
@@ -498,7 +509,7 @@ defineExpose({ show, closeAndReset });
               cancel-text="取消"
               @confirm="clearBalance"
             >
-              <Button danger ghost :loading="saving">清空通道余额</Button>
+              <Button danger ghost>清空通道余额</Button>
             </Popconfirm>
           </Col>
         </Row>
@@ -602,7 +613,7 @@ defineExpose({ show, closeAndReset });
               cancel-text="取消"
               @confirm="deleteSelected"
             >
-              <Button danger ghost :loading="saving">批量删除通道</Button>
+              <Button danger ghost>批量删除通道</Button>
             </Popconfirm>
           </Col>
         </Row>

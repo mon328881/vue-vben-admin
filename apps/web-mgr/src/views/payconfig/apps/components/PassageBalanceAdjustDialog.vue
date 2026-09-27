@@ -26,10 +26,8 @@ function show(target: PayPassage) {
 }
 
 async function submit() {
-  if (!row.value?.payPassageId) {
-    visible.value = false;
-    return;
-  }
+  // 对齐 demo：仅守卫 row；金额 null/undefined 拦截；备注 trim 后判空
+  if (!row.value) return;
   if (form.changeAmount === null || form.changeAmount === undefined) {
     message.error('请输入调整余额金额');
     return;
@@ -45,7 +43,7 @@ async function submit() {
   saving.value = true;
   try {
     await changeMchAppBalanceApi(row.value.payPassageId, {
-      changeAmount: form.changeAmount,
+      changeAmount: String(form.changeAmount),
       changeRemark: form.changeRemark.trim(),
     });
     message.success('余额调整成功');

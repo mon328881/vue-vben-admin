@@ -1,16 +1,13 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PassageHourlyPoint, PassageHourlyStat, PayPassage } from '#/api';
+
 import { ref } from 'vue';
 
-import { Drawer, Table, Tabs, message } from 'ant-design-vue';
+import { Drawer, message, Table, Tabs } from 'ant-design-vue';
 
-import {
-  fetchPassageHourlyStatApi,
-  type PassageHourlyPoint,
-  type PassageHourlyStat,
-  type PayPassage,
-} from '#/api';
+import { fetchPassageHourlyStatApi } from '#/api';
 import { formatRateDecimal } from '#/utils/format';
 
 const columns: TableColumnsType<PassageHourlyPoint> = [
@@ -23,7 +20,7 @@ const columns: TableColumnsType<PassageHourlyPoint> = [
 const visible = ref(false);
 const loading = ref(false);
 const tab = ref('today');
-const passage = ref<PayPassage | null>(null);
+const passage = ref<null | PayPassage>(null);
 const points = ref<PassageHourlyPoint[]>([]);
 const summary = ref<PassageHourlyStat['summary']>(null);
 
@@ -37,7 +34,11 @@ function dateOf(which: string) {
 }
 
 async function load() {
-  if (passage.value?.payPassageId == null) return;
+  if (
+    passage.value?.payPassageId === null ||
+    passage.value?.payPassageId === undefined
+  )
+    return;
   loading.value = true;
   try {
     const data = await fetchPassageHourlyStatApi({
@@ -109,7 +110,9 @@ defineExpose({ show });
         </span>
         <span>
           成率
-          <b class="text-primary">{{ formatRateDecimal(summary.successRate) }}</b>
+          <b class="text-primary">{{
+            formatRateDecimal(summary.successRate)
+          }}</b>
         </span>
       </div>
       <Table
