@@ -20,7 +20,7 @@ import viteVueDevTools from 'vite-plugin-vue-devtools';
 import { viteArchiverPlugin } from './archiver';
 import { viteDayjsPlugin } from './dayjs';
 import { viteExtraAppConfigPlugin } from './extra-app-config';
-import { viteFormFieldSlotMigrationWarningPlugin } from './form-field-slot-migration-warning';
+// import { viteFormFieldSlotMigrationWarningPlugin } from './form-field-slot-migration-warning';
 import { viteHtmlPlugin } from './html';
 import { viteImportMapPlugin } from './importmap';
 import { viteInjectAppLoadingPlugin } from './inject-app-loading';
@@ -145,10 +145,11 @@ async function loadApplicationPlugins(
         return [await vitePrintPlugin({ infoMap: printInfoMap })];
       },
     },
-    {
-      condition: !isBuild,
-      plugins: () => [viteFormFieldSlotMigrationWarningPlugin()],
-    },
+    // 业务页未使用「具名字段槽 + v-bind="slotProps"」旧写法；关闭注入以免污染控制台
+    // {
+    //   condition: !isBuild,
+    //   plugins: () => [viteFormFieldSlotMigrationWarningPlugin()],
+    // },
     {
       condition: vxeTableLazyImport,
       plugins: async () => {

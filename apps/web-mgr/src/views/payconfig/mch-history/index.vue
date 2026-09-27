@@ -66,15 +66,17 @@ const query = reactive({
   mchNo: '',
   mchName: '',
   payOrderId: '',
-  fundDirection: '',
-  bizType: '',
+  fundDirection: undefined as string | undefined,
+  bizType: undefined as string | undefined,
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
 const detailRef = ref<InstanceType<typeof MchHistoryDetailDrawer>>();
 const { loadStatSafely, buildStatItems } = useListStat();
 
-function mchHistoryRowKey(r: Record<string, unknown>, i?: number) {
-  return String(r.mchHistoryId ?? `mch-his-${i ?? 0}`);
+function mchHistoryRowKey(r: Record<string, unknown>) {
+  return String(
+    r.mchHistoryId ?? `${r.createdAt ?? ''}_${r.mchNo ?? ''}_${r.amount ?? ''}`,
+  );
 }
 
 const listStatItems = buildStatItems(() => {
@@ -152,8 +154,8 @@ function onReset() {
   query.mchNo = '';
   query.mchName = '';
   query.payOrderId = '';
-  query.fundDirection = '';
-  query.bizType = '';
+  query.fundDirection = undefined;
+  query.bizType = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
 }

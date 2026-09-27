@@ -237,7 +237,10 @@ onMounted(async () => {
             showTotal: (t: number) => `共 ${t} 条`,
             total,
           }"
-          :row-key="(_r: unknown, i?: number) => String(i ?? 0)"
+          :row-key="
+            (r: Record<string, unknown>) =>
+              `${r.createdAt ?? ''}_${r.mchNo ?? r.mchName ?? ''}_${r.productId ?? r.productName ?? ''}`
+          "
           size="middle"
           :scroll="{ x: 1200 }"
           @change="onTableChange"

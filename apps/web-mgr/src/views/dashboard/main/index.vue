@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { SystemInfo } from '#/api';
+
 /**
  * 主页：KPI → 今日分析 → 排名/监控 → 轻量快捷入口
  */
@@ -10,9 +12,10 @@ import { IconifyIcon } from '@vben/icons';
 import { preferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
+
 import { Popover } from 'ant-design-vue';
 
-import { fetchSystemInfoApi, type SystemInfo } from '#/api';
+import { fetchSystemInfoApi } from '#/api';
 import { formatYuan } from '#/utils/format';
 
 import DashboardRankList from '../components/RankList.vue';
@@ -34,14 +37,12 @@ interface QuickNavItem {
 
 const userStore = useUserStore();
 const router = useRouter();
-const systemInfo = ref<SystemInfo | null>(null);
+const systemInfo = ref<null | SystemInfo>(null);
 const popupVisible = ref(false);
 
 const displayName = computed(
   () =>
-    userStore.userInfo?.realName ||
-    userStore.userInfo?.username ||
-    '运营同学',
+    userStore.userInfo?.realName || userStore.userInfo?.username || '运营同学',
 );
 
 const quickNavItems: QuickNavItem[] = [
@@ -240,11 +241,61 @@ onMounted(() => {
         <template #title>
           你好，{{ displayName }}，开始今天的运营工作吧
         </template>
-        <template #description>
-          实时概览成交、通道与商户表现
-        </template>
+        <template #description> 实时概览成交、通道与商户表现 </template>
         <template #actions>
-          <span />
+          <!-- 租约信息放欢迎区右侧：与账号身份同层，避免沉在页底 -->
+          <Popover
+            v-if="leaseCorner"
+            v-model:open="popupVisible"
+            placement="bottomRight"
+            trigger="click"
+            :overlay-style="{ maxWidth: '420px' }"
+          >
+            <template #content>
+              <div class="lease-reminder-popup">
+                <div class="lease-reminder-popup__header">
+                  <span class="lease-reminder-popup__title">系统提醒</span>
+                  <button
+                    type="button"
+                    class="lease-reminder-popup__close"
+                    @click="closeLeasePopup"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div class="lease-reminder-popup__body">{{ leaseMessage }}</div>
+              </div>
+            </template>
+            <div class="dashboard-lease-meta">
+              <span>{{ leaseCorner.prefix }}</span>
+              <span class="dashboard-lease-meta__type">{{
+                leaseCorner.typeLabel
+              }}</span>
+              <template v-if="leaseCorner.balanceLabel">
+                <span class="dashboard-lease-meta__sep">·</span>
+                <span>{{ leaseCorner.balanceLabel.trim() }}</span>
+                <span
+                  :class="{
+                    'dashboard-lease-meta__highlight':
+                      leaseFlags.insufficientBalance,
+                  }"
+                >
+                  {{ leaseCorner.balanceValue }}
+                </span>
+              </template>
+              <template v-if="leaseCorner.expireLabel">
+                <span class="dashboard-lease-meta__sep">·</span>
+                <span>{{ leaseCorner.expireLabel.trim() }}</span>
+                <span
+                  :class="{
+                    'dashboard-lease-meta__highlight': leaseFlags.expiringSoon,
+                  }"
+                >
+                  {{ leaseCorner.expireValue }}
+                </span>
+              </template>
+            </div>
+          </Popover>
         </template>
       </WorkbenchHeader>
 
@@ -274,55 +325,6 @@ onMounted(() => {
           </button>
         </div>
       </section>
-
-      <Popover
-        v-if="leaseCorner"
-        v-model:open="popupVisible"
-        placement="topLeft"
-        trigger="click"
-        :overlay-style="{ maxWidth: '420px' }"
-      >
-        <template #content>
-          <div class="lease-reminder-popup">
-            <div class="lease-reminder-popup__header">
-              <span class="lease-reminder-popup__title">系统提醒</span>
-              <button
-                type="button"
-                class="lease-reminder-popup__close"
-                @click="closeLeasePopup"
-              >
-                ×
-              </button>
-            </div>
-            <div class="lease-reminder-popup__body">{{ leaseMessage }}</div>
-          </div>
-        </template>
-        <div class="dashboard-lease-corner">
-          <span>{{ leaseCorner.prefix }}</span>
-          <span>{{ leaseCorner.typeLabel }}</span>
-          <template v-if="leaseCorner.balanceLabel">
-            <span>{{ leaseCorner.balanceLabel }}</span>
-            <span
-              :class="{
-                'dashboard-lease-corner__highlight':
-                  leaseFlags.insufficientBalance,
-              }"
-            >
-              {{ leaseCorner.balanceValue }}
-            </span>
-          </template>
-          <template v-if="leaseCorner.expireLabel">
-            <span>{{ leaseCorner.expireLabel }}</span>
-            <span
-              :class="{
-                'dashboard-lease-corner__highlight': leaseFlags.expiringSoon,
-              }"
-            >
-              {{ leaseCorner.expireValue }}
-            </span>
-          </template>
-        </div>
-      </Popover>
     </div>
   </Page>
 </template>
@@ -333,7 +335,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-bottom: 28px;
 }
 
 .row-container {
@@ -356,13 +357,13 @@ onMounted(() => {
 
 .quick-nav {
   display: flex;
-  align-items: center;
-  gap: 14px;
   flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
   padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid hsl(var(--border) / 70%);
   background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 70%);
+  border-radius: 12px;
 }
 
 .quick-nav__label {
@@ -374,21 +375,21 @@ onMounted(() => {
 
 .quick-nav__list {
   display: flex;
+  flex: 1;
   flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
-  flex: 1;
 }
 
 .quick-nav__item {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
   padding: 6px 10px 6px 6px;
-  border-radius: 999px;
-  border: 1px solid hsl(var(--border) / 65%);
-  background: hsl(var(--background) / 55%);
   cursor: pointer;
+  background: hsl(var(--background) / 55%);
+  border: 1px solid hsl(var(--border) / 65%);
+  border-radius: 999px;
   transition:
     border-color 0.18s ease,
     background-color 0.18s ease,
@@ -396,18 +397,18 @@ onMounted(() => {
 }
 
 .quick-nav__item:hover {
-  border-color: hsl(var(--primary) / 35%);
   background: hsl(var(--primary) / 6%);
+  border-color: hsl(var(--primary) / 35%);
   transform: translateY(-1px);
 }
 
 .quick-nav__icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
 }
 
 .quick-nav__title {
@@ -416,18 +417,37 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.dashboard-lease-corner {
-  max-width: min(560px, 100%);
+.dashboard-lease-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: min(420px, 100%);
+  padding: 6px 10px;
   font-size: 12px;
+  line-height: 1.4;
   color: hsl(var(--muted-foreground));
-  line-height: 1.5;
-  word-break: break-word;
+  text-align: right;
+  overflow-wrap: anywhere;
   cursor: default;
+  background: hsl(var(--background) / 60%);
+  border: 1px solid hsl(var(--border) / 70%);
+  border-radius: 999px;
 }
 
-.dashboard-lease-corner__highlight {
-  color: hsl(var(--destructive));
+.dashboard-lease-meta__type {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.dashboard-lease-meta__sep {
+  opacity: 0.45;
+}
+
+.dashboard-lease-meta__highlight {
   font-weight: 700;
+  color: hsl(var(--destructive));
 }
 
 .lease-reminder-popup {
@@ -449,12 +469,12 @@ onMounted(() => {
 }
 
 .lease-reminder-popup__close {
-  border: 0;
-  background: transparent;
   font-size: 18px;
   line-height: 1;
-  cursor: pointer;
   color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  background: transparent;
+  border: 0;
 }
 
 .lease-reminder-popup__body {

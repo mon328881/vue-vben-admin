@@ -132,8 +132,8 @@ function asRow(record: unknown): Record<string, unknown> {
   return (record ?? {}) as Record<string, unknown>;
 }
 
-function errorRowKey(r: Record<string, unknown>, i?: number) {
-  return String(r.errorOrderId ?? r.mchOrderNo ?? i ?? 0);
+function errorRowKey(r: Record<string, unknown>) {
+  return String(r.errorOrderId ?? r.mchOrderNo ?? r.createdAt ?? '');
 }
 
 async function openDetail(row: Record<string, unknown>) {

@@ -73,7 +73,7 @@ const dateRange = ref<[string, string] | undefined>(defaultTodayRange());
 const query = reactive({
   mchNo: '',
   mchName: '',
-  fundDirection: '',
+  fundDirection: undefined as string | undefined,
 });
 const stat = ref<PrepaidHistoryStat>({});
 const { loadStatSafely } = useListStat();
@@ -135,7 +135,7 @@ function onSearch() {
 function onReset() {
   query.mchNo = '';
   query.mchName = '';
-  query.fundDirection = '';
+  query.fundDirection = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
 }

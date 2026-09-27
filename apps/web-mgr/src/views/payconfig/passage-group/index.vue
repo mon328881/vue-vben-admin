@@ -63,7 +63,7 @@ import PassageGroupQuotaDialog from './components/PassageGroupQuotaDialog.vue';
 defineOptions({ name: 'PassageGroupListPage' });
 
 const AUTO_CLEAN_MESSAGE =
-  '开启后每天定时清空未绑定供应商的通道余额；设置为“跟随全局”的供应商也会在该时间自动结算（北京时间）。';
+  '开启后每天定时清空未绑定供应商的通道余额；设置为“全局”的供应商也会在该时间自动结算（北京时间）。';
 
 const loading = ref(false);
 const dataSource = ref<PassageGroupInfo[]>([]);
@@ -141,7 +141,7 @@ const columns: TableColumnsType = [
     width: 160,
   },
   { dataIndex: 'state', title: '状态', width: 90 },
-  { dataIndex: 'featureFlags', title: '功能开关', width: 100 },
+  { dataIndex: 'featureFlags', title: '功能开关', width: 72, align: 'center' },
   { dataIndex: 'prepaid', title: '预付', width: 180 },
   { dataIndex: 'balance', title: '余额', width: 110 },
   { dataIndex: 'diff', title: '[预付-余额]差额', width: 180 },

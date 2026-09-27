@@ -44,7 +44,8 @@ class PreferenceManager {
   private state: Preferences;
 
   constructor() {
-    this.cache = new StorageManager();
+    // initPreferences 前先用占位 prefix，避免空 prefix + LocalStorage 的告警
+    this.cache = new StorageManager({ prefix: 'vben-preferences-pending' });
     // 构造函数不再同步读取缓存，使用默认值初始化
     // 真正的缓存加载在 initPreferences 中完成（已经是 async）
     this.state = reactive<Preferences>({ ...defaultPreferences });

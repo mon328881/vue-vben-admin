@@ -109,13 +109,53 @@ function leafRoute(node: MenuNode): string {
 }
 
 /**
+ * 前端侧栏调整：把「用户角色管理」(ENT_UR) 从「系统管理」下提出来，
+ * 插到「结算管理」与「系统管理」之间。不改后端 sys_ent。
+ */
+function liftUserRoleGroup(nodes: MenuNode[]): MenuNode[] {
+  const list: MenuNode[] = nodes.map((n) => ({
+    ...n,
+    children: n.children ? [...n.children] : n.children,
+  }));
+  if (list.some((n) => n.entId === 'ENT_UR')) {
+    return list.toSorted((a, b) => (a.entSort ?? 0) - (b.entSort ?? 0));
+  }
+
+  const sysIdx = list.findIndex((n) => n.entId === 'ENT_SYS_CONFIG');
+  if (sysIdx === -1) return list;
+
+  const sys = list[sysIdx];
+  if (!sys) return list;
+  const sysChildren = onlyMl(sys.children);
+  const urIdx = sysChildren.findIndex((n) => n.entId === 'ENT_UR');
+  if (urIdx === -1) return list;
+
+  const [ur] = sysChildren.splice(urIdx, 1);
+  if (!ur) return list;
+
+  list[sysIdx] = { ...sys, children: sysChildren };
+
+  const lifted: MenuNode = {
+    ...ur,
+    // 结算管理=100、系统管理=200 → 夹在中间
+    entSort: 150,
+  };
+
+  const divIdx = list.findIndex((n) => n.entId === 'ENT_DIVISION_MANAGE');
+  const insertAt = divIdx === -1 ? sysIdx : divIdx + 1;
+  list.splice(insertAt, 0, lifted);
+
+  return list.toSorted((a, b) => (a.entSort ?? 0) - (b.entSort ?? 0));
+}
+
+/**
  * 将 mgr-api allMenuRouteTree（仅 ML）转为 Vben 后端路由结构。
  * 目录节点无 component；叶子用 menuUri（或缺省 componentName），未迁移页面走 coming-soon。
  */
 export function transformMenuTree(
   nodes: MenuNode[],
 ): RouteRecordStringComponent[] {
-  return transformLevel(onlyMl(nodes), 0);
+  return transformLevel(liftUserRoleGroup(onlyMl(nodes)), 0);
 }
 
 function transformLevel(

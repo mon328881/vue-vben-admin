@@ -94,8 +94,8 @@ function asRow(record: unknown): Record<string, unknown> {
   return (record ?? {}) as Record<string, unknown>;
 }
 
-function notifyRowKey(r: Record<string, unknown>, i?: number) {
-  return String(r.notifyId ?? r.orderId ?? i ?? 0);
+function notifyRowKey(r: Record<string, unknown>) {
+  return String(r.notifyId ?? r.orderId ?? r.createdAt ?? '');
 }
 
 function notifyLimitText(row: Record<string, unknown>) {

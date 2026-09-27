@@ -64,14 +64,17 @@ const query = reactive({
   payPassageName: '',
   payPassageId: '',
   payOrderId: '',
-  fundDirection: '',
-  bizType: '',
+  fundDirection: undefined as string | undefined,
+  bizType: undefined as string | undefined,
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
 const { loadStatSafely, buildStatItems } = useListStat();
 
-function passageHistoryRowKey(r: Record<string, unknown>, i?: number) {
-  return String(r.passageTransactionHistoryId ?? `passage-his-${i ?? 0}`);
+function passageHistoryRowKey(r: Record<string, unknown>) {
+  return String(
+    r.passageTransactionHistoryId ??
+      `${r.createdAt ?? ''}_${r.payPassageId ?? ''}_${r.amount ?? ''}`,
+  );
 }
 
 const listStatItems = buildStatItems(() => {
@@ -147,8 +150,8 @@ function onReset() {
   query.payPassageName = '';
   query.payPassageId = '';
   query.payOrderId = '';
-  query.fundDirection = '';
-  query.bizType = '';
+  query.fundDirection = undefined;
+  query.bizType = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
 }

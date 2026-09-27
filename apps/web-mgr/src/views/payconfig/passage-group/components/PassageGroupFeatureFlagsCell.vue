@@ -1,9 +1,9 @@
 <script lang="ts" setup>
+import type { PassageGroupInfo } from '#/api/modules/passage-group';
+
 import { computed } from 'vue';
 
 import { Tooltip } from 'ant-design-vue';
-
-import type { PassageGroupInfo } from '#/api/modules/passage-group';
 
 const props = defineProps<{ row: PassageGroupInfo }>();
 
@@ -59,7 +59,8 @@ const tipText = computed(() =>
     <template #title>
       <div class="whitespace-pre-line text-xs">{{ tipText }}</div>
     </template>
-    <div class="pg-feature-flags">
+    <!-- 2×2 网格：与商户列表功能开关一致 -->
+    <div class="pg-feature-flags" aria-label="功能开关">
       <span
         v-for="item in items"
         :key="item.key"
@@ -78,35 +79,38 @@ const tipText = computed(() =>
 
 <style scoped>
 .pg-feature-flags {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(2, 22px);
+  gap: 4px;
+  width: fit-content;
   line-height: 1;
   cursor: default;
 }
 
 .pg-feature-flags__chip {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
-  min-width: 14px;
-  padding: 0 1px;
-  font-size: 11px;
-  line-height: 1.2;
-  border: 1px solid hsl(var(--border));
-  border-radius: 2px;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
   user-select: none;
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
 }
 
 .pg-feature-flags__chip--on {
-  color: #389e0d;
-  background: color-mix(in srgb, #52c41a 12%, transparent);
-  border-color: color-mix(in srgb, #52c41a 40%, hsl(var(--border)));
+  color: hsl(142deg 71% 28%);
+  background: hsl(142deg 60% 45% / 12%);
+  border-color: hsl(142deg 50% 40% / 35%);
 }
 
 .pg-feature-flags__chip--off {
   color: hsl(var(--muted-foreground));
-  background: transparent;
+  background: hsl(var(--muted) / 45%);
+  border-color: hsl(var(--border));
 }
 </style>

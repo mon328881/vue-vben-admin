@@ -23,6 +23,7 @@ import {
   Space,
   Switch,
   Table,
+  Tag,
   Textarea,
 } from 'ant-design-vue';
 
@@ -44,6 +45,7 @@ import {
   PRODUCT_RATE_PRECISION,
   PRODUCT_STATE_OPTIONS,
   productPollMode,
+  productPollModeTagColor,
   toProductRate,
   validateProductRate,
 } from '#/constants/payWays';
@@ -650,7 +652,9 @@ onMounted(() => {
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'mode'">
-              {{ productPollMode(record.mode).label }}
+              <Tag :color="productPollModeTagColor(record.mode)">
+                {{ productPollMode(record.mode).label }}
+              </Tag>
             </template>
             <template v-else-if="column.dataIndex === 'state'">
               <Switch

@@ -64,14 +64,17 @@ const query = reactive({
   agentNo: '',
   agentName: '',
   payOrderId: '',
-  fundDirection: '',
-  bizType: '',
+  fundDirection: undefined as string | undefined,
+  bizType: undefined as string | undefined,
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
 const { loadStatSafely, buildStatItems } = useListStat();
 
-function agentHistoryRowKey(r: Record<string, unknown>, i?: number) {
-  return String(r.agentAccountHistoryId ?? `agent-his-${i ?? 0}`);
+function agentHistoryRowKey(r: Record<string, unknown>) {
+  return String(
+    r.agentAccountHistoryId ??
+      `${r.createdAt ?? ''}_${r.agentNo ?? ''}_${r.amount ?? ''}`,
+  );
 }
 
 const listStatItems = buildStatItems(() => {
@@ -147,8 +150,8 @@ function onReset() {
   query.agentNo = '';
   query.agentName = '';
   query.payOrderId = '';
-  query.fundDirection = '';
-  query.bizType = '';
+  query.fundDirection = undefined;
+  query.bizType = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
 }

@@ -34,12 +34,12 @@ export const MCH_GROUP_SETTLE_MODES = [
   { value: 0, label: '关闭', description: '该分组不执行自动结算。' },
   {
     value: 1,
-    label: '独立时间',
+    label: '独立',
     description: '按本分组单独设置的每日时间执行结算。',
   },
   {
     value: 2,
-    label: '跟随全局',
+    label: '全局',
     description: '使用商户自动结算总开关和全局结算时间。',
   },
 ];
@@ -48,12 +48,12 @@ export const PASSAGE_GROUP_SETTLE_MODES = [
   { value: 0, label: '关闭', description: '该供应商不执行自动结算。' },
   {
     value: 1,
-    label: '独立时间',
+    label: '独立',
     description: '按本供应商单独设置的每日时间执行结算。',
   },
   {
     value: 2,
-    label: '跟随全局',
+    label: '全局',
     description: '使用“通道自动日切”总开关和执行时间。',
   },
 ] as const;
@@ -65,18 +65,18 @@ export const DIVISION_STATE_OPTIONS = [
   { value: '4', label: '超时关闭' },
 ];
 
-export function divisionStateLabel(state?: number | null) {
+export function divisionStateLabel(state?: null | number) {
   const map: Record<number, string> = {
     1: '待结算',
     2: '结算成功',
     3: '结算失败',
     4: '超时关闭',
   };
-  if (state == null) return '-';
+  if (state === null || state === undefined) return '-';
   return map[state] ?? `状态${state}`;
 }
 
-export function divisionStateColor(state?: number | null) {
+export function divisionStateColor(state?: null | number) {
   const n = Number(state);
   if (n === 1) return 'processing';
   if (n === 2) return 'success';
@@ -85,29 +85,27 @@ export function divisionStateColor(state?: number | null) {
   return 'default';
 }
 
-export function settleModeLabel(mode?: number | null) {
+export function settleModeLabel(mode?: null | number) {
   const hit = MCH_GROUP_SETTLE_MODES.find((m) => m.value === Number(mode));
   return hit?.label ?? '--';
 }
 
-export function settleModeTagColor(mode?: number | null) {
+export function settleModeTagColor(mode?: null | number) {
   const value = Number(mode);
   if (value === 1) return 'warning';
   if (value === 2) return 'processing';
   return 'default';
 }
 
-
-export function passageGroupSettleModeLabel(mode?: number | null) {
+export function passageGroupSettleModeLabel(mode?: null | number) {
   const n = Number(mode ?? 2);
   const normalized = n === 0 || n === 1 ? n : 2;
   return (
-    PASSAGE_GROUP_SETTLE_MODES.find((m) => m.value === normalized)?.label ??
-    '-'
+    PASSAGE_GROUP_SETTLE_MODES.find((m) => m.value === normalized)?.label ?? '-'
   );
 }
 
-export function passageGroupSettleModeTagColor(mode?: number | null) {
+export function passageGroupSettleModeTagColor(mode?: null | number) {
   const n = Number(mode ?? 2);
   const normalized = n === 0 || n === 1 ? n : 2;
   if (normalized === 1) return 'warning';
@@ -115,15 +113,15 @@ export function passageGroupSettleModeTagColor(mode?: number | null) {
   return 'default';
 }
 
-export { bizTypeLabel } from '@asiapay/shared/constants/biz-type';
 export {
   AMOUNT_FIELD_KIND,
   type AmountDisplayKind,
   amountKindForField,
 } from '@asiapay/shared/constants/amount-display';
+export { bizTypeLabel } from '@asiapay/shared/constants/biz-type';
 
-export function fundDirectionLabel(value?: number | string | null) {
-  if (value == null || value === '') return '-';
+export function fundDirectionLabel(value?: null | number | string) {
+  if (value === null || value === undefined || value === '') return '-';
   return (
     FUND_DIRECTION_OPTIONS.find((o) => o.value === String(value))?.label ??
     String(value)
@@ -148,7 +146,8 @@ export function randomSecret() {
     '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let secret = '';
   for (let i = 0; i < 128; i += 1) {
-    secret += chars[Math.floor(Math.random() * chars.length)]!;
+    const ch = chars[Math.floor(Math.random() * chars.length)];
+    if (ch) secret += ch;
   }
   return secret;
 }

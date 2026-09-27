@@ -1,9 +1,16 @@
 <script lang="ts" setup>
+import type { TableColumnsType, TablePaginationConfig } from 'ant-design-vue';
+
 /**
  * 对齐旧端 RankList：左侧排名/并发表 + 右侧通道监控图
  */
 import type { EchartsUIType } from '@vben/plugins/echarts';
-import type { TableColumnsType, TablePaginationConfig } from 'ant-design-vue';
+
+import type {
+  ConcurrentRow,
+  DashboardRankRow,
+  RealTimePassageItem,
+} from '#/api';
 
 import {
   computed,
@@ -19,13 +26,8 @@ import {
 
 import { AnalysisChartCard } from '@vben/common-ui';
 import { EchartsUI, useEcharts } from '@vben/plugins/echarts';
-import {
-  Col,
-  RadioButton,
-  RadioGroup,
-  Row,
-  Table,
-} from 'ant-design-vue';
+
+import { Col, RadioButton, RadioGroup, Row, Table } from 'ant-design-vue';
 
 import {
   fetchDashboardAgentRankApi,
@@ -34,9 +36,6 @@ import {
   fetchDashboardPassageRankApi,
   fetchRealTimeConcurrentApi,
   fetchRealTimeCountApi,
-  type ConcurrentRow,
-  type DashboardRankRow,
-  type RealTimePassageItem,
 } from '#/api';
 import {
   amountSignedClass,
@@ -185,7 +184,7 @@ async function loadRank(toFirst = false) {
         page = await fetchDashboardMchRankApi(params);
       }
     }
-    rankRows.value = (page?.records ?? []).map(normalizeRankRow);
+    rankRows.value = (page?.records ?? []).map((row) => normalizeRankRow(row));
     rankTotal.value = Number(page?.total ?? 0);
   } catch (error) {
     console.error('加载排名数据失败:', error);
@@ -221,7 +220,7 @@ function formatSuccessRateCell(row: DashboardRankRow) {
     return formatSuccessRate(row.successCount, row.totalCount);
   }
   const value = row.successRate;
-  if (value == null) return '-';
+  if (value === null || value === undefined) return '-';
   const num = Number(value);
   if (!Number.isFinite(num)) return '-';
   return `${(num * 100).toFixed(2)}%`;
@@ -246,7 +245,7 @@ function displayName(row: DashboardRankRow) {
 }
 
 function onPassageNameClick(row: DashboardRankRow) {
-  if (row.payPassageId == null) return;
+  if (row.payPassageId === null || row.payPassageId === undefined) return;
   rateDetailRef.value?.show({
     payPassageId: Number(row.payPassageId),
     payPassageName: row.payPassageName,
@@ -355,7 +354,7 @@ async function loadMonitor() {
         successAmount: Number(item.successAmount ?? 0),
         totalAmount: Number(item.totalAmount ?? 0),
       }))
-      .sort((a, b) => b.rate - a.rate);
+      .toSorted((a, b) => b.rate - a.rate);
     await renderChart(monitorRows);
   } catch (error) {
     console.error('加载通道监控数据失败:', error);
@@ -446,170 +445,183 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Row :gutter="16" class="rank-row">
-    <Col :xs="24" :xl="12">
-      <AnalysisChartCard class="dashboard-rank-card" :title="rankBoardTitle">
-        <div class="card-header">
-          <RadioGroup v-model:value="boardTab" button-style="solid" size="small">
-            <RadioButton value="1">数据排名</RadioButton>
-            <RadioButton value="2">商户并发</RadioButton>
-          </RadioGroup>
-          <RadioGroup
-            v-if="boardTab === '1'"
-            v-model:value="rankTab"
-            button-style="solid"
-            size="small"
-          >
-            <RadioButton value="1">商户</RadioButton>
-            <RadioButton value="2">通道</RadioButton>
-            <RadioButton value="3">供应商</RadioButton>
-            <RadioButton value="4">代理</RadioButton>
-          </RadioGroup>
-          <RadioGroup
-            v-else
-            v-model:value="concurrentMinutes"
-            button-style="solid"
-            size="small"
-          >
-            <RadioButton value="1">1分钟</RadioButton>
-            <RadioButton value="5">5分钟</RadioButton>
-            <RadioButton value="20">20分钟</RadioButton>
-            <RadioButton value="60">60分钟</RadioButton>
-          </RadioGroup>
-        </div>
+  <!-- 单根节点：避免 class 落到 fragment 上触发 inheritAttrs 警告 -->
+  <div class="dashboard-rank-list">
+    <Row :gutter="16" class="rank-row">
+      <Col :xs="24" :xl="12">
+        <AnalysisChartCard class="dashboard-rank-card" :title="rankBoardTitle">
+          <div class="card-header">
+            <RadioGroup
+              v-model:value="boardTab"
+              button-style="solid"
+              size="small"
+            >
+              <RadioButton value="1">数据排名</RadioButton>
+              <RadioButton value="2">商户并发</RadioButton>
+            </RadioGroup>
+            <RadioGroup
+              v-if="boardTab === '1'"
+              v-model:value="rankTab"
+              button-style="solid"
+              size="small"
+            >
+              <RadioButton value="1">商户</RadioButton>
+              <RadioButton value="2">通道</RadioButton>
+              <RadioButton value="3">供应商</RadioButton>
+              <RadioButton value="4">代理</RadioButton>
+            </RadioGroup>
+            <RadioGroup
+              v-else
+              v-model:value="concurrentMinutes"
+              button-style="solid"
+              size="small"
+            >
+              <RadioButton value="1">1分钟</RadioButton>
+              <RadioButton value="5">5分钟</RadioButton>
+              <RadioButton value="20">20分钟</RadioButton>
+              <RadioButton value="60">60分钟</RadioButton>
+            </RadioGroup>
+          </div>
 
-        <div v-show="boardTab === '1'" class="table-container">
-          <Table
-            size="small"
-            :row-key="rowKey"
-            :columns="rankColumns"
-            :data-source="rankRows"
-            :loading="rankLoading"
-            :pagination="{
-              current: rankPage.current,
-              pageSize: rankPage.pageSize,
-              total: rankTotal,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-            }"
-            :scroll="{ y: 480 }"
-            @change="onRankTableChange"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'name'">
-                <button
-                  v-if="rankTab === '2' && record.payPassageId != null"
-                  type="button"
-                  class="passage-rate-link"
-                  title="查看通道费率明细"
-                  @click="onPassageNameClick(record)"
-                >
-                  {{ displayName(record) }}
-                </button>
-                <template v-else>
-                  {{ displayName(record) }}
+          <div v-show="boardTab === '1'" class="table-container">
+            <Table
+              size="small"
+              :row-key="rowKey"
+              :columns="rankColumns"
+              :data-source="rankRows"
+              :loading="rankLoading"
+              :pagination="{
+                current: rankPage.current,
+                pageSize: rankPage.pageSize,
+                total: rankTotal,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+              }"
+              :scroll="{ y: 480 }"
+              @change="onRankTableChange"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'name'">
+                  <button
+                    v-if="rankTab === '2' && record.payPassageId != null"
+                    type="button"
+                    class="passage-rate-link"
+                    title="查看通道费率明细"
+                    @click="onPassageNameClick(record)"
+                  >
+                    {{ displayName(record) }}
+                  </button>
+                  <template v-else>
+                    {{ displayName(record) }}
+                  </template>
+                </template>
+                <template v-else-if="column.key === 'balance'">
+                  <b :class="amountSignedClass(record.balance)">
+                    {{ formatYuan(record.balance) }}
+                  </b>
+                </template>
+                <template v-else-if="column.key === 'successAmount'">
+                  <span v-if="record.successAmount" class="text-brand">
+                    {{ formatYuan(record.successAmount) }}
+                  </span>
+                  <b v-else>-</b>
+                </template>
+                <template v-else-if="column.key === 'successRate'">
+                  <b>{{ formatSuccessRateCell(record) }}</b>
+                </template>
+                <template v-else-if="column.key === 'diff'">
+                  <b>{{ formatDiff(record) }}</b>
                 </template>
               </template>
-              <template v-else-if="column.key === 'balance'">
-                <b :class="amountSignedClass(record.balance)">
-                  {{ formatYuan(record.balance) }}
-                </b>
-              </template>
-              <template v-else-if="column.key === 'successAmount'">
-                <span v-if="record.successAmount" class="text-brand">
-                  {{ formatYuan(record.successAmount) }}
-                </span>
-                <b v-else>-</b>
-              </template>
-              <template v-else-if="column.key === 'successRate'">
-                <b>{{ formatSuccessRateCell(record) }}</b>
-              </template>
-              <template v-else-if="column.key === 'diff'">
-                <b>{{ formatDiff(record) }}</b>
-              </template>
-            </template>
-          </Table>
-        </div>
-
-        <div v-show="boardTab === '2'" class="table-container">
-          <Table
-            size="small"
-            row-key="mchName"
-            :columns="concurrentColumns"
-            :data-source="concurrentRows"
-            :loading="concurrentLoading"
-            :pagination="{
-              current: concurrentPage.current,
-              pageSize: concurrentPage.pageSize,
-              total: concurrentTotal,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-            }"
-            :scroll="{ y: 480 }"
-            @change="onConcurrentTableChange"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'allCount'">
-                {{ record.allCount ?? 0 }}
-              </template>
-              <template v-else-if="column.key === 'realTimeRate'">
-                <span class="text-brand">
-                  {{ formatSuccessRate(record.successCount, record.allCount) }}
-                </span>
-              </template>
-              <template v-else-if="column.key === 'perMinCount'">
-                <b>{{ record.perMinCount ?? 0 }}</b>
-              </template>
-            </template>
-          </Table>
-        </div>
-      </AnalysisChartCard>
-    </Col>
-
-    <Col :xs="24" :xl="12">
-      <AnalysisChartCard class="monitor-panel" title="通道监控">
-        <div class="monitor-header">
-          <RadioGroup
-            v-model:value="monitorMinutes"
-            button-style="solid"
-            size="small"
-          >
-            <RadioButton value="1">1分钟</RadioButton>
-            <RadioButton value="5">5分钟</RadioButton>
-            <RadioButton value="20">20分钟</RadioButton>
-            <RadioButton value="60">60分钟</RadioButton>
-          </RadioGroup>
-        </div>
-        <div class="monitor-body">
-          <div class="chart-legend">
-            <span class="legend-item">
-              <span class="legend-color"></span>
-              <span class="legend-text">通道成功率</span>
-            </span>
+            </Table>
           </div>
-          <div class="monitor-chart-wrap">
-            <EchartsUI ref="chartRef" height="560px" />
-            <div v-if="chartEmpty" class="monitor-empty">暂无数据</div>
+
+          <div v-show="boardTab === '2'" class="table-container">
+            <Table
+              size="small"
+              row-key="mchName"
+              :columns="concurrentColumns"
+              :data-source="concurrentRows"
+              :loading="concurrentLoading"
+              :pagination="{
+                current: concurrentPage.current,
+                pageSize: concurrentPage.pageSize,
+                total: concurrentTotal,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50'],
+              }"
+              :scroll="{ y: 480 }"
+              @change="onConcurrentTableChange"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'allCount'">
+                  {{ record.allCount ?? 0 }}
+                </template>
+                <template v-else-if="column.key === 'realTimeRate'">
+                  <span class="text-brand">
+                    {{
+                      formatSuccessRate(record.successCount, record.allCount)
+                    }}
+                  </span>
+                </template>
+                <template v-else-if="column.key === 'perMinCount'">
+                  <b>{{ record.perMinCount ?? 0 }}</b>
+                </template>
+              </template>
+            </Table>
           </div>
-        </div>
-      </AnalysisChartCard>
-    </Col>
-  </Row>
-  <PassageRateDetailDrawer ref="rateDetailRef" />
+        </AnalysisChartCard>
+      </Col>
+
+      <Col :xs="24" :xl="12">
+        <AnalysisChartCard class="monitor-panel" title="通道监控">
+          <div class="monitor-header">
+            <RadioGroup
+              v-model:value="monitorMinutes"
+              button-style="solid"
+              size="small"
+            >
+              <RadioButton value="1">1分钟</RadioButton>
+              <RadioButton value="5">5分钟</RadioButton>
+              <RadioButton value="20">20分钟</RadioButton>
+              <RadioButton value="60">60分钟</RadioButton>
+            </RadioGroup>
+          </div>
+          <div class="monitor-body">
+            <div class="chart-legend">
+              <span class="legend-item">
+                <span class="legend-color"></span>
+                <span class="legend-text">通道成功率</span>
+              </span>
+            </div>
+            <div class="monitor-chart-wrap">
+              <EchartsUI ref="chartRef" height="560px" />
+              <div v-if="chartEmpty" class="monitor-empty">暂无数据</div>
+            </div>
+          </div>
+        </AnalysisChartCard>
+      </Col>
+    </Row>
+    <PassageRateDetailDrawer ref="rateDetailRef" />
+  </div>
 </template>
 
 <style scoped>
+.dashboard-rank-list {
+  width: 100%;
+}
+
 .rank-row {
   width: 100%;
 }
 
 .passage-rate-link {
   padding: 0;
-  border: 0;
-  background: transparent;
   color: hsl(var(--primary));
-  cursor: pointer;
   text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
 }
 
 .passage-rate-link:hover {
@@ -617,25 +629,25 @@ onUnmounted(() => {
 }
 
 .dashboard-rank-card {
-  height: 710px;
   box-sizing: border-box;
+  height: 710px;
 }
 
 .dashboard-rank-card :deep([data-slot='card-content']),
 .dashboard-rank-card :deep(.p-6) {
-  padding-top: 0;
-  height: calc(100% - 64px);
   display: flex;
   flex-direction: column;
+  height: calc(100% - 64px);
+  padding-top: 0;
 }
 
 .card-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 12px;
-  flex-wrap: wrap;
   padding-bottom: 12px;
 }
 
@@ -649,45 +661,45 @@ onUnmounted(() => {
 }
 
 .monitor-panel {
-  height: 710px;
   box-sizing: border-box;
+  height: 710px;
 }
 
 .monitor-panel :deep([data-slot='card-content']),
 .monitor-panel :deep(.p-6) {
-  padding-top: 0;
-  height: calc(100% - 64px);
   display: flex;
   flex-direction: column;
+  height: calc(100% - 64px);
+  padding-top: 0;
 }
 
 .monitor-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
   padding-bottom: 12px;
 }
 
 .monitor-body {
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-height: 0;
 }
 
 .chart-legend {
   display: flex;
+  flex-shrink: 0;
   justify-content: center;
   padding: 8px 0 12px;
-  flex-shrink: 0;
 }
 
 .legend-item {
   display: inline-flex;
-  align-items: center;
   gap: 6px;
+  align-items: center;
 }
 
 .legend-color {
@@ -715,13 +727,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 14px;
   color: hsl(var(--muted-foreground));
   background-color: hsl(var(--card));
-  font-size: 14px;
 }
 
 :deep(.amount-positive) {
-  color: hsl(142 71% 40%);
+  color: hsl(142deg 71% 40%);
 }
 
 :deep(.amount-negative) {

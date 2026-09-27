@@ -18,8 +18,7 @@ export const PRODUCT_POLL_MODES = [
   {
     value: 1,
     label: '费率优先',
-    description:
-      '在可用通道中，按费率从低到高依次尝试，费率相同时随机排序。',
+    description: '在可用通道中，按费率从低到高依次尝试，费率相同时随机排序。',
   },
   {
     value: 2,
@@ -30,8 +29,7 @@ export const PRODUCT_POLL_MODES = [
   {
     value: 3,
     label: '混合模式',
-    description:
-      '将可用通道按相近权重分组，同组内按费率从低到高顺序依次尝试。',
+    description: '将可用通道按相近权重分组，同组内按费率从低到高顺序依次尝试。',
   },
 ];
 
@@ -84,21 +82,33 @@ export const BATCH_RATE_ACTIONS = [
 
 export type BatchRateAction = (typeof BATCH_RATE_ACTIONS)[number]['value'];
 
-export function productPollMode(mode?: number | string | null) {
+export function productPollMode(mode?: null | number | string) {
   const value = Number(mode ?? 0);
-  return PRODUCT_POLL_MODES.find((item) => item.value === value) ?? UNKNOWN_MODE;
+  return (
+    PRODUCT_POLL_MODES.find((item) => item.value === value) ?? UNKNOWN_MODE
+  );
+}
+
+/** 列表 Tag 色：权重蓝 / 费率青 / 成率绿 / 混合橙 */
+export function productPollModeTagColor(mode?: null | number | string) {
+  const value = Number(mode ?? -1);
+  if (value === 0) return 'processing';
+  if (value === 1) return 'cyan';
+  if (value === 2) return 'success';
+  if (value === 3) return 'orange';
+  return 'default';
 }
 
 export function toProductRate(value: unknown) {
   return Number(
-    (
-      Number.parseFloat(String(value ?? '').trim()) / 100
-    ).toFixed(PRODUCT_RATE_PRECISION),
+    (Number.parseFloat(String(value ?? '').trim()) / 100).toFixed(
+      PRODUCT_RATE_PRECISION,
+    ),
   );
 }
 
 export function percentFromRate(value: unknown) {
-  if (value == null || value === '') return '';
+  if (value === null || value === undefined || value === '') return '';
   const num = Number(value);
   if (!Number.isFinite(num)) return '';
   return Number((num * 100).toFixed(PRODUCT_RATE_PRECISION));

@@ -72,7 +72,7 @@ const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>(defaultTodayRange());
 const query = reactive({
   passageGroupName: '',
-  fundDirection: '',
+  fundDirection: undefined as string | undefined,
 });
 const stat = ref<PrepaidHistoryStat>({});
 const { loadStatSafely } = useListStat();
@@ -80,7 +80,7 @@ const { loadStatSafely } = useListStat();
 const columns: TableColumnsType<PassagePrepaidHistory> = [
   {
     dataIndex: 'passageGroupName',
-    title: '通道商名称',
+    title: '供应商名称',
     width: 160,
     ellipsis: true,
   },
@@ -137,7 +137,7 @@ function onSearch() {
 
 function onReset() {
   query.passageGroupName = '';
-  query.fundDirection = '';
+  query.fundDirection = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
 }
@@ -176,7 +176,7 @@ onMounted(async () => {
             <Input
               v-model:value="query.passageGroupName"
               allow-clear
-              placeholder="通道商名称"
+              placeholder="供应商名称"
             />
           </Form.Item>
           <Form.Item>
