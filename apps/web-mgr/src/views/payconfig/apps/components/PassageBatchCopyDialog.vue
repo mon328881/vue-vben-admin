@@ -1,16 +1,11 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { ref } from 'vue';
 
-import {
-  Alert,
-  Input,
-  Modal,
-  Table,
-  Tag,
-  message,
-} from 'ant-design-vue';
+import { Alert, Input, message, Modal, Table, Tag } from 'ant-design-vue';
 
-import { batchCopyMchAppsApi, type PayPassage } from '#/api';
+import { batchCopyMchAppsApi } from '#/api';
 import {
   stripCopyName,
   uniqueCopyNames,
@@ -20,18 +15,24 @@ import {
 const emit = defineEmits<{ copied: [] }>();
 
 const COLUMNS = [
-  { key: 'source', title: '原通道', dataIndex: 'source', width: 240, ellipsis: true },
+  {
+    key: 'source',
+    title: '原通道',
+    dataIndex: 'source',
+    width: 240,
+    ellipsis: true,
+  },
   { key: 'newName', title: '新通道名称', dataIndex: 'newName' },
 ];
 
 const visible = ref(false);
 const saving = ref(false);
 const rows = ref<
-  Array<{ payPassageId: number; sourceName: string; newName: string }>
+  Array<{ newName: string; payPassageId: number; sourceName: string }>
 >([]);
 
 function open(passages: PayPassage[]) {
-  if (!passages.length) {
+  if (passages.length === 0) {
     message.error('请先勾选需要复制的通道');
     return;
   }
@@ -85,9 +86,7 @@ async function submit() {
         .join('、');
       message.warning(
         `成功复制 ${successCount} 条，失败 ${failItems.length} 条${
-          preview
-            ? `：${preview}${failItems.length > 3 ? '…' : ''}`
-            : ''
+          preview ? `：${preview}${failItems.length > 3 ? '…' : ''}` : ''
         }`,
       );
     }
@@ -125,8 +124,8 @@ defineExpose({ open });
           </div>
         </template>
       </Alert>
-      <section>
-        <div class="batch-copy-dialog__name-panel">
+      <section class="batch-copy-dialog__name-panel">
+        <div class="batch-copy-dialog__name-panel-head">
           <span class="batch-copy-dialog__name-panel-label">新通道名称</span>
           <Tag color="orange">可逐条修改</Tag>
         </div>
@@ -134,67 +133,95 @@ defineExpose({ open });
           默认按「原名称-一键复制-HH:mm」生成，建议便于区分的命名
         </p>
       </section>
-      <Table
-        row-key="payPassageId"
-        size="small"
-        bordered
-        :pagination="false"
-        :scroll="{ y: 360 }"
-        :columns="COLUMNS"
-        :data-source="rows"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'source'">
-            <span class="batch-copy-dialog__source" :title="`[${record.payPassageId}] ${record.sourceName}`">
-              [{{ record.payPassageId }}] {{ record.sourceName }}
-            </span>
+      <div class="batch-copy-dialog__table-wrap">
+        <Table
+          row-key="payPassageId"
+          size="small"
+          bordered
+          :pagination="false"
+          :scroll="{ y: 360 }"
+          :columns="COLUMNS"
+          :data-source="rows"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'source'">
+              <span
+                class="batch-copy-dialog__source"
+                :title="`[${record.payPassageId}] ${record.sourceName}`"
+              >
+                [{{ record.payPassageId }}] {{ record.sourceName }}
+              </span>
+            </template>
+            <template v-else-if="column.key === 'newName'">
+              <Input
+                v-model:value="record.newName"
+                allow-clear
+                placeholder="请输入新通道名称"
+              />
+            </template>
           </template>
-          <template v-else-if="column.key === 'newName'">
-            <Input
-              v-model:value="record.newName"
-              allow-clear
-              placeholder="请输入新通道名称"
-            />
-          </template>
-        </template>
-      </Table>
+        </Table>
+      </div>
     </div>
   </Modal>
 </template>
 
 <style scoped>
 .batch-copy-dialog__alert {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
-.batch-copy-dialog__alert-sub,
-.batch-copy-dialog__hint {
-  margin-top: 4px;
+.batch-copy-dialog__alert-sub {
+  margin-top: 2px;
   font-size: 12px;
-  color: var(--ant-color-text-secondary, #64748b);
+  color: hsl(var(--muted-foreground));
 }
 
 .batch-copy-dialog__name-panel {
+  padding: 10px 12px 8px;
+  margin-bottom: 10px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 8%) 0%,
+    hsl(var(--background)) 100%
+  );
+  border: 1px solid hsl(var(--primary) / 20%);
+  border-left: 3px solid hsl(var(--primary));
+  border-radius: var(--radius);
+}
+
+.batch-copy-dialog__name-panel-head {
   display: flex;
-  align-items: center;
   gap: 8px;
-  margin: 12px 0 0;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .batch-copy-dialog__name-panel-label {
+  font-size: 15px;
   font-weight: 600;
+  color: hsl(var(--foreground));
 }
 
 .batch-copy-dialog__hint {
-  margin: 4px 0 8px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+.batch-copy-dialog__table-wrap :deep(.ant-table) {
+  font-size: 13px;
 }
 
 .batch-copy-dialog__source {
-  display: inline-block;
+  display: block;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
+  color: hsl(var(--primary));
   white-space: nowrap;
-  vertical-align: bottom;
 }
 </style>

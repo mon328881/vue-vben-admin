@@ -5,12 +5,13 @@ import type { PassageStatInfo, PayPassage } from '#/api';
 import type { ListStatCardItem } from '#/components/list/ListStatCards.vue';
 import type { TableActionItem } from '#/components/table/TableActionLinks.vue';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 
 import {
+  Alert,
   Button,
   Card,
   Form,
@@ -42,7 +43,7 @@ import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vu
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import TableActionLinks from '#/components/table/TableActionLinks.vue';
 import { hasEnt, isAdmin } from '#/utils/access';
-import { formatFeeRate, formatRateDecimal, formatYuan } from '#/utils/format';
+import { formatYuan } from '#/utils/format';
 
 import PassageAgentConfigDialog from './components/PassageAgentConfigDialog.vue';
 import PassageAutoCleanDialog from './components/PassageAutoCleanDialog.vue';
@@ -91,10 +92,14 @@ const stat = ref<PassageStatInfo>({
   payPassageAutoCleanTime: '--:--',
 });
 const stateBusy = ref<Record<string, boolean>>({});
+const stateOverride = reactive(new Map<string, 0 | 1>());
 const resetVisible = ref(false);
 const resetSaving = ref(false);
 const closeAllVisible = ref(false);
 const closeAllSaving = ref(false);
+const closeAllGoogle = ref('');
+const openRecentlyVisible = ref(false);
+const openRecentlySaving = ref(false);
 
 const formRef = ref<InstanceType<typeof PassageFormDrawer>>();
 const detailRef = ref<InstanceType<typeof PassageDetailDrawer>>();
@@ -218,14 +223,35 @@ function parseConfig(row: PayPassage) {
   }
 }
 
-function timeLimitText(row: PayPassage) {
-  if (row.timeLimit !== 1) return '未启用';
-  const rules = String(row.timeRules ?? '').trim();
-  if (!rules || rules === '|' || !rules.includes('|')) {
-    return '已启用（未设置时段）';
+/** 对齐 demo Ee(f)：(v*100).toFixed(2)，null/NaN → "0.00"（rate 列外层拼 "%"） */
+function ratePct(value?: null | number | string) {
+  const num = typeof value === 'string' ? Number.parseFloat(value) : value;
+  return Number.isFinite(num) ? (Number(num) * 100).toFixed(2) : '0.00';
+}
+
+/** 对齐 demo x：successRate null/NaN → "--"，否则 *100 两位百分数（自带 %） */
+function successRateText(row: PayPassage) {
+  const value = row.successRate;
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return '--';
   }
-  const [start, end] = rules.split('|');
-  return `已启用 ${start?.trim() || '--'} ~ ${end?.trim() || '--'}`;
+  return `${(Number(value) * 100).toFixed(2)}%`;
+}
+
+/** 对齐 demo dt：agentNo 非 null 且非空串才展示代理费率 */
+function hasAgentRate(row: PayPassage) {
+  const agentNo = row.agentNo;
+  return (
+    agentNo !== null && agentNo !== undefined && String(agentNo).trim() !== ''
+  );
+}
+
+/** 开关显示值：本地乐观覆盖优先，回落行数据 state（对齐演示站 Le/he） */
+function switchState(row: PayPassage): 0 | 1 {
+  const id = String(row.payPassageId);
+  const override = stateOverride.get(id);
+  if (override !== undefined) return override;
+  return row.state === 1 ? 1 : 0;
 }
 
 async function loadStat() {
@@ -289,7 +315,11 @@ async function toggleState(
   row: PayPassage,
   checked: boolean | number | string,
 ) {
-  const next = checked ? 1 : 0;
+  const next = checked === true || checked === 1 || checked === '1' ? 1 : 0;
+  const id = String(row.payPassageId);
+  const before = switchState(row);
+  // 乐观翻转：进入弹窗前开关已显示目标态，取消/失败再回滚（对齐演示站 Ct）
+  stateOverride.set(id, next);
   const ok = await new Promise<boolean>((resolve) => {
     Modal.confirm({
       title: '二次确认',
@@ -303,21 +333,25 @@ async function toggleState(
       onCancel: () => resolve(false),
     });
   });
-  if (!ok) return;
-  const key = String(row.payPassageId);
-  stateBusy.value[key] = true;
+  if (!ok) {
+    stateOverride.set(id, before);
+    return;
+  }
+  stateBusy.value[id] = true;
   try {
     const payload: Record<string, unknown> = { state: next };
-    // 契约：关闭时关定时限制；openLimit 入参已被忽略，勿再传
+    // 契约：关闭时关定时限制；开启时带 openLimit: 1（对齐 demo）
     if (next === 0) payload.timeLimit = 0;
+    else payload.openLimit = 1;
     await updateMchAppApi(row.payPassageId, payload);
-    row.state = next;
     message.success('操作成功');
-    void loadStat();
+    stateOverride.delete(id);
+    void loadData(false);
   } catch {
     message.error('操作失败');
+    stateOverride.set(id, before);
   } finally {
-    stateBusy.value[key] = false;
+    stateBusy.value[id] = false;
   }
 }
 
@@ -331,7 +365,7 @@ function confirmDelete(row: PayPassage) {
     async onOk() {
       await deleteMchAppApi(row.payPassageId);
       message.success('删除成功');
-      void loadData(true);
+      void loadData(false);
     },
   });
 }
@@ -398,6 +432,13 @@ function onBatchDeleted() {
   void loadData(true);
 }
 
+watch(
+  () => closeAllVisible.value,
+  (open) => {
+    if (!open) closeAllGoogle.value = '';
+  },
+);
+
 async function submitResetAll(googleCode: string) {
   resetSaving.value = true;
   try {
@@ -410,32 +451,33 @@ async function submitResetAll(googleCode: string) {
   }
 }
 
-async function submitCloseAll(googleCode: string) {
+async function submitCloseAll() {
+  const code = closeAllGoogle.value.trim();
+  if (!/^\d{6}$/.test(code)) {
+    message.error('请输入 6 位数字验证码');
+    return;
+  }
   closeAllSaving.value = true;
   try {
-    await closeAllMchAppsApi(googleCode);
+    await closeAllMchAppsApi(code);
     message.success('关闭全部通道成功');
     closeAllVisible.value = false;
-    void loadData(true);
+    void loadData(false);
   } finally {
     closeAllSaving.value = false;
   }
 }
 
-function confirmOpenRecently() {
-  Modal.confirm({
-    title: '打开最近启用通道',
-    width: 520,
-    content:
-      '将通道恢复到「关闭全部通道」前的启用状态与定时开关（timeLimit）。收款时段规则（timeRules）不会写回。快照约 3 小时有效，过期或已消费后无效。',
-    okText: '确定',
-    cancelText: '取消',
-    async onOk() {
-      await openRecentlyMchAppsApi();
-      message.success('恢复最近关闭通道状态成功');
-      void loadData(true);
-    },
-  });
+async function submitOpenRecently() {
+  openRecentlySaving.value = true;
+  try {
+    await openRecentlyMchAppsApi();
+    message.success('恢复最近关闭通道状态成功');
+    openRecentlyVisible.value = false;
+    void loadData(false);
+  } finally {
+    openRecentlySaving.value = false;
+  }
 }
 
 onMounted(() => {
@@ -525,7 +567,7 @@ onMounted(() => {
             >
               关闭全部通道
             </Button>
-            <Button v-if="canAdminDanger" @click="confirmOpenRecently">
+            <Button v-if="canAdminDanger" @click="openRecentlyVisible = true">
               打开最近启用通道
             </Button>
             <Button v-if="canAdminDanger" @click="openBatch">
@@ -599,9 +641,9 @@ onMounted(() => {
             <template v-else-if="column.dataIndex === 'state'">
               <Space size="small" align="center">
                 <Switch
-                  :checked="record.state === 1"
-                  :disabled="!canEdit"
+                  :checked="switchState(record as PayPassage) === 1"
                   :loading="!!stateBusy[String(record.payPassageId)]"
+                  style="min-width: 50px"
                   @change="(c) => toggleState(record as PayPassage, c)"
                 />
               </Space>
@@ -634,7 +676,8 @@ onMounted(() => {
                 <Button
                   v-if="canEdit"
                   size="small"
-                  class="inline-action-cell__icon-btn"
+                  type="primary"
+                  class="inline-action-cell__action inline-action-cell__icon-btn"
                   @click="weightsRef?.show(record as PayPassage)"
                 >
                   <template #icon>
@@ -645,48 +688,105 @@ onMounted(() => {
                   </template>
                 </Button>
                 <span class="inline-action-cell__value">{{
-                  record.weights ?? '--'
+                  record.weights
                 }}</span>
               </div>
             </template>
             <template v-else-if="column.dataIndex === 'timeLimitState'">
-              <Button
-                type="link"
-                class="!px-0"
-                @click="timeLimitRef?.show(record as PayPassage)"
-              >
-                {{ timeLimitText(record as PayPassage) }}
-              </Button>
+              <div class="inline-action-cell time-limit-state-row">
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__action inline-action-cell__icon-btn"
+                  @click="timeLimitRef?.show(record as PayPassage)"
+                >
+                  <template #icon>
+                    <IconifyIcon
+                      class="inline-action-cell__icon"
+                      icon="ant-design:setting-outlined"
+                    />
+                  </template>
+                </Button>
+                <div class="time-limit-state-core">
+                  <span
+                    class="time-limit-status-dot"
+                    :class="record.timeLimit !== 0 ? 'is-active' : ''"
+                    :title="
+                      record.timeLimit !== 0 ? '定时已开启' : '定时已关闭'
+                    "
+                  ></span>
+                  <span
+                    class="ellipsis time-limit-rules-text"
+                    :title="record.timeRules"
+                    >{{ record.timeRules || '--' }}</span>
+                </div>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'rate'">
-              <Button
-                type="link"
-                class="!px-0"
-                @click="rateRef?.show(record as PayPassage)"
-              >
-                {{ formatFeeRate(record.rate) }}
-              </Button>
+              <div class="inline-action-cell">
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__action inline-action-cell__icon-btn"
+                  @click="rateRef?.show(record as PayPassage)"
+                >
+                  <template #icon>
+                    <IconifyIcon
+                      class="inline-action-cell__icon"
+                      icon="ant-design:setting-outlined"
+                    />
+                  </template>
+                </Button>
+                <b class="inline-action-cell__value text-brand">{{ ratePct(record.rate) }}%</b>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'successRate'">
-              <Button
-                type="link"
-                class="!px-0"
-                @click="hourlyRef?.show(record as PayPassage)"
-              >
-                {{ formatRateDecimal(record.successRate) }}
-              </Button>
+              <div class="inline-action-cell">
+                <Button
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__action inline-action-cell__icon-btn"
+                  @click="hourlyRef?.show(record as PayPassage)"
+                >
+                  <template #icon>
+                    <IconifyIcon
+                      class="inline-action-cell__icon"
+                      icon="lucide:chart-bubble"
+                    />
+                  </template>
+                </Button>
+                <span class="inline-action-cell__value text-brand">{{
+                  successRateText(record as PayPassage)
+                }}</span>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'passageGroup'">
               {{ record.passageGroupName || record.passageGroup || '' }}
             </template>
             <template v-else-if="column.dataIndex === 'agentRate'">
-              <Button
-                type="link"
-                class="!px-0"
-                @click="agentRef?.open(record as PayPassage)"
-              >
-                {{ record.agentNo ? formatFeeRate(record.agentRate) : '--' }}
-              </Button>
+              <div class="inline-action-cell">
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="primary"
+                  class="inline-action-cell__action inline-action-cell__icon-btn"
+                  @click="agentRef?.open(record as PayPassage)"
+                >
+                  <template #icon>
+                    <IconifyIcon
+                      class="inline-action-cell__icon"
+                      icon="ant-design:setting-outlined"
+                    />
+                  </template>
+                </Button>
+                <span class="inline-action-cell__value">{{
+                  hasAgentRate(record as PayPassage)
+                    ? `${ratePct(record.agentRate)}%`
+                    : '-'
+                }}</span>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'payInterfaceConfig'">
               <div class="text-xs">
@@ -737,13 +837,61 @@ onMounted(() => {
       :saving="resetSaving"
       @confirm="submitResetAll"
     />
-    <GoogleDangerConfirmDialog
+    <!-- 线上结构（yanshi 前端 bundle index-jRTA-cAX.js 反解）：
+         closeAll = 560px dialog + error 告警条(三行 div, 末行 12px 小字) + 谷歌码输入 + 默认确认钮 -->
+    <Modal
       v-model:open="closeAllVisible"
-      header="关闭全部通道"
-      warning="该操作将关闭全部通道并停止定时任务，请谨慎操作。状态仅保存约 3 小时。"
-      :saving="closeAllSaving"
-      @confirm="submitCloseAll"
-    />
+      title="关闭全部通道"
+      width="560px"
+      :confirm-loading="closeAllSaving"
+      ok-text="确定"
+      cancel-text="取消"
+      @ok="submitCloseAll"
+    >
+      <Alert type="error" show-icon style="margin-bottom: 12px">
+        <template #message>
+          <div>此操作将停止所有通道的定时任务。</div>
+          <div>可通过「打开最近启用通道」恢复关闭前的状态。</div>
+          <div style="margin-top: 8px; font-size: 12px">
+            状态仅保存约 3 小时，过期后恢复无效。
+          </div>
+        </template>
+      </Alert>
+      <Form layout="vertical">
+        <Form.Item label="谷歌验证码" required>
+          <Input
+            v-model:value="closeAllGoogle"
+            placeholder="请输入 6 位数字验证码"
+            :maxlength="6"
+            allow-clear
+            @input="
+              closeAllGoogle = String(closeAllGoogle)
+                .replace(/\D/g, '')
+                .slice(0, 6)
+            "
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
+    <!-- openRecently = 520px dialog + warning 告警条(两行 div, 末行 12px 小字)，无谷歌码 -->
+    <Modal
+      v-model:open="openRecentlyVisible"
+      title="打开最近启用通道"
+      width="520px"
+      :confirm-loading="openRecentlySaving"
+      ok-text="确定"
+      cancel-text="取消"
+      @ok="submitOpenRecently"
+    >
+      <Alert type="warning" show-icon>
+        <template #message>
+          <div>将所有通道恢复到「关闭全部通道」前的状态（含定时任务）。</div>
+          <div style="margin-top: 8px; font-size: 12px">
+            有效时间约 3 小时，过期无效。
+          </div>
+        </template>
+      </Alert>
+    </Modal>
   </Page>
 </template>
 
@@ -779,6 +927,48 @@ onMounted(() => {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 对齐 demo：定时设置列内部结构 */
+.time-limit-state-row {
+  align-items: center;
+}
+
+.time-limit-state-core {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.time-limit-status-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  background-color: #d9d9d9;
+  border-radius: 50%;
+}
+
+.time-limit-status-dot.is-active {
+  background-color: #52c41a;
+}
+
+.time-limit-rules-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: inherit;
+}
+
+.ellipsis {
+  display: inline-block;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
   white-space: nowrap;
 }
 </style>

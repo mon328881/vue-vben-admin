@@ -1,9 +1,13 @@
 <script lang="ts" setup>
+import type { PayTestEnvelope } from '#/api/types/business';
+
 /**
  * 下单测试抽屉底座（对齐 mgr-web PayTestDrawerBase）
  */
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+
+import { IconifyIcon } from '@vben/icons';
 
 import {
   Button,
@@ -11,29 +15,29 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Radio,
   Tooltip,
-  message,
 } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
 
-import type { PayTestEnvelope } from '#/api/types/business';
+defineOptions({ name: 'PayTestDrawerBase' });
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean;
-    title: string;
-    selectorLabel: string;
+    beforeSubmit?: () => null | string | undefined;
     description: string;
+    modelValue: boolean;
+    selectorLabel: string;
     showTestOrderIn?: boolean;
-    beforeSubmit?: () => string | null | undefined;
     submitRequest: (payload: {
-      testOrderNo: string;
       amount: number;
       testOrderIn: number;
-    }) => Promise<PayTestEnvelope | null | undefined>;
+      testOrderNo: string;
+    }) => Promise<null | PayTestEnvelope | undefined>;
+    title: string;
   }>(),
   {
+    beforeSubmit: undefined,
     showTestOrderIn: false,
   },
 );
@@ -41,8 +45,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
 }>();
-
-defineOptions({ name: 'PayTestDrawerBase' });
 
 const router = useRouter();
 const amount = ref<number | undefined>();
@@ -93,8 +95,9 @@ async function submit() {
     message.error(blocked);
     return;
   }
-  // 线上契约：订单号用户可输入（placeholder 请输入）；留空自动生成
-  const orderNo = testOrderNo.value.trim() || genTestOrderNo();
+  // 对齐 demo bundle $()：const o=M() —— 订单号永远自动生成（T{ts}{1000-9999}），
+  // 无用户输入路径；「请输入」是只读展示空态的默认 placeholder
+  const orderNo = genTestOrderNo();
   submitting.value = true;
   try {
     const res = await props.submitRequest({
@@ -107,7 +110,8 @@ async function submit() {
     // 线上契约：res 为内层信封 {code,data:{payData},msg,sign}；成功=内层 code 0 且 payData 非空
     const innerData = res?.data;
     const link = innerData?.payData;
-    const linkText = link == null ? '' : String(link).trim();
+    const linkText =
+      link === null || link === undefined ? '' : String(link).trim();
     if (res?.code === 0 && linkText !== '') {
       payData.value = String(link);
       payOk.value = true;
@@ -167,7 +171,7 @@ defineExpose({ resetState });
         <Form layout="vertical" class="ap-drawer-form ap-form-label-wide">
           <Form.Item :label="selectorLabel">
             <div class="pay-test-drawer__selector">
-              <slot name="selector" />
+              <slot name="selector"></slot>
             </div>
           </Form.Item>
           <Form.Item label="支付金额">
@@ -203,13 +207,24 @@ defineExpose({ resetState });
           <Form layout="vertical" class="ap-form-label-wide">
             <Form.Item label="测试商户订单号">
               <div class="pay-test-drawer__order-row">
-                <Input
-                  v-model:value="testOrderNo"
-                  class="pay-test-drawer__order-input"
-                  placeholder="请输入"
-                  :maxlength="64"
-                  allow-clear
-                />
+                <div class="pay-test-display pay-test-drawer__order-input">
+                  <Tooltip v-if="testOrderNo" title="复制内容">
+                    <Button
+                      class="pay-test-display__copy"
+                      size="small"
+                      type="text"
+                      @click="copyText(testOrderNo)"
+                    >
+                      <IconifyIcon icon="ant-design:copy-outlined" />
+                    </Button>
+                  </Tooltip>
+                  <Input
+                    :value="testOrderNo"
+                    readonly
+                    class="pay-test-display__readonly-input"
+                    placeholder="请输入"
+                  />
+                </div>
                 <Button
                   v-if="payOk && payData"
                   danger
@@ -298,9 +313,9 @@ defineExpose({ resetState });
 
 .pay-test-drawer__result-card {
   padding: 16px;
+  background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--card));
 }
 
 .pay-test-drawer__order-row {
@@ -316,8 +331,8 @@ defineExpose({ resetState });
 }
 
 .pay-test-drawer__pay-link {
-  word-break: break-all;
   color: hsl(var(--primary));
+  word-break: break-all;
 }
 
 .pay-test-display {
@@ -333,10 +348,19 @@ defineExpose({ resetState });
 }
 
 .pay-test-display__mono :deep(textarea) {
+  padding-right: 32px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
-  padding-right: 32px;
-  background: hsl(var(--muted));
   cursor: default;
+  background: hsl(var(--muted));
+}
+
+.pay-test-display__readonly-input :deep(input),
+.pay-test-display__readonly-input {
+  cursor: default;
+}
+
+.pay-test-display:has(.pay-test-display__copy) :deep(input) {
+  padding-right: 32px;
 }
 </style>

@@ -1,14 +1,16 @@
 <script lang="ts" setup>
+import type { PayPassage } from '#/api';
+
 import { computed, ref } from 'vue';
 
-import { doPassagePayTestApi, type PayPassage } from '#/api';
+import { doPassagePayTestApi } from '#/api';
 import PayTestDrawerBase from '#/components/list/PayTestDrawerBase.vue';
 
 defineOptions({ name: 'PassagePayTestDrawer' });
 
 const visible = ref(false);
-const passage = ref<PayPassage | null>(null);
-const drawerRef = ref<{ resetState: () => void } | null>(null);
+const passage = ref<null | PayPassage>(null);
+const drawerRef = ref<null | { resetState: () => void }>(null);
 
 const hasProduct = computed(() => {
   const row = passage.value;
@@ -17,6 +19,20 @@ const hasProduct = computed(() => {
     String(row.productId ?? '').trim() !== '' ||
     String(row.productName ?? '').trim() !== ''
   );
+});
+
+// 对齐 demo bundle y()：productId null/空串 → '—'（0 显 '0'）
+const productIdText = computed(() => {
+  const v = passage.value?.productId;
+  return v === null || v === undefined || String(v).trim() === ''
+    ? '—'
+    : String(v);
+});
+
+// 对齐 demo bundle I()：productName 非空白字符串 → trim，否则 '—'
+const productNameText = computed(() => {
+  const v = passage.value?.productName;
+  return typeof v === 'string' && v.trim() !== '' ? v.trim() : '—';
 });
 
 function show(row: PayPassage) {
@@ -28,7 +44,8 @@ function show(row: PayPassage) {
 function beforeSubmit() {
   if (!passage.value?.payPassageId) return '通道信息无效';
   if (
-    passage.value.productId == null ||
+    passage.value.productId === null ||
+    passage.value.productId === undefined ||
     String(passage.value.productId).trim() === ''
   ) {
     return '参数有误[参数productId必填]';
@@ -37,16 +54,16 @@ function beforeSubmit() {
 }
 
 async function submitRequest(payload: {
-  testOrderNo: string;
   amount: number;
   testOrderIn: number;
+  testOrderNo: string;
 }) {
   return doPassagePayTestApi({
     testOrderNo: payload.testOrderNo,
     passageId: Number(passage.value?.payPassageId),
     amount: payload.amount,
     testOrderIn: payload.testOrderIn,
-    productId: Number(passage.value?.productId),
+    productId: passage.value?.productId,
   });
 }
 
@@ -73,11 +90,9 @@ defineExpose({ show });
           }}</span>
         </div>
         <div v-if="hasProduct" class="current-passage__product">
-          <span class="current-passage__product-id"
-            >[{{ passage.productId || '—' }}]</span
-          >
+          <span class="current-passage__product-id">[{{ productIdText }}]</span>
           <span class="current-passage__product-name">{{
-            passage.productName || '—'
+            productNameText
           }}</span>
         </div>
       </div>

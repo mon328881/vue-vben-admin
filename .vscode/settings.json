@@ -209,6 +209,11 @@
     "plaintext": false,
     "yaml": false
   },
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "请一律使用简体中文生成 Git commit message。遵循 Conventional Commits 规范（如 fix: ..., feat: ..., refactor: ...），第一行标题简洁精炼，下方说明使用中文无序列表详述具体改动点。"
+    }
+  ],
 
   "cssVariables.lookupFiles": ["packages/@core/base/design/src/**/*.css"],
 

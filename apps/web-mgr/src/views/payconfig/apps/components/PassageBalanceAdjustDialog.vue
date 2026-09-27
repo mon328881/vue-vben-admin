@@ -32,7 +32,7 @@ async function submit() {
     message.error('请输入调整余额金额');
     return;
   }
-  if (!form.changeRemark.trim()) {
+  if (!form.changeRemark || form.changeRemark.trim() === '') {
     message.error('请输入调整备注');
     return;
   }
@@ -70,10 +70,10 @@ defineExpose({ show });
   >
     <Form layout="vertical">
       <Form.Item label="通道号">
-        <span class="font-semibold">{{ row?.payPassageId ?? '-' }}</span>
+        <span>{{ row?.payPassageId }}</span>
       </Form.Item>
       <Form.Item label="通道名称">
-        <span class="font-semibold">{{ row?.payPassageName ?? '-' }}</span>
+        <span>{{ row?.payPassageName }}</span>
       </Form.Item>
       <Form.Item label="调整余额金额" required>
         <InputNumber

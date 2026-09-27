@@ -81,23 +81,20 @@ async function submit() {
   }
 }
 
-function clearLimit() {
-  Modal.confirm({
-    title: '确认清除定时并关闭定时开关？',
-    okText: '确定',
-    okType: 'danger',
-    cancelText: '取消',
-    async onOk() {
-      if (!row.value?.payPassageId) return;
-      await updateMchAppApi(row.value.payPassageId, {
-        timeLimit: 0,
-        timeRules: '',
-      });
-      message.success('修改成功');
-      visible.value = false;
-      emit('success');
-    },
-  });
+async function clearLimit() {
+  const payPassageId = row.value?.payPassageId;
+  if (!payPassageId) return;
+  visible.value = false;
+  try {
+    await updateMchAppApi(payPassageId, {
+      timeLimit: 0,
+      timeRules: '',
+    });
+    message.success('修改成功');
+    emit('success');
+  } catch {
+    // demo catch{} 静默
+  }
 }
 
 defineExpose({ show });
@@ -107,9 +104,8 @@ defineExpose({ show });
   <Modal
     v-model:open="visible"
     title="通道定时开启设置"
-    width="640px"
+    width="520px"
     destroy-on-close
-    :footer="null"
   >
     <Alert
       type="info"
@@ -147,12 +143,21 @@ defineExpose({ show });
         />
       </Form.Item>
     </Form>
-    <div class="flex justify-between">
-      <Button danger ghost @click="clearLimit">清除定时</Button>
-      <Space>
-        <Button @click="visible = false">取消</Button>
-        <Button type="primary" :loading="saving" @click="submit">确定</Button>
-      </Space>
-    </div>
+    <template #footer>
+      <div class="flex items-center justify-between w-full">
+        <Popconfirm
+          title="确认后将清除定时设置并关闭定时开关"
+          ok-text="确定"
+          cancel-text="取消"
+          @confirm="clearLimit"
+        >
+          <Button danger ghost>清除定时</Button>
+        </Popconfirm>
+        <Space>
+          <Button @click="visible = false">取消</Button>
+          <Button type="primary" :loading="saving" @click="submit">确定</Button>
+        </Space>
+      </div>
+    </template>
   </Modal>
 </template>

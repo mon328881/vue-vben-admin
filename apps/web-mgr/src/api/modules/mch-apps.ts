@@ -264,7 +264,7 @@ export async function passageMchBatchSetApi(
 export async function doPassagePayTestApi(payload: {
   amount: number;
   passageId: number;
-  productId: number;
+  productId?: null | number | string;
   testOrderIn: number;
   testOrderNo: string;
 }) {

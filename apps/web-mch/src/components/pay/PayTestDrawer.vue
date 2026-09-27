@@ -1,6 +1,10 @@
 <script lang="ts" setup>
+import type { MchAppItem } from '#/api/types/business';
+
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+
+import { IconifyIcon } from '@vben/icons';
 
 import {
   Button,
@@ -8,25 +12,22 @@ import {
   Form,
   Input,
   InputNumber,
-  Typography,
   message,
+  Tooltip,
+  Typography,
 } from 'ant-design-vue';
 
-import type { MchAppItem } from '#/api/types/business';
 import { copyRaw } from '#/utils/copy';
 
 defineOptions({ name: 'PayTestDrawer' });
 
 const props = defineProps<{
+  mchNo: string;
   open: boolean;
   product: MchAppItem | null;
-  mchNo: string;
-  submitRequest: (payload: {
-    testOrderNo: string;
-    amount: number;
-  }) => Promise<{
+  submitRequest: (payload: { amount: number; testOrderNo: string }) => Promise<{
     code?: number;
-    data?: { payData?: string; mchOrderNo?: string };
+    data?: { mchOrderNo?: string; payData?: string };
     msg?: string;
   }>;
 }>();
@@ -50,7 +51,9 @@ const visible = computed({
 
 const productIdLabel = computed(() => {
   const id = props.product?.productId;
-  return id == null || String(id).trim() === '' ? '—' : String(id);
+  return id === null || id === undefined || String(id).trim() === ''
+    ? '—'
+    : String(id);
 });
 
 const productNameLabel = computed(() => {
@@ -81,15 +84,19 @@ async function submit() {
     message.error('商户号不存在，无法下单测试');
     return;
   }
-  // 线上契约：订单号用户可输入（placeholder 请输入）；留空自动生成
-  const orderNo = testOrderNo.value.trim() || genTestOrderNo();
+  // 对齐 demo bundle $()：订单号永远自动生成（T{ts}{1000-9999}），无用户输入路径；「请输入」是只读展示空态默认 placeholder
+  const orderNo = genTestOrderNo();
   submitting.value = true;
   try {
-    const res = await props.submitRequest({ amount: yuan, testOrderNo: orderNo });
+    const res = await props.submitRequest({
+      amount: yuan,
+      testOrderNo: orderNo,
+    });
     testOrderNo.value = orderNo;
     rawResult.value = JSON.stringify(res ?? {}, null, 2);
     const link = res?.data?.payData;
-    const hasLink = link != null && String(link).trim() !== '';
+    const hasLink =
+      link !== null && link !== undefined && String(link).trim() !== '';
     if (res?.code === 0 && hasLink) {
       payData.value = String(link);
       payOk.value = true;
@@ -105,6 +112,13 @@ async function submit() {
   } finally {
     submitting.value = false;
   }
+}
+
+async function copyText(text: string) {
+  if (!text) return;
+  const ok = await copyRaw(text);
+  if (ok) message.success('复制成功');
+  else message.error('复制失败，请手动复制');
 }
 
 async function copyPayData() {
@@ -171,13 +185,24 @@ watch(visible, (open) => {
           <Form layout="vertical" class="ap-form-label-wide">
             <Form.Item label="测试商户订单号">
               <div class="result-order-row">
-                <Input
-                  v-model:value="testOrderNo"
-                  class="result-input"
-                  placeholder="请输入"
-                  :maxlength="64"
-                  allow-clear
-                />
+                <div class="pay-test-display result-input">
+                  <Tooltip v-if="testOrderNo" title="复制内容">
+                    <Button
+                      class="pay-test-display__copy"
+                      size="small"
+                      type="text"
+                      @click="copyText(testOrderNo)"
+                    >
+                      <IconifyIcon icon="ant-design:copy-outlined" />
+                    </Button>
+                  </Tooltip>
+                  <Input
+                    :value="testOrderNo"
+                    readonly
+                    class="pay-test-display__readonly-input"
+                    placeholder="请输入"
+                  />
+                </div>
                 <Button v-if="payOk" danger size="small" @click="goPayOrder">
                   去订单页查看
                 </Button>
@@ -235,8 +260,8 @@ watch(visible, (open) => {
 }
 
 .product-context__id {
-  font-weight: 600;
   margin-right: 6px;
+  font-weight: 600;
 }
 
 .product-context__name {
@@ -244,24 +269,24 @@ watch(visible, (open) => {
 }
 
 .help-text {
-  color: hsl(var(--muted-foreground));
+  margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  margin: 0;
+  color: hsl(var(--muted-foreground));
 }
 
 .result-card {
+  padding: 16px;
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border) / 60%);
   border-radius: 8px;
-  padding: 16px;
 }
 
 .result-order-row {
-  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  align-items: center;
 }
 
 .result-input {
@@ -274,5 +299,26 @@ watch(visible, (open) => {
 
 .pay-link {
   word-break: break-all;
+}
+
+.pay-test-display {
+  position: relative;
+  width: 100%;
+}
+
+.pay-test-display__copy {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+}
+
+.pay-test-display__readonly-input :deep(input),
+.pay-test-display__readonly-input {
+  cursor: default;
+}
+
+.pay-test-display:has(.pay-test-display__copy) :deep(input) {
+  padding-right: 32px;
 }
 </style>

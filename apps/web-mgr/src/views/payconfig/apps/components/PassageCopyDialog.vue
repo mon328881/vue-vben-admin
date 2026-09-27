@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { PayPassage } from '#/api';
 
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import {
   Alert,
@@ -12,7 +12,7 @@ import {
   Tag,
 } from 'ant-design-vue';
 
-import { createMchAppApi, fetchMchAppApi } from '#/api';
+import { createMchAppApi, fetchMchAppApi, fetchPayIfCodeApi } from '#/api';
 import { formatFeeRate } from '#/utils/format';
 import {
   clonePassageForCreate,
@@ -26,6 +26,13 @@ const visible = ref(false);
 const saving = ref(false);
 const source = ref<null | PayPassage>(null);
 const newName = ref('');
+// 对齐 demo：支付接口列显示 ifName（如「测试接口」），/mchApps 数据无 ifName，
+// 用 /payIfCode 短列表映射；映射不到回退 ifCode
+const ifNameByCode = ref<Record<string, string>>({});
+const ifNameText = computed(() => {
+  const code = source.value?.ifCode ?? '';
+  return ifNameByCode.value[code] ?? code ?? '--';
+});
 
 function parseConfig(row: null | PayPassage) {
   if (!row) return { mchNo: '-', payType: '-' };
@@ -82,6 +89,18 @@ function show(row: PayPassage) {
   newName.value = defaultCopyName(String(row.payPassageName ?? ''));
   saving.value = false;
   visible.value = true;
+  // 惰性加载映射（复用 dialog 生命周期，避免每次都拉）
+  if (Object.keys(ifNameByCode.value).length === 0) {
+    fetchPayIfCodeApi()
+      .then((list) => {
+        const map: Record<string, string> = {};
+        for (const item of list ?? []) {
+          if (item?.ifCode) map[item.ifCode] = item.ifName ?? item.ifCode;
+        }
+        ifNameByCode.value = map;
+      })
+      .catch(() => {});
+  }
 }
 
 async function submit() {
@@ -147,7 +166,7 @@ defineExpose({ show });
           [{{ source.productId }}] {{ source.productName || '--' }}
         </Descriptions.Item>
         <Descriptions.Item label="支付接口">
-          {{ source.ifCode || '--' }}
+          {{ ifNameText }}
         </Descriptions.Item>
         <Descriptions.Item label="通道费率">
           {{ formatFeeRate(source.rate) }}

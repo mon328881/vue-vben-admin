@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PassageMchBind, PayPassage } from '#/api';
+
 import { nextTick, reactive, ref } from 'vue';
 
 import {
@@ -8,6 +10,7 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   Radio,
@@ -15,7 +18,6 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -24,8 +26,6 @@ import {
   passageMchBlindAllApi,
   passageMchUnBlindAllApi,
   updatePassageMchInfoApi,
-  type PassageMchBind,
-  type PayPassage,
 } from '#/api';
 import { formatRateDecimal } from '#/utils/format';
 
@@ -36,7 +36,7 @@ const HAVE_AGENT_OPTIONS = [
 
 const visible = ref(false);
 const loading = ref(false);
-const passage = ref<PayPassage | null>(null);
+const passage = ref<null | PayPassage>(null);
 const dataSource = ref<PassageMchBind[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
@@ -129,8 +129,8 @@ async function unBlindAll() {
 }
 
 function openBatch() {
-  if (!selectedIds.value.length) {
-    message.error('请先勾选商户');
+  if (selectedIds.value.length === 0) {
+    message.error('请先选中需要批量修改的商户');
     return;
   }
   batchState.value = 1;
@@ -197,7 +197,11 @@ defineExpose({ show });
       <div class="ap-drawer-section ap-drawer-filter">
         <Form layout="inline" @submit="onSearch">
           <Form.Item>
-            <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
+            <Input
+              v-model:value="query.mchNo"
+              allow-clear
+              placeholder="商户号"
+            />
           </Form.Item>
           <Form.Item>
             <Input
