@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { Rule } from 'ant-design-vue/es/form';
+
 import { computed, reactive, ref } from 'vue';
 
 import {
@@ -100,7 +102,7 @@ function validatePayRules(_rule: unknown, value: string) {
   return Promise.resolve();
 }
 
-const rules = computed(() => ({
+const rules = computed<Record<string, Rule[]>>(() => ({
   payPassageName: [
     { required: true, message: '请输入支付通道名称', trigger: 'blur' as const },
   ],
@@ -274,7 +276,7 @@ defineExpose({ show });
       ref="formRef"
       class="ap-drawer-body"
       :model="form"
-      :rules="rules as any"
+      :rules="rules"
       layout="vertical"
     >
       <Divider orientation="left">基础信息</Divider>

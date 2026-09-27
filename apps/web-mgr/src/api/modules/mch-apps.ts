@@ -1,6 +1,6 @@
-import { requestClient } from '#/api/request';
-
 import type { PageResult, PayTestEnvelope } from '#/api/types/business';
+
+import { requestClient } from '#/api/request';
 
 export interface PayPassage {
   payPassageId: number;
@@ -24,6 +24,7 @@ export interface PayPassage {
   timeLimit?: number;
   timeRules?: string;
   openLimit?: number;
+  isBindAll?: number;
   timeLimitState?: number;
   payInterfaceConfig?: string;
   successRate?: number;
@@ -50,11 +51,11 @@ export interface PassageHourlyPoint {
 
 export interface PassageHourlyStat {
   points: PassageHourlyPoint[];
-  summary: {
-    totalCount: number;
+  summary: null | {
     successCount: number;
     successRate: number;
-  } | null;
+    totalCount: number;
+  };
 }
 
 export interface PassageHourlyArchive {
@@ -77,10 +78,10 @@ export interface MchAppsListParams {
   pageNumber?: number;
   pageSize?: number;
   payPassageName?: string;
-  payPassageId?: string | number;
+  payPassageId?: number | string;
   productId?: number | string;
   passageGroup?: string;
-  state?: string | number;
+  state?: number | string;
   payInterfaceConfig?: string;
   enabledFirst?: number;
   sortField?: string;
@@ -96,14 +97,14 @@ export async function fetchMchAppApi(payPassageId: number | string) {
 }
 
 export async function createMchAppApi(payload: Record<string, unknown>) {
-  return requestClient.post<void>('/mchApps', payload);
+  return requestClient.post('/mchApps', payload);
 }
 
 export async function updateMchAppApi(
   payPassageId: number | string,
   payload: Record<string, unknown>,
 ) {
-  return requestClient.put<void>(`/mchApps/${payPassageId}`, payload);
+  return requestClient.put(`/mchApps/${payPassageId}`, payload);
 }
 
 export async function deleteMchAppApi(payPassageId: number | string) {
@@ -126,8 +127,8 @@ export async function resetAllMchAppBalanceApi(googleCode: string) {
 }
 
 export async function setPassageAutoCleanApi(payload: {
-  googleCode: string;
   autoCleanEnable: number;
+  googleCode: string;
   time: string;
 }) {
   return requestClient.post<PassageStatInfo>(
@@ -152,21 +153,21 @@ export async function postMchAppsMultipleSetApi(
 }
 
 export async function batchCopyMchAppsApi(
-  items: { sourcePayPassageId: number; payPassageName: string }[],
+  items: { payPassageName: string; sourcePayPassageId: number }[],
 ) {
   return requestClient.post<{
-    successCount?: number;
     failItems?: Array<{
+      reason?: string;
       sourcePayPassageId?: number;
       sourcePayPassageName?: string;
-      reason?: string;
     }>;
+    successCount?: number;
   }>('/mchAppsCopy/batchCopy', { items });
 }
 
 export async function fetchPassageHourlyStatApi(params: {
-  payPassageId: number | string;
   date?: string;
+  payPassageId: number | string;
 }) {
   return requestClient.get<PassageHourlyStat>('/passageHourlyStat', { params });
 }
@@ -199,8 +200,8 @@ export async function fetchPassageMchInfoApi(params: Record<string, unknown>) {
 }
 
 export async function updatePassageMchInfoApi(payload: {
-  payPassageId: number;
   mchNo: string;
+  payPassageId: number;
   state: number;
 }) {
   return requestClient.put('/passageMchInfo', payload);
@@ -225,11 +226,11 @@ export async function passageMchBatchSetApi(
 }
 
 export async function doPassagePayTestApi(payload: {
-  testOrderNo: string;
-  passageId: number;
   amount: number;
-  testOrderIn: number;
+  passageId: number;
   productId: number;
+  testOrderIn: number;
+  testOrderNo: string;
 }) {
   // 拦截器剥外层后为内层信封 {code,data:{payData,...},msg,sign}
   return requestClient.post<PayTestEnvelope>('/passageTest/doPay', payload);

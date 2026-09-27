@@ -4,26 +4,20 @@ import type { TableColumnsType } from 'ant-design-vue';
 import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
-import {
-  Card,
-  Form,
-  Input,
-  RangePicker,
-  Table,
-} from 'ant-design-vue';
+
+import AmountText from '@asiapay/shared/components/AmountText.vue';
+import { Card, Form, Input, RangePicker, Table } from 'ant-design-vue';
 
 import { fetchPassageStatApi, fetchPassageStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards from '#/components/list/ListStatCards.vue';
-import AmountText from '@asiapay/shared/components/AmountText.vue';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import PassageSelector from '#/components/selectors/PassageSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import { usePassageStatExport } from '#/composables/use-async-export';
 import { useListStat } from '#/composables/use-list-stat';
-
 import { defaultWeekRange } from '#/utils/date-range';
 import {
   fenToYuanNumber,
@@ -175,118 +169,121 @@ onMounted(async () => {
   <Page auto-content-height title="通道统计">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <RangePicker
-            v-model:value="dateRange"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.payPassageName" allow-clear placeholder="通道名" />
-        </Form.Item>
-        <Form.Item>
-          <PassageSelector
-            v-model="query.payPassageId"
-            placeholder="对应通道"
-          />
-        </Form.Item>
-        <Form.Item>
-          <ProductSelector
-            v-model="query.productId"
-            placeholder="对应产品"
-          />
-        </Form.Item>
-        <Form.Item>
-          <PassageGroupSelector
-            v-model="query.passageGroupName"
-            placeholder="通道供应商"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
-    <ListStatCards :items="listStatItems" />
-    <Card>
-      <div class="ap-table-toolbar">
-        <AsyncExportButtons
-          danger
-          :loading="exportLoading"
-          :progress="exportProgress"
-          :has-report-downloads="hasReportDownloads"
-          @export="onExport"
-          @open-report-list="openReportList"
-        />
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-key="(_r: any, i?: number) => String(i ?? 0)"
-        size="middle"
-        :scroll="{ x: 1200 }"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="false" />
-          <template v-else-if="column.dataIndex === 'payPassageName'">
-            <button
-              type="button"
-              class="passage-rate-link"
-              title="查看通道费率明细"
-              @click="openRateDetail(record)"
-            >
-              <span class="passage-id">[{{ record.payPassageId ?? '--' }}]</span>
-              <span>{{ record.payPassageName ?? '--' }}</span>
-            </button>
-          </template>
-          <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
-            <AmountText
-              :value="record.totalSuccessAmount as number"
-              kind="plain"
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <RangePicker
+              v-model:value="dateRange"
+              show-time
+              value-format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="['创建时间开始', '创建时间结束']"
             />
-          </template>
-          <template v-else-if="column.dataIndex === 'totalPassageCost'">
-            <AmountText
-              :value="record.totalPassageCost as number"
-              kind="cost"
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.payPassageName"
+              allow-clear
+              placeholder="通道名"
             />
+          </Form.Item>
+          <Form.Item>
+            <PassageSelector
+              v-model="query.payPassageId"
+              placeholder="对应通道"
+            />
+          </Form.Item>
+          <Form.Item>
+            <ProductSelector v-model="query.productId" placeholder="对应产品" />
+          </Form.Item>
+          <Form.Item>
+            <PassageGroupSelector
+              v-model="query.passageGroupName"
+              placeholder="通道供应商"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
+      <ListStatCards :items="listStatItems" />
+      <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :loading="exportLoading"
+            :progress="exportProgress"
+            :has-report-downloads="hasReportDownloads"
+            @export="onExport"
+            @open-report-list="openReportList"
+          />
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          :row-key="(_r: unknown, i?: number) => String(i ?? 0)"
+          size="middle"
+          :scroll="{ x: 1200 }"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="false"></template>
+            <template v-else-if="column.dataIndex === 'payPassageName'">
+              <button
+                type="button"
+                class="passage-rate-link"
+                title="查看通道费率明细"
+                @click="openRateDetail(record)"
+              >
+                <span class="passage-id">
+                  [{{ record.payPassageId ?? '--' }}]
+                </span>
+                <span>{{ record.payPassageName ?? '--' }}</span>
+              </button>
+            </template>
+            <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
+              <AmountText
+                :value="record.totalSuccessAmount as number"
+                kind="plain"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'totalPassageCost'">
+              <AmountText
+                :value="record.totalPassageCost as number"
+                kind="cost"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'successRate'">
+              {{
+                formatSuccessRate(
+                  record.orderSuccessCount as number,
+                  record.totalOrderCount as number,
+                )
+              }}
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt as string) }}
+            </template>
           </template>
-          <template v-else-if="column.dataIndex === 'successRate'">
-            {{
-              formatSuccessRate(
-                record.orderSuccessCount as number,
-                record.totalOrderCount as number,
-              )
-            }}
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-        </template>
-      </Table>
-    </Card>
-    <PassageRateDetailDrawer ref="rateDetailRef" />
-    <ExportReportListDialog
-      v-model:visible="reportListVisible"
-      :loading="reportListLoading"
-      :title="reportListTitle"
-      :empty-hint="reportListEmptyHint"
-      :data="completedExports"
-      @download="downloadFile"
-      @remove="deleteCompletedItem"
-    />
+        </Table>
+      </Card>
+      <PassageRateDetailDrawer ref="rateDetailRef" />
+      <ExportReportListDialog
+        v-model:visible="reportListVisible"
+        :loading="reportListLoading"
+        :title="reportListTitle"
+        :empty-hint="reportListEmptyHint"
+        :data="completedExports"
+        @download="downloadFile"
+        @remove="deleteCompletedItem"
+      />
     </div>
   </Page>
 </template>
@@ -294,14 +291,14 @@ onMounted(async () => {
 <style scoped>
 .passage-rate-link {
   display: inline-flex;
-  align-items: center;
   gap: 4px;
+  align-items: center;
   padding: 0;
-  border: 0;
-  background: transparent;
   color: hsl(var(--primary));
-  cursor: pointer;
   text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
 }
 
 .passage-rate-link:hover {

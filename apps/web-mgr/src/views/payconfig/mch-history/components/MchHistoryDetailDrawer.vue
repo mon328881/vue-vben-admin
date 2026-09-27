@@ -1,23 +1,12 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 
-import {
-  Descriptions,
-  Drawer,
-  Input,
-  Tag,
-} from 'ant-design-vue';
-
-import {
-  MCH_BIZ_TYPE_OPTIONS,
-  fundDirectionLabel,
-} from '#/constants/merchant';
-import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
 import AmountText from '@asiapay/shared/components/AmountText.vue';
-import {
-  formatDateTime,
-  formatYuan,
-} from '#/utils/format';
+import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
+import { Descriptions, Drawer, Input, Tag } from 'ant-design-vue';
+
+import { fundDirectionLabel, MCH_BIZ_TYPE_OPTIONS } from '#/constants/merchant';
+import { formatDateTime, formatYuan } from '#/utils/format';
 
 defineOptions({ name: 'MchHistoryDetailDrawer' });
 
@@ -25,7 +14,9 @@ const open = ref(false);
 const detail = ref<Record<string, unknown>>({});
 
 const fundText = computed(() =>
-  fundDirectionLabel(detail.value.fundDirection as any),
+  fundDirectionLabel(
+    detail.value.fundDirection as null | number | string | undefined,
+  ),
 );
 
 function show(row: Record<string, unknown>) {
@@ -40,7 +31,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="open"
     title="订单详情"
-    :width="'50%'"
+    width="50%"
     destroy-on-close
     :footer="null"
   >
@@ -63,9 +54,9 @@ defineExpose({ show });
         </Descriptions.Item>
         <Descriptions.Item label="业务类型">
           <HistoryAdjustBizTypeCell
-            :biz-type="detail.bizType as number | string"
-            :created-login-name="detail.createdLoginName as string"
-            :created-uid="detail.createdUid as number | string"
+            :biz-type="String(detail.bizType ?? '')"
+            :created-login-name="String(detail.createdLoginName ?? '')"
+            :created-uid="String(detail.createdUid ?? '')"
             :options="MCH_BIZ_TYPE_OPTIONS"
           />
         </Descriptions.Item>
@@ -88,10 +79,7 @@ defineExpose({ show });
           {{ formatYuan(detail.afterBalance as number) }}
         </Descriptions.Item>
         <Descriptions.Item label="变更金额">
-          <AmountText
-            :value="detail.amount as number"
-            kind="signed"
-          />
+          <AmountText :value="detail.amount as number" kind="signed" />
         </Descriptions.Item>
         <Descriptions.Item label="代理商商户号">
           {{ detail.agentNo || '-' }}
@@ -135,7 +123,7 @@ defineExpose({ show });
 
 .detail-remark__label {
   margin-bottom: 8px;
-  color: hsl(var(--muted-foreground));
   font-size: 13px;
+  color: hsl(var(--muted-foreground));
 }
 </style>

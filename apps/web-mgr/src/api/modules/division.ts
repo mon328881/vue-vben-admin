@@ -1,6 +1,6 @@
-import { requestClient } from '#/api/request';
-
 import type { PageResult } from '#/api/types/business';
+
+import { requestClient } from '#/api/request';
 
 export interface DivisionRecord {
   recordId: string;
@@ -11,6 +11,7 @@ export interface DivisionRecord {
   applyAmount?: number;
   /** 到账金额 */
   divisionAmount?: number;
+  receiveAmount?: number;
   /** 服务费 */
   divisionAmountFee?: number;
   feeAmount?: number;
@@ -26,7 +27,9 @@ export async function fetchMchDivisionListApi(params: Record<string, unknown>) {
   });
 }
 
-export async function fetchMchDivisionCountApi(params?: Record<string, unknown>) {
+export async function fetchMchDivisionCountApi(
+  params?: Record<string, unknown>,
+) {
   return requestClient.post('/mchDivision/count', params ?? {});
 }
 
@@ -45,7 +48,9 @@ export async function fetchMchDivisionConfigApi() {
   );
 }
 
-export async function setMchDivisionConfigApi(payload: Record<string, unknown>) {
+export async function setMchDivisionConfigApi(
+  payload: Record<string, unknown>,
+) {
   return requestClient.post('/mchDivision/setConfig', payload);
 }
 

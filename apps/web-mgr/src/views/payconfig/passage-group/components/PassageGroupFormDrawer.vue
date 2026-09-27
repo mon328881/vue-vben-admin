@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { PassageGroupInfo } from '#/api/modules/passage-group';
+
 import { computed, nextTick, reactive, ref } from 'vue';
 
 import {
@@ -7,10 +9,10 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Radio,
   Space,
   Spin,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -64,7 +66,7 @@ function flag(value: unknown, fallback = 1) {
   return Number(value ?? fallback) === 0 ? 0 : 1;
 }
 
-function applyDetail(row: Record<string, unknown>, name: string) {
+function applyDetail(row: PassageGroupInfo, name: string) {
   form.passageGroupName = name;
   form.remark = String(row.remark ?? '');
   form.state = Number(row.state ?? 1) === 0 ? 0 : 1;
@@ -118,7 +120,7 @@ async function showEdit(name: string) {
   try {
     const detail = await fetchPassageGroupApi(name);
     if (detail && stillOpen(seq, name)) {
-      applyDetail(detail as unknown as Record<string, unknown>, name);
+      applyDetail(detail, name);
     }
   } catch (error) {
     if (stillOpen(seq, name)) {
@@ -176,7 +178,8 @@ async function save() {
     canRemind: Number(form.canRemind ?? 1),
     canWarn: Number(form.canWarn ?? 1),
   };
-  if (form.isAutoSettle === 1) payload.autoSettleTime = form.autoSettleTime.trim();
+  if (form.isAutoSettle === 1)
+    payload.autoSettleTime = form.autoSettleTime.trim();
   saving.value = true;
   const wasCreate = creating.value;
   try {
@@ -221,9 +224,7 @@ defineExpose({ show, showCreate, showEdit });
         <Form.Item
           label="通道供应商名称"
           name="passageGroupName"
-          :rules="[
-            { required: true, message: '请输入通道供应商名称' },
-          ]"
+          :rules="[{ required: true, message: '请输入通道供应商名称' }]"
         >
           <Input
             v-model:value="form.passageGroupName"

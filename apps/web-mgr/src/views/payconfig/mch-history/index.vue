@@ -4,14 +4,17 @@ import type { TableColumnsType } from 'ant-design-vue';
 import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
+import AmountText from '@asiapay/shared/components/AmountText.vue';
+import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
 import {
   Card,
   Form,
   Input,
+  message,
   RangePicker,
   Select,
   Table,
-  message,
 } from 'ant-design-vue';
 
 import { fetchMchHistoryApi, fetchMchHistoryStatApi } from '#/api';
@@ -20,8 +23,6 @@ import ExportReportListDialog from '#/components/export/ExportReportListDialog.v
 import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
-import HistoryAdjustBizTypeCell from '@asiapay/shared/components/HistoryAdjustBizTypeCell.vue';
-import AmountText from '@asiapay/shared/components/AmountText.vue';
 import { useMchHistoryExport } from '#/composables/use-async-export';
 import { useListStat } from '#/composables/use-list-stat';
 import {
@@ -33,11 +34,7 @@ import {
   defaultTodayRange,
   toDateTimeParam,
 } from '#/utils/date-range';
-import {
-  fenToYuanNumber,
-  formatDateTime,
-  formatYuan,
-} from '#/utils/format';
+import { fenToYuanNumber, formatDateTime, formatYuan } from '#/utils/format';
 
 import MchHistoryDetailDrawer from './components/MchHistoryDetailDrawer.vue';
 
@@ -66,15 +63,19 @@ const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>(defaultTodayRange());
 const query = reactive({
-  mchNo: '' as any,
-  mchName: '' as any,
-  payOrderId: '' as any,
-  fundDirection: '' as any,
-  bizType: '' as any,
+  mchNo: '',
+  mchName: '',
+  payOrderId: '',
+  fundDirection: '',
+  bizType: '',
 });
 const stat = ref<{ totalAmount?: number; totalCount?: number }>({});
 const detailRef = ref<InstanceType<typeof MchHistoryDetailDrawer>>();
 const { loadStatSafely, buildStatItems } = useListStat();
+
+function mchHistoryRowKey(r: Record<string, unknown>, i?: number) {
+  return String(r.mchHistoryId ?? `mch-his-${i ?? 0}`);
+}
 
 const listStatItems = buildStatItems(() => {
   const s = stat.value;
@@ -135,7 +136,9 @@ async function loadData(resetPage = false) {
   } catch (error) {
     dataSource.value = [];
     total.value = 0;
-    message.error(error instanceof Error ? error.message : '加载商户资金流水失败');
+    message.error(
+      error instanceof Error ? error.message : '加载商户资金流水失败',
+    );
   } finally {
     loading.value = false;
   }
@@ -180,124 +183,133 @@ onMounted(async () => {
   <Page auto-content-height title="商户资金流水">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <RangePicker
-            v-model:value="dateRange"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.mchName" allow-clear placeholder="商户名" />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.payOrderId" allow-clear placeholder="订单号" />
-        </Form.Item>
-        <Form.Item>
-          <Select
-            v-model:value="query.fundDirection"
-            allow-clear
-            placeholder="资金变动方向"
-            style="width: 140px"
-            :options="FUND_DIRECTION_OPTIONS"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Select
-            v-model:value="query.bizType"
-            allow-clear
-            placeholder="业务类型"
-            style="width: 140px"
-            :options="MCH_BIZ_TYPE_OPTIONS"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
-    <ListStatCards :items="listStatItems" />
-    <Card>
-      <div class="ap-table-toolbar">
-        <AsyncExportButtons
-          danger
-          :loading="exportLoading"
-          :progress="exportProgress"
-          :has-report-downloads="hasReportDownloads"
-          @export="onExport"
-          @open-report-list="openReportList"
-        />
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-key="(r: any, i?: number) => String(r.mchHistoryId ?? `mch-his-${i ?? 0}`)"
-        size="middle"
-        :scroll="{ x: 1200 }"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'beforeBalance'">
-            {{ formatYuan(record.beforeBalance as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'amount'">
-            <AmountText
-              :value="record.amount as number"
-              kind="signed"
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <RangePicker
+              v-model:value="dateRange"
+              show-time
+              value-format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="['创建时间开始', '创建时间结束']"
             />
-          </template>
-          <template v-else-if="column.dataIndex === 'afterBalance'">
-            {{ formatYuan(record.afterBalance as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'orderNo'">
-            <CellCopyStack
-              :pay-order-id="record.payOrderId as string"
-              :mch-order-no="record.mchOrderNo as string"
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.mchNo"
+              allow-clear
+              placeholder="商户号"
             />
-          </template>
-          <template v-else-if="column.dataIndex === 'payOrderAmount'">
-            {{ formatYuan(record.payOrderAmount as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'bizType'">
-            <HistoryAdjustBizTypeCell
-              :biz-type="record.bizType as number | string"
-              :created-login-name="record.createdLoginName as string"
-              :created-uid="record.createdUid as number | string"
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.mchName"
+              allow-clear
+              placeholder="商户名"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.payOrderId"
+              allow-clear
+              placeholder="订单号"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Select
+              v-model:value="query.fundDirection"
+              allow-clear
+              placeholder="资金变动方向"
+              style="width: 140px"
+              :options="FUND_DIRECTION_OPTIONS"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Select
+              v-model:value="query.bizType"
+              allow-clear
+              placeholder="业务类型"
+              style="width: 140px"
               :options="MCH_BIZ_TYPE_OPTIONS"
             />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
+      <ListStatCards :items="listStatItems" />
+      <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :loading="exportLoading"
+            :progress="exportProgress"
+            :has-report-downloads="hasReportDownloads"
+            @export="onExport"
+            @open-report-list="openReportList"
+          />
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          :row-key="mchHistoryRowKey"
+          size="middle"
+          :scroll="{ x: 1200 }"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'beforeBalance'">
+              {{ formatYuan(record.beforeBalance as number) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'amount'">
+              <AmountText :value="record.amount as number" kind="signed" />
+            </template>
+            <template v-else-if="column.dataIndex === 'afterBalance'">
+              {{ formatYuan(record.afterBalance as number) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'orderNo'">
+              <CellCopyStack
+                :pay-order-id="record.payOrderId as string"
+                :mch-order-no="record.mchOrderNo as string"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'payOrderAmount'">
+              {{ formatYuan(record.payOrderAmount as number) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt as string) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'bizType'">
+              <HistoryAdjustBizTypeCell
+                :biz-type="String(record.bizType ?? '')"
+                :created-login-name="String(record.createdLoginName ?? '')"
+                :created-uid="String(record.createdUid ?? '')"
+                :options="MCH_BIZ_TYPE_OPTIONS"
+              />
+            </template>
+            <template v-else-if="column.key === 'op'">
+              <a class="text-brand" @click="openDetail(record)">查看详细</a>
+            </template>
           </template>
-          <template v-else-if="column.key === 'op'">
-            <a class="text-brand" @click="openDetail(record)">查看详细</a>
-          </template>
-        </template>
-      </Table>
-    </Card>
-    <MchHistoryDetailDrawer ref="detailRef" />
-    <ExportReportListDialog
-      v-model:visible="reportListVisible"
-      :loading="reportListLoading"
-      :title="reportListTitle"
-      :empty-hint="reportListEmptyHint"
-      :data="completedExports"
-      @download="downloadFile"
-      @remove="deleteCompletedItem"
-    />
+        </Table>
+      </Card>
+      <MchHistoryDetailDrawer ref="detailRef" />
+      <ExportReportListDialog
+        v-model:visible="reportListVisible"
+        :loading="reportListLoading"
+        :title="reportListTitle"
+        :empty-hint="reportListEmptyHint"
+        :data="completedExports"
+        @download="downloadFile"
+        @remove="deleteCompletedItem"
+      />
     </div>
   </Page>
 </template>

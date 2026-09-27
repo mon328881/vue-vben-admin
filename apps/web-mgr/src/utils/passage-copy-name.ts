@@ -1,5 +1,7 @@
+import type { PayPassage } from '#/api/modules/mch-apps';
+
 export function stripCopyName(value: string) {
-  return String(value ?? '').replace(/\s+/g, '');
+  return String(value ?? '').replaceAll(/\s+/g, '');
 }
 
 export function defaultCopyName(sourceName: string, at = new Date()) {
@@ -33,13 +35,14 @@ export function validateCopyName(newName: string, sourceName: string) {
 }
 
 export function validateCopyBatch(
-  items: Array<{ newName: string; sourceName: string; label?: string }>,
+  items: Array<{ label?: string; newName: string; sourceName: string }>,
 ) {
   const used = new Set<string>();
   for (const item of items) {
     const prefix = item.label ? `${item.label}：` : '';
     const check = validateCopyName(item.newName, item.sourceName);
-    if (!check.valid) return { valid: false, message: `${prefix}${check.message}` };
+    if (!check.valid)
+      return { valid: false, message: `${prefix}${check.message}` };
     const name = stripCopyName(item.newName);
     if (used.has(name)) {
       return {
@@ -52,13 +55,12 @@ export function validateCopyBatch(
   return { valid: true as const };
 }
 
-export function clonePassageForCreate(
-  row: Record<string, unknown>,
-  newName: string,
-) {
+export function clonePassageForCreate(row: PayPassage, newName: string) {
   const rawConfig = row.payInterfaceConfig;
   const config =
-    rawConfig == null || String(rawConfig).trim() === ''
+    rawConfig === null ||
+    rawConfig === undefined ||
+    String(rawConfig).trim() === ''
       ? null
       : String(rawConfig);
   return {

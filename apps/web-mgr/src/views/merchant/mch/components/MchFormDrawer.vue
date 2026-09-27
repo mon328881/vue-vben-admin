@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import type { RadioChangeEvent } from 'ant-design-vue';
+
+import type { MchInfo } from '#/api/types/business';
+
 import { computed, reactive, ref } from 'vue';
 
 import {
@@ -8,12 +12,12 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Radio,
   Space,
   Tag,
   Textarea,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -26,7 +30,11 @@ import {
 } from '#/api';
 import AgentSelector from '#/components/selectors/AgentSelector.vue';
 import MchGroupSelector from '#/components/selectors/MchGroupSelector.vue';
-import { LOCKED_MCH_NO, isValidWhiteList, randomSecret } from '#/constants/merchant';
+import {
+  isValidWhiteList,
+  LOCKED_MCH_NO,
+  randomSecret,
+} from '#/constants/merchant';
 
 const emit = defineEmits<{ success: [] }>();
 
@@ -34,9 +42,9 @@ const visible = ref(false);
 const creating = ref(true);
 const saving = ref(false);
 const loaded = ref(false);
-const editingNo = ref<string | null>(null);
+const editingNo = ref<null | string>(null);
 const limitMode = ref<'limited' | 'unlimited'>('unlimited');
-const savedLimit = ref<number | null>(null);
+const savedLimit = ref<null | number>(null);
 const formRef = ref();
 
 const emptyForm = {
@@ -80,6 +88,10 @@ function applyLimit(value?: number) {
   form.orderCountLimit = -1;
 }
 
+function onLimitModeRadio(e: RadioChangeEvent) {
+  onLimitModeChange(String(e.target.value ?? ''));
+}
+
 function onLimitModeChange(mode: string) {
   if (mode === 'unlimited') {
     const current = Number(form.orderCountLimit);
@@ -92,7 +104,7 @@ function onLimitModeChange(mode: string) {
   }
 }
 
-function fill(row: Record<string, unknown>) {
+function fill(row: MchInfo) {
   Object.assign(form, {
     mchNo: row.mchNo,
     mchName: row.mchName ?? '',
@@ -109,7 +121,7 @@ function fill(row: Record<string, unknown>) {
     cashierState: row.cashierState ?? 0,
     loginWhiteList: row.loginWhiteList ?? '',
   });
-  applyLimit(row.orderCountLimit as number | undefined);
+  applyLimit(row.orderCountLimit);
 }
 
 async function show(mchNo?: string) {
@@ -121,7 +133,8 @@ async function show(mchNo?: string) {
   if (mchNo) {
     editingNo.value = mchNo;
     loaded.value = true;
-    fill((await fetchMchInfoApi(mchNo)) as unknown as Record<string, unknown>);
+    const info = await fetchMchInfoApi(mchNo);
+    if (info) fill(info);
   } else {
     editingNo.value = null;
     loaded.value = false;
@@ -270,206 +283,213 @@ defineExpose({ show });
     @close="onClose"
   >
     <div class="ap-drawer-body">
-    <Form
-      ref="formRef"
-      :model="form"
-      layout="vertical"
-      class="ap-drawer-form"
-    >
-      <Divider orientation="left">
-        <Tag color="processing">基础信息</Tag>
-      </Divider>
-      <Form.Item
-        label="商户名称"
-        name="mchName"
-        :rules="[
-          { required: true, message: '请输入商户名称' },
-          { max: 64, message: '商户名称不能超过64个字符' },
-        ]"
+      <Form
+        ref="formRef"
+        :model="form"
+        layout="vertical"
+        class="ap-drawer-form"
       >
-        <Input
-          v-model:value="form.mchName"
-          placeholder="请输入商户名称"
-          :maxlength="64"
-          show-count
-          :disabled="locked"
-        />
-      </Form.Item>
-      <Form.Item
-        label="登录名"
-        name="loginUserName"
-        :rules="[
-          { required: true, message: '请输入登录名' },
-          {
-            pattern: /^[a-z][a-z0-9]{5,17}$/i,
-            message: '字母开头，长度为6-18位',
-          },
-        ]"
-      >
-        <Input
-          v-model:value="form.loginUserName"
-          placeholder="请输入商户登录名（字母开头，6-18位）"
-          :disabled="!creating"
-        />
-      </Form.Item>
-      <Form.Item label="代理商号" name="agentNo">
-        <AgentSelector
-          v-model="form.agentNo"
-          placeholder="请选择代理商"
-          style="width: 100%"
-        />
-      </Form.Item>
-      <Form.Item label="所属分组" name="mchGroup">
-        <MchGroupSelector
-          v-model="form.mchGroup"
-          placeholder="请选择商户分组（可不选）"
-          style="width: 100%"
-        />
-        <div class="text-muted-foreground mt-1 text-xs">
-          不选择表示该商户不属于任何分组；已停用的当前分组仍会保留显示。
-        </div>
-      </Form.Item>
-      <template v-if="!locked">
-        <Form.Item label="并发限制" name="orderCountLimit">
-          <Space>
-            <Radio.Group
-              v-model:value="limitMode"
-              @change="(e: any) => onLimitModeChange(e.target.value)"
-            >
-              <Radio value="unlimited">不限</Radio>
-              <Radio value="limited">限制</Radio>
-            </Radio.Group>
-            <InputNumber
-              v-if="limitMode === 'limited'"
-              v-model:value="form.orderCountLimit"
-              :min="1"
-              :max="2147483647"
-              :precision="0"
-              placeholder="请输入正整数"
-              style="width: 160px"
-            />
-          </Space>
-          <div class="text-muted-foreground mt-1 text-xs">
-            按自然分钟统计下单数量；选择“限制”后，请设置每分钟允许的最大订单数。
-          </div>
-        </Form.Item>
-        <Form.Item label="状态" name="state">
-          <Radio.Group v-model:value="form.state">
-            <Radio :value="1">启用</Radio>
-            <Radio :value="0">禁用</Radio>
-          </Radio.Group>
-        </Form.Item>
+        <Divider orientation="left">
+          <Tag color="processing">基础信息</Tag>
+        </Divider>
         <Form.Item
-          label="商户私钥"
-          name="secret"
+          label="商户名称"
+          name="mchName"
           :rules="[
-            { required: true, message: '请点击生成私钥' },
-            { max: 512, message: '私钥不能超过512个字符' },
+            { required: true, message: '请输入商户名称' },
+            { max: 64, message: '商户名称不能超过64个字符' },
           ]"
         >
+          <Input
+            v-model:value="form.mchName"
+            placeholder="请输入商户名称"
+            :maxlength="64"
+            show-count
+            :disabled="locked"
+          />
+        </Form.Item>
+        <Form.Item
+          label="登录名"
+          name="loginUserName"
+          :rules="[
+            { required: true, message: '请输入登录名' },
+            {
+              pattern: /^[a-z][a-z0-9]{5,17}$/i,
+              message: '字母开头，长度为6-18位',
+            },
+          ]"
+        >
+          <Input
+            v-model:value="form.loginUserName"
+            placeholder="请输入商户登录名（字母开头，6-18位）"
+            :disabled="!creating"
+          />
+        </Form.Item>
+        <Form.Item label="代理商号" name="agentNo">
+          <AgentSelector
+            v-model="form.agentNo"
+            placeholder="请选择代理商"
+            style="width: 100%"
+          />
+        </Form.Item>
+        <Form.Item label="所属分组" name="mchGroup">
+          <MchGroupSelector
+            v-model="form.mchGroup"
+            placeholder="请选择商户分组（可不选）"
+            style="width: 100%"
+          />
+          <div class="text-muted-foreground mt-1 text-xs">
+            不选择表示该商户不属于任何分组；已停用的当前分组仍会保留显示。
+          </div>
+        </Form.Item>
+        <template v-if="!locked">
+          <Form.Item label="并发限制" name="orderCountLimit">
+            <Space>
+              <Radio.Group v-model:value="limitMode" @change="onLimitModeRadio">
+                <Radio value="unlimited">不限</Radio>
+                <Radio value="limited">限制</Radio>
+              </Radio.Group>
+              <InputNumber
+                v-if="limitMode === 'limited'"
+                v-model:value="form.orderCountLimit"
+                :min="1"
+                :max="2147483647"
+                :precision="0"
+                placeholder="请输入正整数"
+                style="width: 160px"
+              />
+            </Space>
+            <div class="text-muted-foreground mt-1 text-xs">
+              按自然分钟统计下单数量；选择“限制”后，请设置每分钟允许的最大订单数。
+            </div>
+          </Form.Item>
+          <Form.Item label="状态" name="state">
+            <Radio.Group v-model:value="form.state">
+              <Radio :value="1">启用</Radio>
+              <Radio :value="0">禁用</Radio>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item
+            label="商户私钥"
+            name="secret"
+            :rules="[
+              { required: true, message: '请点击生成私钥' },
+              { max: 512, message: '私钥不能超过512个字符' },
+            ]"
+          >
+            <Textarea
+              v-model:value="form.secret"
+              placeholder="最多512位，可点击随机生成128位"
+              :maxlength="512"
+              show-count
+              :rows="4"
+            />
+            <Button
+              class="mt-2"
+              size="small"
+              type="primary"
+              ghost
+              @click="form.secret = randomSecret()"
+            >
+              随机生成私钥
+            </Button>
+          </Form.Item>
+        </template>
+        <Form.Item
+          label="备注"
+          name="remark"
+          :rules="[{ max: 128, message: '备注不能超过128个字符' }]"
+        >
           <Textarea
-            v-model:value="form.secret"
-            placeholder="最多512位，可点击随机生成128位"
-            :maxlength="512"
+            v-model:value="form.remark"
+            placeholder="请输入内容"
+            :maxlength="128"
             show-count
             :rows="4"
           />
-          <Button
-            class="mt-2"
-            size="small"
-            type="primary"
-            ghost
-            @click="form.secret = randomSecret()"
-          >
-            随机生成私钥
-          </Button>
         </Form.Item>
-      </template>
-      <Form.Item
-        label="备注"
-        name="remark"
-        :rules="[{ max: 128, message: '备注不能超过128个字符' }]"
-      >
-        <Textarea
-          v-model:value="form.remark"
-          placeholder="请输入内容"
-          :maxlength="128"
-          show-count
-          :rows="4"
-        />
-      </Form.Item>
-      <template v-if="!locked && !creating">
-        <Divider orientation="left">
-          <Tag color="error">账户安全</Tag>
-        </Divider>
-        <Form.Item v-if="loaded" label="商户登录IP白名单">
-          <Textarea
-            v-model:value="form.loginWhiteList"
-            placeholder="多个 IP 用 | 分隔，* 表示不限；留空保存不会清空"
-            :rows="4"
-            disabled
-          />
-          <Button class="mt-2" size="small" type="primary" ghost @click="openWhiteList">
-            修改IP白名单
-          </Button>
-        </Form.Item>
-        <Form.Item v-if="loaded" label="重置密码">
-          <Button danger ghost @click="confirmResetAuth">
-            重置密码并解绑谷歌验证
-          </Button>
-        </Form.Item>
-        <Divider orientation="left">
-          <Tag color="error">其他设置</Tag>
-        </Divider>
-        <Form.Item label="启用推送" name="canPush">
-          <Space>
-            <Radio.Group v-model:value="form.canPush">
+        <template v-if="!locked && !creating">
+          <Divider orientation="left">
+            <Tag color="error">账户安全</Tag>
+          </Divider>
+          <Form.Item v-if="loaded" label="商户登录IP白名单">
+            <Textarea
+              v-model:value="form.loginWhiteList"
+              placeholder="多个 IP 用 | 分隔，* 表示不限；留空保存不会清空"
+              :rows="4"
+              disabled
+            />
+            <Button
+              class="mt-2"
+              size="small"
+              type="primary"
+              ghost
+              @click="openWhiteList"
+            >
+              修改IP白名单
+            </Button>
+          </Form.Item>
+          <Form.Item v-if="loaded" label="重置密码">
+            <Button danger ghost @click="confirmResetAuth">
+              重置密码并解绑谷歌验证
+            </Button>
+          </Form.Item>
+          <Divider orientation="left">
+            <Tag color="error">其他设置</Tag>
+          </Divider>
+          <Form.Item label="启用推送" name="canPush">
+            <Space>
+              <Radio.Group v-model:value="form.canPush">
+                <Radio :value="1">启用</Radio>
+                <Radio :value="0">禁用</Radio>
+              </Radio.Group>
+              <span class="text-muted-foreground text-xs">
+                是否接收群发消息
+              </span>
+            </Space>
+          </Form.Item>
+          <Form.Item label="启用通知" name="canNotify">
+            <Space>
+              <Radio.Group v-model:value="form.canNotify">
+                <Radio :value="1">启用</Radio>
+                <Radio :value="0">禁用</Radio>
+              </Radio.Group>
+              <span class="text-muted-foreground text-xs">
+                是否接收动账、预付等
+              </span>
+            </Space>
+          </Form.Item>
+          <Form.Item label="启用费率变动提醒" name="canRateNotify">
+            <Radio.Group v-model:value="form.canRateNotify">
               <Radio :value="1">启用</Radio>
               <Radio :value="0">禁用</Radio>
             </Radio.Group>
-            <span class="text-muted-foreground text-xs">是否接收群发消息</span>
-          </Space>
-        </Form.Item>
-        <Form.Item label="启用通知" name="canNotify">
-          <Space>
-            <Radio.Group v-model:value="form.canNotify">
+          </Form.Item>
+          <Form.Item label="是否启用收银台" name="cashierState">
+            <Radio.Group v-model:value="form.cashierState">
               <Radio :value="1">启用</Radio>
               <Radio :value="0">禁用</Radio>
             </Radio.Group>
-            <span class="text-muted-foreground text-xs">是否接收动账、预付等</span>
-          </Space>
-        </Form.Item>
-        <Form.Item label="启用费率变动提醒" name="canRateNotify">
-          <Radio.Group v-model:value="form.canRateNotify">
-            <Radio :value="1">启用</Radio>
-            <Radio :value="0">禁用</Radio>
-          </Radio.Group>
-        </Form.Item>
-        <Form.Item label="是否启用收银台" name="cashierState">
-          <Radio.Group v-model:value="form.cashierState">
-            <Radio :value="1">启用</Radio>
-            <Radio :value="0">禁用</Radio>
-          </Radio.Group>
-        </Form.Item>
-        <Form.Item label="收银台地址">
-          <Button
-            size="small"
-            type="primary"
-            ghost
-            :disabled="form.cashierState !== 1"
-            @click="openCashier"
-          >
-            打开收银台地址
-          </Button>
-          <div
-            v-if="form.cashierState !== 1"
-            class="text-muted-foreground mt-1 text-xs"
-          >
-            启用收银台后才可打开
-          </div>
-        </Form.Item>
-      </template>
-    </Form>
+          </Form.Item>
+          <Form.Item label="收银台地址">
+            <Button
+              size="small"
+              type="primary"
+              ghost
+              :disabled="form.cashierState !== 1"
+              @click="openCashier"
+            >
+              打开收银台地址
+            </Button>
+            <div
+              v-if="form.cashierState !== 1"
+              class="text-muted-foreground mt-1 text-xs"
+            >
+              启用收银台后才可打开
+            </div>
+          </Form.Item>
+        </template>
+      </Form>
     </div>
     <template #footer>
       <Space>

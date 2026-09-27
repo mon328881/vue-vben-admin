@@ -1,9 +1,12 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { ListStatCardItem } from '#/components/list/ListStatCards.vue';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Button,
   Card,
@@ -11,9 +14,9 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   RangePicker,
   Table,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -22,13 +25,11 @@ import {
   fetchErrorOrderStatApi,
 } from '#/api';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
 import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import { hasEnt } from '#/utils/access';
-import { formatDateTime, formatYuan } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
+import { formatDateTime, formatYuan } from '#/utils/format';
 
 defineOptions({ name: 'OrderErrorListPage' });
 
@@ -64,7 +65,7 @@ const listStatItems = computed<ListStatCardItem[]>(() => {
 });
 
 const detailLoading = ref(false);
-const detail = ref<Record<string, unknown> | null>(null);
+const detail = ref<null | Record<string, unknown>>(null);
 
 const canView = computed(() => hasEnt('ENT_PAY_ORDER_VIEW'));
 
@@ -127,9 +128,17 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
   void loadData();
 }
 
+function asRow(record: unknown): Record<string, unknown> {
+  return (record ?? {}) as Record<string, unknown>;
+}
+
+function errorRowKey(r: Record<string, unknown>, i?: number) {
+  return String(r.errorOrderId ?? r.mchOrderNo ?? i ?? 0);
+}
+
 async function openDetail(row: Record<string, unknown>) {
   const id = row.errorOrderId;
-  if (id == null) {
+  if (id === null || id === undefined) {
     message.error('异常订单 ID 无效');
     return;
   }
@@ -153,122 +162,130 @@ onMounted(() => {
   <Page auto-content-height title="异常订单">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <RangePicker
-            v-model:value="dateRange"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.mchName" allow-clear placeholder="商户名" />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
-        </Form.Item>
-        <Form.Item>
-          <Input
-            v-model:value="query.mchOrderNo"
-            allow-clear
-            placeholder="商户订单号"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <RangePicker
+              v-model:value="dateRange"
+              show-time
+              value-format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="['创建时间开始', '创建时间结束']"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.mchName"
+              allow-clear
+              placeholder="商户名"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.mchNo"
+              allow-clear
+              placeholder="商户号"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.mchOrderNo"
+              allow-clear
+              placeholder="商户订单号"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
 
-    <ListStatCards :items="listStatItems" />
+      <ListStatCards :items="listStatItems" />
 
-    <Card>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-key="(r: any, i?: number) => String(r.errorOrderId ?? r.mchOrderNo ?? i ?? 0)"
-        :scroll="{ x: 1100 }"
-        size="middle"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'mchNo'">
-            <div>
-              <div>{{ record.mchNo }}</div>
-              <div class="text-muted-foreground text-xs">
-                {{ record.mchName || '' }}
+      <Card>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          :row-key="errorRowKey"
+          :scroll="{ x: 1100 }"
+          size="middle"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'mchNo'">
+              <div>
+                <div>{{ record.mchNo }}</div>
+                <div class="text-muted-foreground text-xs">
+                  {{ record.mchName || '' }}
+                </div>
               </div>
-            </div>
+            </template>
+            <template v-else-if="column.dataIndex === 'orderNo'">
+              <CellCopyStack :mch-order-no="record.mchOrderNo as string" />
+            </template>
+            <template v-else-if="column.dataIndex === 'amount'">
+              {{ formatYuan(record.amount as number) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'productName'">
+              {{ record.productName || '-' }}
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt as string) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <Button
+                v-if="canView"
+                size="small"
+                type="link"
+                @click="openDetail(asRow(record))"
+              >
+                查看详情
+              </Button>
+            </template>
           </template>
-          <template v-else-if="column.dataIndex === 'orderNo'">
-            <CellCopyStack :mch-order-no="record.mchOrderNo as string" />
-          </template>
-          <template v-else-if="column.dataIndex === 'amount'">
-            {{ formatYuan(record.amount as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'productName'">
-            {{ record.productName || '-' }}
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'action'">
-            <Button
-              v-if="canView"
-              size="small"
-              type="link"
-              @click="openDetail(record as Record<string, unknown>)"
-            >
-              查看详情
-            </Button>
-          </template>
-        </template>
-      </Table>
-    </Card>
+        </Table>
+      </Card>
 
-    <Drawer
-      v-model:open="detailOpen"
-      title="异常订单详情"
-      width="680"
-      :loading="detailLoading"
-    >
-      <Descriptions v-if="detail" :column="1" bordered size="small">
-        <Descriptions.Item label="商户号">
-          {{ detail.mchNo }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户名称">
-          {{ detail.mchName || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="支付金额">
-          {{ formatYuan(detail.amount as number) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户订单号">
-          {{ detail.mchOrderNo }}
-        </Descriptions.Item>
-        <Descriptions.Item label="创建时间">
-          {{ formatDateTime(detail.createdAt as string) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户请求参数">
-          <pre class="m-0 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{{
-            detail.mchReq || '-'
-          }}</pre>
-        </Descriptions.Item>
-        <Descriptions.Item label="错误信息">
-          <pre class="m-0 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{{
-            detail.mchResp || '-'
-          }}</pre>
-        </Descriptions.Item>
-      </Descriptions>
-    </Drawer>
+      <Drawer
+        v-model:open="detailOpen"
+        title="异常订单详情"
+        width="680"
+        :loading="detailLoading"
+      >
+        <Descriptions v-if="detail" :column="1" bordered size="small">
+          <Descriptions.Item label="商户号">
+            {{ detail.mchNo }}
+          </Descriptions.Item>
+          <Descriptions.Item label="商户名称">
+            {{ detail.mchName || '-' }}
+          </Descriptions.Item>
+          <Descriptions.Item label="支付金额">
+            {{ formatYuan(detail.amount as number) }}
+          </Descriptions.Item>
+          <Descriptions.Item label="商户订单号">
+            {{ detail.mchOrderNo }}
+          </Descriptions.Item>
+          <Descriptions.Item label="创建时间">
+            {{ formatDateTime(detail.createdAt as string) }}
+          </Descriptions.Item>
+          <Descriptions.Item label="商户请求参数">
+            <pre
+              class="m-0 max-h-48 overflow-auto whitespace-pre-wrap text-xs"
+              >{{ detail.mchReq || '-' }}</pre>
+          </Descriptions.Item>
+          <Descriptions.Item label="错误信息">
+            <pre
+              class="m-0 max-h-48 overflow-auto whitespace-pre-wrap text-xs"
+              >{{ detail.mchResp || '-' }}</pre>
+          </Descriptions.Item>
+        </Descriptions>
+      </Drawer>
     </div>
   </Page>
 </template>

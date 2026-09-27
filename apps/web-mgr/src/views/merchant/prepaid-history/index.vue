@@ -1,28 +1,33 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PrepaidHistoryStat } from '#/api/modules/history';
+import type { MchPrepaidHistory } from '#/api/types/business';
+
 import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Card,
   Form,
   Input,
+  message,
   RangePicker,
   Select,
   Table,
-  message,
 } from 'ant-design-vue';
 
-import { fetchMchPrepaidHistoryApi, fetchMchPrepaidHistoryStatApi } from '#/api';
-import type { PrepaidHistoryStat } from '#/api/modules/history';
-import type { MchPrepaidHistory } from '#/api/types/business';
-import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
-import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
-import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
+import {
+  fetchMchPrepaidHistoryApi,
+  fetchMchPrepaidHistoryStatApi,
+} from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
+import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
+import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
+import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
 import { useMchPrepaidHistoryExport } from '#/composables/use-async-export';
 import { useListStat } from '#/composables/use-list-stat';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
@@ -66,9 +71,9 @@ const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>(defaultTodayRange());
 const query = reactive({
-  mchNo: '' as any,
-  mchName: '' as any,
-  fundDirection: '' as any,
+  mchNo: '',
+  mchName: '',
+  fundDirection: '',
 });
 const stat = ref<PrepaidHistoryStat>({});
 const { loadStatSafely } = useListStat();
@@ -115,7 +120,9 @@ async function loadData(resetPage = false) {
   } catch (error) {
     dataSource.value = [];
     total.value = 0;
-    message.error(error instanceof Error ? error.message : '加载商户预付流水失败');
+    message.error(
+      error instanceof Error ? error.message : '加载商户预付流水失败',
+    );
   } finally {
     loading.value = false;
   }
@@ -164,10 +171,18 @@ onMounted(async () => {
             />
           </Form.Item>
           <Form.Item>
-            <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
+            <Input
+              v-model:value="query.mchNo"
+              allow-clear
+              placeholder="商户号"
+            />
           </Form.Item>
           <Form.Item>
-            <Input v-model:value="query.mchName" allow-clear placeholder="商户名称" />
+            <Input
+              v-model:value="query.mchName"
+              allow-clear
+              placeholder="商户名称"
+            />
           </Form.Item>
           <Form.Item>
             <Select

@@ -4,6 +4,7 @@ import type { TableColumnsType } from 'ant-design-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Button,
   Card,
@@ -11,6 +12,7 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   RangePicker,
@@ -18,7 +20,6 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -34,8 +35,8 @@ import {
   notifyStateLabel,
 } from '#/constants/order';
 import { hasEnt } from '#/utils/access';
-import { formatDateTime } from '#/utils/format';
 import { defaultTodayRange } from '#/utils/date-range';
+import { formatDateTime } from '#/utils/format';
 
 defineOptions({ name: 'MchNotifyListPage' });
 
@@ -53,7 +54,7 @@ const query = reactive({
 });
 const detailOpen = ref(false);
 const detailLoading = ref(false);
-const detail = ref<Record<string, unknown> | null>(null);
+const detail = ref<null | Record<string, unknown>>(null);
 /** 列表行含 payPassageName，详情契约无此键——保留作展示兜底 */
 const detailPassageName = ref('');
 
@@ -61,7 +62,12 @@ const canResend = computed(() => hasEnt('ENT_MCH_NOTIFY_RESEND'));
 
 const columns: TableColumnsType = [
   { dataIndex: 'orderId', ellipsis: true, title: '订单号', width: 200 },
-  { dataIndex: 'passageOrderNo', ellipsis: true, title: '通道订单号', width: 160 },
+  {
+    dataIndex: 'passageOrderNo',
+    ellipsis: true,
+    title: '通道订单号',
+    width: 160,
+  },
   { dataIndex: 'state', title: '通知状态', width: 110 },
   { dataIndex: 'notifyCount', title: '通知次数', width: 100 },
   { dataIndex: 'orderType', title: '订单类型', width: 100 },
@@ -71,7 +77,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'action', fixed: 'right', title: '操作', width: 140 },
 ];
 
-function orderTypeLabel(orderType?: number | null) {
+function orderTypeLabel(orderType?: null | number) {
   if (orderType === 1) return '支付';
   if (orderType === 2) return '代付';
   if (orderType === 3) return '提现';
@@ -84,10 +90,18 @@ const ORDER_TYPE_OPTIONS = [
   { label: '提现', value: 3 },
 ];
 
+function asRow(record: unknown): Record<string, unknown> {
+  return (record ?? {}) as Record<string, unknown>;
+}
+
+function notifyRowKey(r: Record<string, unknown>, i?: number) {
+  return String(r.notifyId ?? r.orderId ?? i ?? 0);
+}
+
 function notifyLimitText(row: Record<string, unknown>) {
   const count = Number(row.notifyCount ?? 0);
   const limit =
-    row.notifyCountLimit == null
+    row.notifyCountLimit === null || row.notifyCountLimit === undefined
       ? Math.max(4, count)
       : Number(row.notifyCountLimit);
   return `${count}/${limit}`;
@@ -138,7 +152,7 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
 
 async function openDetail(row: Record<string, unknown>) {
   const notifyId = row.notifyId;
-  if (notifyId == null) {
+  if (notifyId === null || notifyId === undefined) {
     message.error('通知 ID 无效');
     return;
   }
@@ -162,7 +176,7 @@ async function openDetail(row: Record<string, unknown>) {
 
 function confirmResend(row: Record<string, unknown>) {
   const notifyId = row.notifyId;
-  if (notifyId == null) {
+  if (notifyId === null || notifyId === undefined) {
     message.error('通知 ID 无效');
     return;
   }
@@ -195,162 +209,172 @@ onMounted(() => {
   <Page auto-content-height title="商户通知">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <RangePicker
-            v-model:value="dateRange"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.orderId" allow-clear placeholder="订单号" />
-        </Form.Item>
-        <Form.Item>
-          <Input
-            v-model:value="query.passageOrderNo"
-            allow-clear
-            placeholder="通道订单号"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input v-model:value="query.mchNo" allow-clear placeholder="商户号" />
-        </Form.Item>
-        <Form.Item>
-          <Select
-            v-model:value="query.state"
-            allow-clear
-            placeholder="通知状态"
-            style="width: 140px"
-            :options="NOTIFY_STATE_OPTIONS"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Select
-            v-model:value="query.orderType"
-            allow-clear
-            placeholder="订单类型"
-            style="width: 120px"
-            :options="ORDER_TYPE_OPTIONS"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <RangePicker
+              v-model:value="dateRange"
+              show-time
+              value-format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="['创建时间开始', '创建时间结束']"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.orderId"
+              allow-clear
+              placeholder="订单号"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.passageOrderNo"
+              allow-clear
+              placeholder="通道订单号"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.mchNo"
+              allow-clear
+              placeholder="商户号"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Select
+              v-model:value="query.state"
+              allow-clear
+              placeholder="通知状态"
+              style="width: 140px"
+              :options="NOTIFY_STATE_OPTIONS"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Select
+              v-model:value="query.orderType"
+              allow-clear
+              placeholder="订单类型"
+              style="width: 120px"
+              :options="ORDER_TYPE_OPTIONS"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
 
-    <Card>
-      <div v-if="canResend" class="ap-table-toolbar">
-        <Popconfirm title="确认重发全部通知么?" @confirm="resendAll">
-          <Button danger>重发全部</Button>
-        </Popconfirm>
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-key="(r: any, i?: number) => String(r.notifyId ?? r.orderId ?? i ?? 0)"
-        :scroll="{ x: 1200 }"
-        size="middle"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'state'">
-            <Tag :color="notifyStateColor(record.state as number)">
-              {{ notifyStateLabel(record.state as number) }}
+      <Card>
+        <div v-if="canResend" class="ap-table-toolbar">
+          <Popconfirm title="确认重发全部通知么?" @confirm="resendAll">
+            <Button danger>重发全部</Button>
+          </Popconfirm>
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          :row-key="notifyRowKey"
+          :scroll="{ x: 1200 }"
+          size="middle"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'state'">
+              <Tag :color="notifyStateColor(record.state as number)">
+                {{ notifyStateLabel(record.state as number) }}
+              </Tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'notifyCount'">
+              {{ notifyLimitText(asRow(record)) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'orderType'">
+              {{ orderTypeLabel(record.orderType as number) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'updatedAt'">
+              {{ formatDateTime(record.updatedAt as string) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <Space>
+                <Button
+                  size="small"
+                  type="link"
+                  @click="openDetail(asRow(record))"
+                >
+                  详情
+                </Button>
+                <Button
+                  v-if="canResend && Number(record.state) === 3"
+                  danger
+                  size="small"
+                  type="link"
+                  @click="confirmResend(asRow(record))"
+                >
+                  重发通知
+                </Button>
+              </Space>
+            </template>
+          </template>
+        </Table>
+      </Card>
+
+      <Drawer v-model:open="detailOpen" title="通知详情" width="640">
+        <div v-if="detailLoading" class="py-8 text-center text-gray-400">
+          加载中…
+        </div>
+        <Descriptions v-else-if="detail" :column="1" bordered size="small">
+          <Descriptions.Item label="通知 ID">
+            {{ detail.notifyId }}
+          </Descriptions.Item>
+          <Descriptions.Item label="订单号">
+            {{ detail.orderId }}
+          </Descriptions.Item>
+          <Descriptions.Item label="通道订单号">
+            {{ detail.passageOrderNo || '-' }}
+          </Descriptions.Item>
+          <Descriptions.Item label="通知状态">
+            <Tag :color="notifyStateColor(detail.state as number)">
+              {{ notifyStateLabel(detail.state as number) }}
             </Tag>
-          </template>
-          <template v-else-if="column.dataIndex === 'notifyCount'">
-            {{ notifyLimitText(record as Record<string, unknown>) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'orderType'">
-            {{ orderTypeLabel(record.orderType as number) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'updatedAt'">
-            {{ formatDateTime(record.updatedAt as string) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'action'">
-            <Space>
-              <Button
-                size="small"
-                type="link"
-                @click="openDetail(record as Record<string, unknown>)"
-              >
-                详情
-              </Button>
-              <Button
-                v-if="canResend && Number(record.state) === 3"
-                danger
-                size="small"
-                type="link"
-                @click="confirmResend(record as Record<string, unknown>)"
-              >
-                重发通知
-              </Button>
-            </Space>
-          </template>
-        </template>
-      </Table>
-    </Card>
-
-    <Drawer v-model:open="detailOpen" title="通知详情" width="640">
-      <div v-if="detailLoading" class="py-8 text-center text-gray-400">
-        加载中…
-      </div>
-      <Descriptions v-else-if="detail" :column="1" bordered size="small">
-        <Descriptions.Item label="通知 ID">
-          {{ detail.notifyId }}
-        </Descriptions.Item>
-        <Descriptions.Item label="订单号">
-          {{ detail.orderId }}
-        </Descriptions.Item>
-        <Descriptions.Item label="通道订单号">
-          {{ detail.passageOrderNo || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="通知状态">
-          <Tag :color="notifyStateColor(detail.state as number)">
-            {{ notifyStateLabel(detail.state as number) }}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="通知次数">
-          {{ notifyLimitText(detail) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="订单类型">
-          {{ orderTypeLabel(detail.orderType as number) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="商户号">{{ detail.mchNo }}</Descriptions.Item>
-        <Descriptions.Item label="代理号">
-          {{ detail.agentNo || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="通道">
-          {{ detail.payPassageName || detailPassageName || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="通知地址">
-          {{ detail.notifyUrl || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="响应结果">
-          {{ detail.resResult || '-' }}
-        </Descriptions.Item>
-        <Descriptions.Item label="最近通知">
-          {{ formatDateTime(detail.lastNotifyTime as string) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="创建时间">
-          {{ formatDateTime(detail.createdAt as string) }}
-        </Descriptions.Item>
-        <Descriptions.Item label="更新日期">
-          {{ formatDateTime(detail.updatedAt as string) }}
-        </Descriptions.Item>
-      </Descriptions>
-    </Drawer>
+          </Descriptions.Item>
+          <Descriptions.Item label="通知次数">
+            {{ notifyLimitText(detail) }}
+          </Descriptions.Item>
+          <Descriptions.Item label="订单类型">
+            {{ orderTypeLabel(detail.orderType as number) }}
+          </Descriptions.Item>
+          <Descriptions.Item label="商户号">
+            {{ detail.mchNo }}
+          </Descriptions.Item>
+          <Descriptions.Item label="代理号">
+            {{ detail.agentNo || '-' }}
+          </Descriptions.Item>
+          <Descriptions.Item label="通道">
+            {{ detail.payPassageName || detailPassageName || '-' }}
+          </Descriptions.Item>
+          <Descriptions.Item label="通知地址">
+            {{ detail.notifyUrl || '-' }}
+          </Descriptions.Item>
+          <Descriptions.Item label="响应结果">
+            {{ detail.resResult || '-' }}
+          </Descriptions.Item>
+          <Descriptions.Item label="最近通知">
+            {{ formatDateTime(detail.lastNotifyTime as string) }}
+          </Descriptions.Item>
+          <Descriptions.Item label="创建时间">
+            {{ formatDateTime(detail.createdAt as string) }}
+          </Descriptions.Item>
+          <Descriptions.Item label="更新日期">
+            {{ formatDateTime(detail.updatedAt as string) }}
+          </Descriptions.Item>
+        </Descriptions>
+      </Drawer>
     </div>
   </Page>
 </template>

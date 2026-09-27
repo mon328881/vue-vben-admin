@@ -4,22 +4,17 @@ import type { TableColumnsType } from 'ant-design-vue';
 import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
-import {
-  Card,
-  Form,
-  RangePicker,
-  Table,
-} from 'ant-design-vue';
+
+import AmountText from '@asiapay/shared/components/AmountText.vue';
+import { Card, Form, RangePicker, Table } from 'ant-design-vue';
 
 import { fetchPlatStatApi, fetchPlatStatCountApi } from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards from '#/components/list/ListStatCards.vue';
-import AmountText from '@asiapay/shared/components/AmountText.vue';
 import { usePlatStatExport } from '#/composables/use-async-export';
 import { useListStat } from '#/composables/use-list-stat';
-
 import { defaultWeekRange } from '#/utils/date-range';
 import {
   fenToYuanNumber,
@@ -51,9 +46,7 @@ const dataSource = ref<Record<string, unknown>[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>(defaultWeekRange());
-const query = reactive({
-
-});
+const query = reactive({});
 const stat = ref<Record<string, any>>({});
 const { loadStatSafely, buildStatItems } = useListStat();
 
@@ -124,7 +117,6 @@ function onSearch() {
 }
 
 function onReset() {
-
   dateRange.value = defaultWeekRange();
   void loadData(true);
 }
@@ -150,86 +142,85 @@ onMounted(async () => {
   <Page auto-content-height title="平台统计">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <RangePicker
-            v-model:value="dateRange"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="['创建时间开始', '创建时间结束']"
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <RangePicker
+              v-model:value="dateRange"
+              show-time
+              value-format="YYYY-MM-DD HH:mm:ss"
+              :placeholder="['创建时间开始', '创建时间结束']"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
+      <ListStatCards :items="listStatItems" />
+      <Card>
+        <div class="ap-table-toolbar">
+          <AsyncExportButtons
+            danger
+            :loading="exportLoading"
+            :progress="exportProgress"
+            :has-report-downloads="hasReportDownloads"
+            @export="onExport"
+            @open-report-list="openReportList"
           />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
-    <ListStatCards :items="listStatItems" />
-    <Card>
-      <div class="ap-table-toolbar">
-        <AsyncExportButtons
-          danger
-          :loading="exportLoading"
-          :progress="exportProgress"
-          :has-report-downloads="hasReportDownloads"
-          @export="onExport"
-          @open-report-list="openReportList"
-        />
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        :row-key="(_r: any, i?: number) => String(i ?? 0)"
-        size="middle"
-        :scroll="{ x: 1200 }"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="false" />
-          <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
-            <AmountText
-              :value="record.totalSuccessAmount as number"
-              kind="plain"
-            />
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          :row-key="(_r: unknown, i?: number) => String(i ?? 0)"
+          size="middle"
+          :scroll="{ x: 1200 }"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="false"></template>
+            <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
+              <AmountText
+                :value="record.totalSuccessAmount as number"
+                kind="plain"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'platTotalIncome'">
+              <AmountText
+                :value="record.platTotalIncome as number"
+                kind="signed"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'successRate'">
+              {{
+                formatSuccessRate(
+                  record.orderSuccessCount as number,
+                  record.totalOrderCount as number,
+                )
+              }}
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt as string) }}
+            </template>
           </template>
-          <template v-else-if="column.dataIndex === 'platTotalIncome'">
-            <AmountText
-              :value="record.platTotalIncome as number"
-              kind="signed"
-            />
-          </template>
-          <template v-else-if="column.dataIndex === 'successRate'">
-            {{
-              formatSuccessRate(
-                record.orderSuccessCount as number,
-                record.totalOrderCount as number,
-              )
-            }}
-          </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt as string) }}
-          </template>
-
-        </template>
-      </Table>
-    </Card>
-    <ExportReportListDialog
-      v-model:visible="reportListVisible"
-      :loading="reportListLoading"
-      :title="reportListTitle"
-      :empty-hint="reportListEmptyHint"
-      :data="completedExports"
-      @download="downloadFile"
-      @remove="deleteCompletedItem"
-    />
+        </Table>
+      </Card>
+      <ExportReportListDialog
+        v-model:visible="reportListVisible"
+        :loading="reportListLoading"
+        :title="reportListTitle"
+        :empty-hint="reportListEmptyHint"
+        :data="completedExports"
+        @download="downloadFile"
+        @remove="deleteCompletedItem"
+      />
     </div>
   </Page>
 </template>

@@ -1,9 +1,13 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { DivisionRecord } from '#/api/modules/division';
+import type { ListStatCardItem } from '#/components/list/ListStatCards.vue';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Button,
   Card,
@@ -11,6 +15,7 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Modal,
   Radio,
   RangePicker,
@@ -18,7 +23,6 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -29,11 +33,8 @@ import {
   reviewMchDivisionRefuseApi,
   setMchDivisionConfigApi,
 } from '#/api';
-import type { DivisionRecord } from '#/api/modules/division';
 import FilterActions from '#/components/list/FilterActions.vue';
-import ListStatCards, {
-  type ListStatCardItem,
-} from '#/components/list/ListStatCards.vue';
+import ListStatCards from '#/components/list/ListStatCards.vue';
 import {
   DIVISION_STATE_OPTIONS,
   divisionStateColor,
@@ -110,16 +111,20 @@ const columns: TableColumnsType = [
   { dataIndex: 'action', fixed: 'right', title: '操作', width: 100 },
 ];
 
-function applyAmountOf(row: Record<string, unknown>) {
-  return (row.applyAmount ?? row.amount) as number | undefined;
+function asDivision(record: unknown): DivisionRecord {
+  return (record ?? {}) as DivisionRecord;
 }
 
-function receiveAmountOf(row: Record<string, unknown>) {
-  return (row.divisionAmount ?? row.receiveAmount) as number | undefined;
+function applyAmountOf(row: DivisionRecord) {
+  return row.applyAmount ?? row.amount;
 }
 
-function feeAmountOf(row: Record<string, unknown>) {
-  return (row.divisionAmountFee ?? row.feeAmount) as number | undefined;
+function receiveAmountOf(row: DivisionRecord) {
+  return row.divisionAmount ?? row.receiveAmount;
+}
+
+function feeAmountOf(row: DivisionRecord) {
+  return row.divisionAmountFee ?? row.feeAmount;
 }
 
 function buildParams() {
@@ -374,13 +379,13 @@ onMounted(async () => {
               {{ formatDateTime(record.createdAt) }}
             </template>
             <template v-else-if="column.dataIndex === 'applyAmount'">
-              {{ formatYuan(applyAmountOf(record as any)) }}
+              {{ formatYuan(applyAmountOf(asDivision(record))) }}
             </template>
             <template v-else-if="column.dataIndex === 'amount'">
-              {{ formatYuan(receiveAmountOf(record as any)) }}
+              {{ formatYuan(receiveAmountOf(asDivision(record))) }}
             </template>
             <template v-else-if="column.dataIndex === 'feeAmount'">
-              {{ formatYuan(feeAmountOf(record as any)) }}
+              {{ formatYuan(feeAmountOf(asDivision(record))) }}
             </template>
             <template v-else-if="column.dataIndex === 'state'">
               <Tag :color="divisionStateColor(record.state)">
@@ -392,7 +397,7 @@ onMounted(async () => {
                 v-if="canReview && Number(record.state) === 1"
                 size="small"
                 type="link"
-                @click="openDetail(record as DivisionRecord)"
+                @click="openDetail(asDivision(record))"
               >
                 审核
               </Button>
@@ -442,15 +447,15 @@ onMounted(async () => {
         </Descriptions>
         <Descriptions :column="1" size="small" class="mb-4">
           <Descriptions.Item label="申请金额">
-            {{ formatYuan(applyAmountOf(detail as any)) }}
+            {{ formatYuan(applyAmountOf(asDivision(detail))) }}
           </Descriptions.Item>
           <Descriptions.Item label="到账金额">
             <Tag color="success">
-              {{ formatYuan(receiveAmountOf(detail as any)) }}
+              {{ formatYuan(receiveAmountOf(asDivision(detail))) }}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="手续费">
-            <b>{{ formatYuan(feeAmountOf(detail as any)) }}</b>
+            <b>{{ formatYuan(feeAmountOf(asDivision(detail))) }}</b>
           </Descriptions.Item>
         </Descriptions>
         <div class="text-muted-foreground mb-1 text-sm">商户备注</div>
@@ -472,8 +477,8 @@ onMounted(async () => {
         商户结算手续费 = 结算金额 * 比例手续费 + 固定手续费
       </div>
       <div class="text-muted-foreground mb-4 text-xs">
-        如：申请结算 10000
-        元，手续费 1%，固定手续费 10 元，综合手续费为 110 元。
+        如：申请结算 10000 元，手续费 1%，固定手续费 10 元，综合手续费为 110
+        元。
       </div>
       <Form :label-col="{ span: 8 }" :wrapper-col="{ span: 14 }">
         <Form.Item label="最小结算金额设置">

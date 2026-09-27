@@ -94,7 +94,7 @@ async function submit() {
   saving.value = true;
   try {
     const detail = await fetchMchAppApi(source.value.payPassageId);
-    const row = (detail ?? source.value) as unknown as Record<string, unknown>;
+    const row = detail ?? source.value;
     await createMchAppApi(clonePassageForCreate(row, newName.value));
     message.success('新增成功');
     visible.value = false;

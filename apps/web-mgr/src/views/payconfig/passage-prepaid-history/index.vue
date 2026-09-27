@@ -1,28 +1,33 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PrepaidHistoryStat } from '#/api/modules/history';
+import type { PassagePrepaidHistory } from '#/api/types/business';
+
 import { onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Card,
   Form,
   Input,
+  message,
   RangePicker,
   Select,
   Table,
-  message,
 } from 'ant-design-vue';
 
-import { fetchPassagePrepaidHistoryApi, fetchPassagePrepaidHistoryStatApi } from '#/api';
-import type { PrepaidHistoryStat } from '#/api/modules/history';
-import type { PassagePrepaidHistory } from '#/api/types/business';
-import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
-import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
-import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
+import {
+  fetchPassagePrepaidHistoryApi,
+  fetchPassagePrepaidHistoryStatApi,
+} from '#/api';
 import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
+import HistoryPrepaidOperatorCell from '#/components/prepaid/HistoryPrepaidOperatorCell.vue';
+import PicPreviewButton from '#/components/prepaid/PicPreviewButton.vue';
+import PrepaidHistoryStatCards from '#/components/prepaid/PrepaidHistoryStatCards.vue';
 import { usePassagePrepaidHistoryExport } from '#/composables/use-async-export';
 import { useListStat } from '#/composables/use-list-stat';
 import { FUND_DIRECTION_OPTIONS } from '#/constants/merchant';
@@ -66,14 +71,19 @@ const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const dateRange = ref<[string, string] | undefined>(defaultTodayRange());
 const query = reactive({
-  passageGroupName: '' as any,
-  fundDirection: '' as any,
+  passageGroupName: '',
+  fundDirection: '',
 });
 const stat = ref<PrepaidHistoryStat>({});
 const { loadStatSafely } = useListStat();
 
 const columns: TableColumnsType<PassagePrepaidHistory> = [
-  { dataIndex: 'passageGroupName', title: '通道商名称', width: 160, ellipsis: true },
+  {
+    dataIndex: 'passageGroupName',
+    title: '通道商名称',
+    width: 160,
+    ellipsis: true,
+  },
   { dataIndex: 'beforeBalance', title: '变更前预付', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 120 },
   { dataIndex: 'afterBalance', title: '变更后预付', width: 120 },
@@ -98,8 +108,7 @@ function buildParams() {
 
 async function loadStat() {
   await loadStatSafely(async () => {
-    stat.value =
-      (await fetchPassagePrepaidHistoryStatApi(buildParams())) ?? {};
+    stat.value = (await fetchPassagePrepaidHistoryStatApi(buildParams())) ?? {};
   });
 }
 
