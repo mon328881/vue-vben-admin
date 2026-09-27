@@ -207,6 +207,22 @@
   margin: 0 !important;
 }
 
+/* 无行选择列时：首列与筛选区 16px 左内边距对齐（有多选列时勾选列已占位） */
+.ap-page-stack
+  > .ant-card:not(.ap-page-filter)
+  .ant-table-wrapper:not(:has(.ant-table-selection-column))
+  .ant-table-thead
+  > tr
+  > th:first-child,
+.ap-page-stack
+  > .ant-card:not(.ap-page-filter)
+  .ant-table-wrapper:not(:has(.ant-table-selection-column))
+  .ant-table-tbody
+  > tr
+  > td:first-child {
+  padding-inline-start: 16px !important;
+}
+
 .ap-page-stats {
   margin-bottom: 0;
 }

@@ -49,7 +49,7 @@ const query = reactive({
   orderId: '',
   passageOrderNo: '',
   mchNo: '',
-  state: 3 as number | undefined,
+  state: undefined as number | undefined,
   orderType: undefined as number | undefined,
 });
 const detailOpen = ref(false);
@@ -138,7 +138,7 @@ function onReset() {
   query.orderId = '';
   query.passageOrderNo = '';
   query.mchNo = '';
-  query.state = 3;
+  query.state = undefined;
   query.orderType = undefined;
   dateRange.value = defaultTodayRange();
   void loadData(true);
