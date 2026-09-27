@@ -248,17 +248,10 @@ async function loadData(resetPage = false) {
       pageSize: pagination.pageSize,
       payPassageId: query.payPassageId || undefined,
       productId: query.productId || undefined,
-      // 契约：enabledFirst 仅做 Byte 校验，不影响服务端排序——前端本地启用优先
+      // 契约：enabledFirst=1 时服务端按 state 数值降序（启用优先）
+      enabledFirst: enabledFirst.value ? 1 : 0,
     });
-    let rows = page?.records ?? [];
-    if (enabledFirst.value) {
-      rows = [...rows].toSorted((a, b) => {
-        const ae = Number(a.state) === 1 ? 0 : 1;
-        const be = Number(b.state) === 1 ? 0 : 1;
-        return ae - be;
-      });
-    }
-    dataSource.value = rows;
+    dataSource.value = page?.records ?? [];
     total.value = page?.total ?? 0;
   } finally {
     loading.value = false;
@@ -425,8 +418,9 @@ async function submitCloseAll(googleCode: string) {
 function confirmOpenRecently() {
   Modal.confirm({
     title: '打开最近启用通道',
+    width: 520,
     content:
-      '将所有通道恢复到「关闭全部通道」前的状态（含定时任务）。有效时间约 3 小时，过期无效。',
+      '将通道恢复到「关闭全部通道」前的启用状态与定时开关（timeLimit）。收款时段规则（timeRules）不会写回。快照约 3 小时有效，过期或已消费后无效。',
     okText: '确定',
     cancelText: '取消',
     async onOk() {
@@ -524,16 +518,16 @@ onMounted(() => {
             >
               关闭全部通道
             </Button>
-            <Button v-if="canEdit" @click="confirmOpenRecently">
+            <Button v-if="canAdminDanger" @click="confirmOpenRecently">
               打开最近启用通道
             </Button>
-            <Button v-if="canEdit" @click="openBatch">批量操作通道</Button>
+            <Button v-if="canAdminDanger" @click="openBatch">
+              批量操作通道
+            </Button>
           </Space>
           <Space wrap>
             <Button size="small" @click="openHourlyReport"> 成率报表 </Button>
-            <Tooltip
-              title="打开后，当前页结果中已启用通道会排到前面（本地排序）。"
-            >
+            <Tooltip title="打开后由服务端按通道状态优先排序（启用靠前）。">
               <span class="inline-flex items-center gap-2">
                 <span class="text-muted-foreground text-sm">启用优先</span>
                 <Switch

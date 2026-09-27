@@ -1,24 +1,26 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PayIfDefine } from '#/api/modules/pay-if';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Button,
   Card,
   Form,
   Input,
+  message,
   Popconfirm,
   Space,
   Table,
-  message,
 } from 'ant-design-vue';
 
 import { deletePayIfDefineApi, fetchPayIfDefinesApi } from '#/api';
-import type { PayIfDefine } from '#/api/modules/pay-if';
 import FilterActions from '#/components/list/FilterActions.vue';
-import { hasEnt } from '#/utils/access';
+import { hasEnt, isAdmin } from '#/utils/access';
 import { formatDateTime } from '#/utils/format';
 
 import IfDefineFormDrawer from './components/IfDefineFormDrawer.vue';
@@ -33,9 +35,10 @@ const query = reactive({ ifCode: '', ifName: '' });
 
 const formRef = ref<InstanceType<typeof IfDefineFormDrawer>>();
 
-const canAdd = computed(() => hasEnt('ENT_PC_IF_DEFINE_ADD'));
-const canEdit = computed(() => hasEnt('ENT_PC_IF_DEFINE_EDIT'));
-const canDel = computed(() => hasEnt('ENT_PC_IF_DEFINE_DEL'));
+/** 写操作后端 requireAdmin → 200/5004，需同时具备 ent + 超管 */
+const canAdd = computed(() => isAdmin() && hasEnt('ENT_PC_IF_DEFINE_ADD'));
+const canEdit = computed(() => isAdmin() && hasEnt('ENT_PC_IF_DEFINE_EDIT'));
+const canDel = computed(() => isAdmin() && hasEnt('ENT_PC_IF_DEFINE_DEL'));
 
 const columns: TableColumnsType = [
   { dataIndex: 'ifCode', title: '接口代码', width: 220 },
@@ -95,81 +98,81 @@ onMounted(() => {
   <Page auto-content-height title="支付接口">
     <div class="ap-page-stack">
       <Card class="ap-page-filter">
-      <Form layout="inline" @submit="onSearch">
-        <Form.Item>
-          <Input
-            v-model:value="query.ifCode"
-            allow-clear
-            placeholder="接口代码"
-          />
-        </Form.Item>
-        <Form.Item>
-          <Input
-            v-model:value="query.ifName"
-            allow-clear
-            placeholder="接口名称"
-          />
-        </Form.Item>
-        <Form.Item class="ap-filter-actions">
-          <FilterActions @search="onSearch" @reset="onReset" />
-        </Form.Item>
-      </Form>
-    </Card>
+        <Form layout="inline" @submit="onSearch">
+          <Form.Item>
+            <Input
+              v-model:value="query.ifCode"
+              allow-clear
+              placeholder="接口代码"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              v-model:value="query.ifName"
+              allow-clear
+              placeholder="接口名称"
+            />
+          </Form.Item>
+          <Form.Item class="ap-filter-actions">
+            <FilterActions @search="onSearch" @reset="onReset" />
+          </Form.Item>
+        </Form>
+      </Card>
 
-    <Card>
-      <div class="ap-table-toolbar">
-        <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
-          新建接口
-        </Button>
-        <Button :loading="loading" @click="() => loadData()">刷新</Button>
-        <span class="text-sm text-muted-foreground">共 {{ total }} 个接口</span>
-      </div>
-      <Table
-        :columns="columns"
-        :data-source="dataSource"
-        :loading="loading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-          total,
-        }"
-        row-key="ifCode"
-        size="middle"
-        @change="onTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'ifCode'">
-            [{{ record.ifCode }}]
+      <Card>
+        <div class="ap-table-toolbar">
+          <Button v-if="canAdd" type="primary" @click="formRef?.showCreate()">
+            新建接口
+          </Button>
+          <Button :loading="loading" @click="() => loadData()">刷新</Button>
+          <span class="text-sm text-muted-foreground">共 {{ total }} 个接口</span>
+        </div>
+        <Table
+          :columns="columns"
+          :data-source="dataSource"
+          :loading="loading"
+          :pagination="{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            showSizeChanger: true,
+            showTotal: (t: number) => `共 ${t} 条`,
+            total,
+          }"
+          row-key="ifCode"
+          size="middle"
+          @change="onTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.dataIndex === 'ifCode'">
+              [{{ record.ifCode }}]
+            </template>
+            <template v-else-if="column.dataIndex === 'createdAt'">
+              {{ formatDateTime(record.createdAt) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <Space>
+                <Button
+                  v-if="canEdit"
+                  size="small"
+                  type="link"
+                  @click="formRef?.showEdit(record.ifCode)"
+                >
+                  编辑
+                </Button>
+                <Popconfirm
+                  v-if="canDel"
+                  :title="`确定删除支付接口「${record.ifName || record.ifCode}」（${record.ifCode}）？删除后不可恢复。`"
+                  @confirm="onDelete(record as PayIfDefine)"
+                >
+                  <Button danger size="small" type="link">删除</Button>
+                </Popconfirm>
+              </Space>
+            </template>
           </template>
-          <template v-else-if="column.dataIndex === 'createdAt'">
-            {{ formatDateTime(record.createdAt) }}
-          </template>
-          <template v-else-if="column.dataIndex === 'action'">
-            <Space>
-              <Button
-                v-if="canEdit"
-                size="small"
-                type="link"
-                @click="formRef?.showEdit(record.ifCode)"
-              >
-                编辑
-              </Button>
-              <Popconfirm
-                v-if="canDel"
-                :title="`确定删除支付接口「${record.ifName || record.ifCode}」（${record.ifCode}）？删除后不可恢复。`"
-                @confirm="onDelete(record as PayIfDefine)"
-              >
-                <Button danger size="small" type="link">删除</Button>
-              </Popconfirm>
-            </Space>
-          </template>
-        </template>
-      </Table>
-    </Card>
+        </Table>
+      </Card>
 
-    <IfDefineFormDrawer ref="formRef" @success="onFormSuccess" />
+      <IfDefineFormDrawer ref="formRef" @success="onFormSuccess" />
     </div>
   </Page>
 </template>

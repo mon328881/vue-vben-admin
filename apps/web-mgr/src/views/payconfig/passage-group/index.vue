@@ -668,7 +668,7 @@ onMounted(async () => {
     <PassageGroupQuotaDialog ref="quotaRef" @success="reloadTable" />
     <PassageAutoCleanDialog
       ref="autoCleanRef"
-      :message="AUTO_CLEAN_MESSAGE"
+      :hint="AUTO_CLEAN_MESSAGE"
       @success="onAutoCleanSuccess"
     />
     <ExportReportListDialog

@@ -71,10 +71,10 @@ function timeLimitText(row: null | PayPassage) {
 }
 
 function payRulesType(row: null | PayPassage) {
-  const rules = String(row?.payRules ?? '').trim();
-  if (!rules) return '--';
-  if (rules.includes('-')) return '区间范围';
-  return '固定金额';
+  const payType = Number(row?.payType);
+  if (payType === 1) return '区间范围';
+  if (payType === 2) return '固定金额';
+  return '--';
 }
 
 function show(row: PayPassage) {

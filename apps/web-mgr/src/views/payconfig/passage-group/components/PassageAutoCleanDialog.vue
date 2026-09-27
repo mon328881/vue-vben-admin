@@ -1,29 +1,27 @@
 <script lang="ts" setup>
+import type { PassageStatInfo } from '#/api';
+
 import { reactive, ref } from 'vue';
 
 import {
   Alert,
   Form,
   Input,
+  message,
   Modal,
   Radio,
   TimePicker,
-  message,
 } from 'ant-design-vue';
 
-import {
-  setPassageAutoCleanApi,
-  type PassageStatInfo,
-} from '#/api';
+import { setPassageAutoCleanApi } from '#/api';
 import { GOOGLE_CODE_ERROR, isGoogleCode } from '#/constants/merchant';
 
 const props = withDefaults(
   defineProps<{
-    message?: string;
+    hint?: string;
   }>(),
   {
-    message:
-      '开启后每天定时自动清空所有通道余额（北京时间）。绑定了供应商的通道将自动结算一次。',
+    hint: '开启后每天定时对已绑定供应商的通道执行自动结算并清零余额（北京时间）。未绑定供应商的通道不受影响。',
   },
 );
 
@@ -38,8 +36,7 @@ function show(stat: PassageStatInfo) {
   google.value = '';
   form.enable = stat.payPassageAutoClean === 1 ? 1 : 0;
   form.time =
-    stat.payPassageAutoCleanTime &&
-    stat.payPassageAutoCleanTime !== '--:--'
+    stat.payPassageAutoCleanTime && stat.payPassageAutoCleanTime !== '--:--'
       ? stat.payPassageAutoCleanTime
       : '00:00';
   visible.value = true;
@@ -85,7 +82,7 @@ defineExpose({ show });
   >
     <Form layout="vertical">
       <Form.Item label="说明">
-        <Alert type="warning" show-icon :message="props.message" />
+        <Alert type="warning" show-icon :message="props.hint" />
       </Form.Item>
       <Form.Item label="自动日切开关">
         <Radio.Group v-model:value="form.enable">
@@ -111,7 +108,10 @@ defineExpose({ show });
           inputmode="numeric"
           autocomplete="one-time-code"
           @update:value="
-            (v) => (google = String(v ?? '').replace(/\D/g, '').slice(0, 6))
+            (v) =>
+              (google = String(v ?? '')
+                .replace(/\D/g, '')
+                .slice(0, 6))
           "
         />
       </Form.Item>
