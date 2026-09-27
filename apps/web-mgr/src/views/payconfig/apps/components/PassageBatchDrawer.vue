@@ -618,15 +618,21 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.state"
     title="批量开关通道"
     :width="480"
-    :confirm-loading="saving"
-    :ok-button-props="{
-      disabled: form.state === null || form.state === undefined,
-    }"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitState"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.state = false">取消</Button>
+        <Button
+          type="primary"
+          :loading="saving"
+          :disabled="form.state !== 0 && form.state !== 1"
+          @click="submitState"
+        >
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="通道操作">
         <Radio.Group v-model:value="form.state">
@@ -641,12 +647,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.product"
     title="批量设置产品"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitProduct"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.product = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitProduct">
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="所属产品">
         <ProductSelector
@@ -662,12 +672,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.ifCode"
     title="批量设置支付接口"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitIfCode"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.ifCode = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitIfCode">
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="支付接口">
         <Select
@@ -688,12 +702,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.rate"
     title="批量设置费率"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitRate"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.rate = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitRate">
+          确定
+        </Button>
+      </div>
+    </template>
     <Alert type="warning" show-icon message="请先核对后谨慎操作" class="mb-3" />
     <Form layout="vertical">
       <Form.Item label="通道费率（%）">
@@ -715,12 +733,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.payRules"
     title="批量设置收款规则"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitPayRules"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.payRules = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitPayRules">
+          确定
+        </Button>
+      </div>
+    </template>
     <Alert
       type="warning"
       show-icon
@@ -751,12 +773,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.weights"
     title="批量设置轮询权重"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitWeights"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.weights = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitWeights">
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="轮询权重">
         <InputNumber
@@ -776,12 +802,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.gate"
     title="批量设置下单网关"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitGate"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.gate = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitGate">
+          确定
+        </Button>
+      </div>
+    </template>
     <Alert type="warning" show-icon message="请先核对后谨慎操作" class="mb-3" />
     <Form layout="vertical">
       <Form.Item label="下单网关（需 http 开头）">
@@ -794,12 +824,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.ip"
     title="批量设置回调 IP"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitIp"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.ip = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitIp">
+          确定
+        </Button>
+      </div>
+    </template>
     <Alert
       type="info"
       show-icon
@@ -817,12 +851,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.mchNo"
     title="批量设置商户号"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitMchNo"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.mchNo = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitMchNo">
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="商户号">
         <Input v-model:value="form.mchNo" />
@@ -834,12 +872,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.secret"
     title="批量设置密钥"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitSecret"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.secret = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitSecret">
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="密钥">
         <Textarea
@@ -854,12 +896,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.timeLimitState"
     title="批量开关通道定时"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitTimeLimitState"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.timeLimitState = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitTimeLimitState">
+          确定
+        </Button>
+      </div>
+    </template>
     <Form layout="vertical">
       <Form.Item label="定时状态">
         <Radio.Group v-model:value="form.timeLimit">
@@ -932,12 +978,16 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.passageGroup"
     title="通道供应商批量设置"
     :width="480"
-    :confirm-loading="saving"
-    ok-text="确定"
-    cancel-text="取消"
     destroy-on-close
-    @ok="submitPassageGroup"
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Button @click="dialogs.passageGroup = false">取消</Button>
+        <Button type="primary" :loading="saving" @click="submitPassageGroup">
+          确定
+        </Button>
+      </div>
+    </template>
     <Alert
       type="warning"
       show-icon
@@ -1038,11 +1088,11 @@ defineExpose({ show, closeAndReset });
 }
 
 .pbd-dialog-footer-row {
-  /* 对齐 demo：footer 内右簇排列；清除定时无 loading */
+  /* 对齐 demo：自定义 footer，右对齐；gutter≈12 */
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
   justify-content: flex-end;
   width: 100%;
