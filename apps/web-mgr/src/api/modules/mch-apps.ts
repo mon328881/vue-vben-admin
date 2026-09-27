@@ -57,7 +57,7 @@ export interface PassageHourlyPoint {
 export interface PassageHourlyStat {
   /** 请求回显 */
   payPassageId?: number | string;
-  /** 请求回显（非法 date 时后端回落为今日） */
+  /** 请求回显（非法 date → 全 0 空表，不兜底今日） */
   date?: string;
   points: PassageHourlyPoint[];
   summary: null | {

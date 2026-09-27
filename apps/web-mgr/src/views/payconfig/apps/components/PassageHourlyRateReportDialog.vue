@@ -44,13 +44,13 @@ const columns: TableColumnsType<PassageHourlyArchive> = [
 ];
 
 function downloadHref(row: PassageHourlyArchive) {
-  const base =
-    row.url ||
-    `/api/passageHourlyStat/download?statDate=${encodeURIComponent(row.statDate)}`;
+  // GCS V4 直链原样返回；加 iToken 会 SignatureDoesNotMatch 403
+  if (row.url) return row.url;
+  const base = `/api/passageHourlyStat/download?statDate=${encodeURIComponent(row.statDate)}`;
   const token = accessStore.accessToken;
   if (!token) return base;
-  const sep = base.includes('?') ? '&' : '?';
-  return `${base}${sep}iToken=${encodeURIComponent(token)}`;
+  // 本地 /download 回退：<a target=_blank> 无法带 Header，走 query iToken
+  return `${base}&iToken=${encodeURIComponent(token)}`;
 }
 
 async function loadData() {
