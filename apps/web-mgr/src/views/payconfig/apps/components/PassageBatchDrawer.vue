@@ -99,26 +99,6 @@ const form = reactive({
   passageGroup: undefined as string | undefined,
 });
 
-function resetForm() {
-  Object.assign(form, {
-    state: undefined,
-    productId: undefined,
-    ifCode: undefined,
-    rate: undefined,
-    payType: 1,
-    payRules: '',
-    weights: undefined,
-    gate: '',
-    ip: '',
-    mchNo: '',
-    secret: '',
-    timeLimit: undefined,
-    start: '',
-    end: '',
-    passageGroup: undefined,
-  });
-}
-
 function closeDialogs() {
   (Object.keys(dialogs) as DialogKey[]).forEach((key) => {
     dialogs[key] = false;
@@ -128,7 +108,7 @@ function closeDialogs() {
 function show(ids: Array<number | string>, names: string[]) {
   selectedIds.value = ids.map(Number);
   labels.value = names;
-  resetForm();
+  // 对齐 demo：重新打开抽屉时表单保留上次值，只清选择与子弹窗
   closeDialogs();
   visible.value = true;
   void loadIfCodes();
@@ -148,10 +128,10 @@ async function loadIfCodes() {
 }
 
 function closeAndReset() {
+  // 对齐 demo：关闭抽屉只清选择与摘要，表单保留残留
   visible.value = false;
   selectedIds.value = [];
   labels.value = [];
-  resetForm();
   closeDialogs();
 }
 
@@ -173,7 +153,7 @@ function openTimeLimitRules() {
 }
 
 function openDialog(key: DialogKey) {
-  resetForm();
+  // 对齐 demo：打开子弹窗不重置表单，仅定时规则弹窗显式清 start/end
   dialogs[key] = true;
 }
 
@@ -188,21 +168,14 @@ function isValidGate(value: string) {
 }
 
 function isValidCallbackIp(value: string) {
-  const parts = value
-    .split('|')
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (parts.length === 0) return false;
-  return parts.every((ip) => {
-    if (ip === '*') return true;
-    const segs = ip.split('.');
-    if (segs.length !== 4) return false;
-    return segs.every((seg) => {
-      if (!/^\d{1,3}$/.test(seg)) return false;
-      const n = Number(seg);
-      return n >= 0 && n <= 255;
-    });
-  });
+  // 对齐 demo："*" 整体直通；否则按 "|" 分割，空段拒绝；支持 IPv4 / 完整 IPv6
+  if (value.trim() === '*') return true;
+  const parts = value.split('|').map((item) => item.trim());
+  if (parts.length === 0 || parts.some((part) => !part)) return false;
+  const ipv4 =
+    /^(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})$/;
+  const ipv6 = /^(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}$/i;
+  return parts.every((ip) => ipv4.test(ip) || ipv6.test(ip));
 }
 
 function isNumberLike(value: string) {
@@ -261,10 +234,8 @@ async function run(
     options?.afterSuccess?.();
     if (options?.closeDrawer) {
       closeAndReset();
-    } else {
-      resetForm();
-      closeDialogs();
     }
+    // 对齐 demo：成功只关当前弹窗，不关其它弹窗、不清表单
     emit('success');
     return true;
   } catch (error) {
@@ -436,14 +407,30 @@ async function submitTimeLimitRules() {
   );
 }
 
+/** 对齐 demo：先关弹窗再请求，失败静默；全程不置 saving，避免确定按钮误转圈 */
 async function clearTimeRules() {
-  await run('multipleSetTimeRulesDelete', {}, { closeKey: 'timeLimitRules' });
+  dialogs.timeLimitRules = false;
+  try {
+    await postMchAppsMultipleSetApi('multipleSetTimeRulesDelete', {
+      selectedIds: selectedIds.value,
+    });
+    message.success('操作成功');
+    emit('success');
+  } catch {
+    // demo catch{} 静默
+  }
 }
 
 async function submitPassageGroup() {
   await run(
     'multipleSetPassageGroup',
-    { passageGroup: form.passageGroup ?? '' },
+    // 对齐 demo：字符串才 trim，非串原样透传
+    {
+      passageGroup:
+        typeof form.passageGroup === 'string'
+          ? form.passageGroup.trim()
+          : form.passageGroup,
+    },
     { closeKey: 'passageGroup' },
   );
 }
@@ -838,7 +825,7 @@ defineExpose({ show, closeAndReset });
   >
     <Form layout="vertical">
       <Form.Item label="商户号">
-        <Input v-model:value="form.mchNo" placeholder="请输入" />
+        <Input v-model:value="form.mchNo" />
       </Form.Item>
     </Form>
   </Modal>
@@ -855,7 +842,10 @@ defineExpose({ show, closeAndReset });
   >
     <Form layout="vertical">
       <Form.Item label="密钥">
-        <Input v-model:value="form.secret" placeholder="请输入" />
+        <Textarea
+          v-model:value="form.secret"
+          :auto-size="{ minRows: 2, maxRows: 6 }"
+        />
       </Form.Item>
     </Form>
   </Modal>
@@ -884,9 +874,30 @@ defineExpose({ show, closeAndReset });
     v-model:open="dialogs.timeLimitRules"
     title="通道定时开启设置"
     :width="480"
-    :footer="null"
     destroy-on-close
   >
+    <template #footer>
+      <div class="pbd-dialog-footer-row">
+        <Popconfirm
+          title="确认后将清除定时设置并关闭定时开关"
+          ok-text="确定"
+          cancel-text="取消"
+          @confirm="clearTimeRules"
+        >
+          <Button ghost class="pbd-warn-btn">清除定时</Button>
+        </Popconfirm>
+        <Space>
+          <Button @click="dialogs.timeLimitRules = false">取消</Button>
+          <Button
+            type="primary"
+            :loading="saving"
+            @click="submitTimeLimitRules"
+          >
+            确定
+          </Button>
+        </Space>
+      </div>
+    </template>
     <Alert
       type="info"
       show-icon
@@ -915,22 +926,6 @@ defineExpose({ show, closeAndReset });
         />
       </Form.Item>
     </Form>
-    <div class="pbd-dialog-footer-row">
-      <Popconfirm
-        title="确认后将清除定时设置并关闭定时开关"
-        ok-text="确定"
-        cancel-text="取消"
-        @confirm="clearTimeRules"
-      >
-        <Button ghost class="pbd-warn-btn" :loading="saving">清除定时</Button>
-      </Popconfirm>
-      <Space>
-        <Button @click="dialogs.timeLimitRules = false">取消</Button>
-        <Button type="primary" :loading="saving" @click="submitTimeLimitRules">
-          确定
-        </Button>
-      </Space>
-    </div>
   </Modal>
 
   <Modal
@@ -1043,10 +1038,14 @@ defineExpose({ show, closeAndReset });
 }
 
 .pbd-dialog-footer-row {
+  /* 对齐 demo：footer 内右簇排列；清除定时无 loading */
+  box-sizing: border-box;
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 16px;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .pbd-time-rules-form {

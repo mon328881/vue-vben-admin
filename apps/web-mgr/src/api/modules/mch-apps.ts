@@ -156,11 +156,13 @@ export async function batchCopyMchAppsApi(
   items: { payPassageName: string; sourcePayPassageId: number }[],
 ) {
   return requestClient.post<{
+    failCount?: number;
     failItems?: Array<{
       reason?: string;
       sourcePayPassageId?: number;
       sourcePayPassageName?: string;
     }>;
+    newPayPassageIds?: number[];
     successCount?: number;
   }>('/mchAppsCopy/batchCopy', { items });
 }
