@@ -1,21 +1,17 @@
 <script lang="ts" setup>
+import type { PassageGroupInfo } from '#/api';
+
 import { reactive, ref } from 'vue';
 
-import {
-  Form,
-  InputNumber,
-  Modal,
-  Radio,
-  message,
-} from 'ant-design-vue';
+import { Form, InputNumber, message, Modal, Radio } from 'ant-design-vue';
 
-import { updatePassageGroupApi, type PassageGroupInfo } from '#/api';
+import { updatePassageGroupApi } from '#/api';
 
 const emit = defineEmits<{ success: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const row = ref<PassageGroupInfo | null>(null);
+const row = ref<null | PassageGroupInfo>(null);
 const form = reactive({
   quotaLimitState: 0,
   quotaNum: 0,
@@ -50,9 +46,8 @@ async function submit() {
     message.success('修改成功');
     visible.value = false;
     emit('success');
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '修改失败');
   } finally {
+    // 错误提示由 http 拦截器统一 toast，此处不额外弹错
     saving.value = false;
   }
 }
@@ -117,8 +112,8 @@ defineExpose({ show });
 <style scoped>
 .hint-text {
   margin: 0 0 16px;
-  color: hsl(var(--muted-foreground));
   font-size: 12px;
   line-height: 1.6;
+  color: hsl(var(--muted-foreground));
 }
 </style>

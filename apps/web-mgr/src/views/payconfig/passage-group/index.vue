@@ -245,7 +245,7 @@ async function toggleState(
     row.state = next;
     message.success('操作成功');
   } catch {
-    message.error('操作失败');
+    // 错误已由 request 拦截器统一提示，此处避免重复弹错
   } finally {
     stateBusy.value[name] = false;
   }

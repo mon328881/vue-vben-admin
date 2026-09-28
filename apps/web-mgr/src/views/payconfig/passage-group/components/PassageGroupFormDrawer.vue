@@ -62,21 +62,18 @@ function resetForm() {
   saving.value = false;
 }
 
-function flag(value: unknown, fallback = 1) {
-  return Number(value ?? fallback) === 0 ? 0 : 1;
-}
-
 function applyDetail(row: PassageGroupInfo, name: string) {
   form.passageGroupName = name;
   form.remark = String(row.remark ?? '');
-  form.state = Number(row.state ?? 1) === 0 ? 0 : 1;
+  // demo 契约：Number(x ?? 1) 直传，不做 0/1 归一（后端 toView 恒返回 0/1，仅极端值时表现一致）
+  form.state = Number(row.state ?? 1);
   const mode = Number(row.isAutoSettle ?? 2);
   form.isAutoSettle = mode === 0 || mode === 1 ? mode : 2;
   form.autoSettleTime = String(row.autoSettleTime || '00:00');
-  form.canPush = flag(row.canPush);
-  form.canNotify = flag(row.canNotify);
-  form.canRemind = flag(row.canRemind);
-  form.canWarn = flag(row.canWarn);
+  form.canPush = Number(row.canPush ?? 1);
+  form.canNotify = Number(row.canNotify ?? 1);
+  form.canRemind = Number(row.canRemind ?? 1);
+  form.canWarn = Number(row.canWarn ?? 1);
 }
 
 function stillOpen(seq: number, name: string) {
@@ -122,10 +119,8 @@ async function showEdit(name: string) {
     if (detail && stillOpen(seq, name)) {
       applyDetail(detail, name);
     }
-  } catch (error) {
-    if (stillOpen(seq, name)) {
-      message.error(error instanceof Error ? error.message : '加载供应商失败');
-    }
+  } catch {
+    // demo 契约：详情加载失败静默（.catch(() => {})），不弹错误提示
   } finally {
     if (stillOpen(seq, name)) detailLoading.value = false;
   }
@@ -156,6 +151,7 @@ async function save() {
     message.error('请输入通道供应商名称');
     return;
   }
+  // demo 契约（按序）：中间空格 → 空格文案；UTF-16 长度 >= 40 → 40 字文案；字符集/超长 → 后端 6003
   if (name.includes(' ')) {
     message.error('供应商名称不能包含空格');
     return;
@@ -193,9 +189,8 @@ async function save() {
     visible.value = false;
     resetForm();
     emit('success', wasCreate);
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '保存失败');
   } finally {
+    // 错误提示由 http 拦截器统一 toast，此处不额外弹错
     saving.value = false;
   }
 }
@@ -229,7 +224,6 @@ defineExpose({ show, showCreate, showEdit });
           <Input
             v-model:value="form.passageGroupName"
             :disabled="!creating"
-            :maxlength="39"
             placeholder="请输入通道供应商名称"
           />
         </Form.Item>
