@@ -169,9 +169,10 @@ const rowSelection = computed(() =>
 
 async function loadStat() {
   try {
+    const name = query.passageGroupName.trim();
     stat.value =
       (await fetchPassageGroupStatApi({
-        passageGroupName: query.passageGroupName || undefined,
+        passageGroupName: name || undefined,
       })) ?? {};
   } catch {
     // ignore
@@ -183,8 +184,10 @@ async function loadData(resetPage = false) {
   loading.value = true;
   try {
     void loadStat();
+    const name = query.passageGroupName.trim();
     const page = await fetchPassageGroupListApi({
       ...query,
+      passageGroupName: name || undefined,
       pageNumber: pagination.current,
       pageSize: pagination.pageSize,
     });
@@ -280,7 +283,7 @@ async function confirmSettle(row: PassageGroupInfo) {
 async function confirmBatchPrepaid() {
   if (!canEdit.value) return;
   if (selectedRowKeys.value.length === 0) {
-    message.error('请先选择要批量操作的供应商');
+    message.error('请先勾选需要进行批量操作的供应商');
     return;
   }
   await multiplePassageGroupPrepaidResetApi(selectedRowKeys.value.map(String));
@@ -291,7 +294,7 @@ async function confirmBatchPrepaid() {
 async function confirmBatchSettle() {
   if (!canEdit.value) return;
   if (selectedRowKeys.value.length === 0) {
-    message.error('请先选择要批量操作的供应商');
+    message.error('请先勾选需要进行批量操作的供应商');
     return;
   }
   await multiplePassageGroupSettleApi(selectedRowKeys.value.map(String));
