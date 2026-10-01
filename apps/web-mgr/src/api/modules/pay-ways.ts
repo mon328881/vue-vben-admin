@@ -1,6 +1,6 @@
-import { requestClient } from '#/api/request';
-
 import type { PageResult } from '#/api/types/business';
+
+import { requestClient } from '#/api/request';
 
 export interface PayWay {
   productId: number;
@@ -38,9 +38,9 @@ export interface PayWayListParams {
 }
 
 export async function fetchPayWaysApi(params: PayWayListParams) {
-  return requestClient.get<PageResult<PayWay>>('/payWays', {
-    params: { sortOrder: 'descend', ...params },
-  });
+  // 不传 sortField 时后端默认 state DESC + productId ASC（demo 2026-09-30）；
+  // 勿再硬塞 sortOrder=descend，否则易被误当成「按 ID 降序」。
+  return requestClient.get<PageResult<PayWay>>('/payWays', { params });
 }
 
 export async function fetchPayWayApi(productId: number) {
@@ -48,22 +48,25 @@ export async function fetchPayWayApi(productId: number) {
 }
 
 export async function createPayWayApi(payload: {
+  detail?: string;
+  icon?: string;
+  mode: number;
   productId: number;
   productName: string;
-  detail?: string;
-  mode: number;
-  icon?: string;
 }) {
-  return requestClient.post<void>('/payWays', payload);
+  return requestClient.post('/payWays', payload);
 }
 
 export async function updatePayWayApi(
   productId: number,
   payload: Partial<
-    Pick<PayWay, 'productName' | 'detail' | 'mode' | 'icon' | 'state' | 'limitState'>
+    Pick<
+      PayWay,
+      'detail' | 'icon' | 'limitState' | 'mode' | 'productName' | 'state'
+    >
   >,
 ) {
-  return requestClient.put<void>(`/payWays/${productId}`, payload);
+  return requestClient.put(`/payWays/${productId}`, payload);
 }
 
 export async function deletePayWayApi(productId: number) {
@@ -88,7 +91,9 @@ export async function fetchProductMchInfoApi(params: Record<string, unknown>) {
   });
 }
 
-export async function updateProductMchInfoApi(payload: Record<string, unknown>) {
+export async function updateProductMchInfoApi(
+  payload: Record<string, unknown>,
+) {
   return requestClient.put('/productMchInfo', payload);
 }
 

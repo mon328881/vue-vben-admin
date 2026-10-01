@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { PayWay } from '#/api';
+
 import { reactive, ref } from 'vue';
 
 import {
@@ -7,24 +9,20 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Radio,
   Space,
   Tag,
   Textarea,
-  message,
 } from 'ant-design-vue';
 
-import {
-  createPayWayApi,
-  fetchPayWayApi,
-  updatePayWayApi,
-  type PayWay,
-} from '#/api';
+import { createPayWayApi, fetchPayWayApi, updatePayWayApi } from '#/api';
 import AssetsIcon from '#/components/payconfig/AssetsIcon.vue';
 import {
   PRODUCT_DETAIL_MAX,
   PRODUCT_ICON_FILES,
   PRODUCT_ID_PATTERN,
+  PRODUCT_NAME_MAX,
   PRODUCT_POLL_MODES,
 } from '#/constants/payWays';
 
@@ -34,7 +32,7 @@ const visible = ref(false);
 const creating = ref(true);
 const detailLoading = ref(false);
 const saving = ref(false);
-const editingId = ref<number | null>(null);
+const editingId = ref<null | number>(null);
 
 const empty = {
   productId: undefined as number | string | undefined,
@@ -68,7 +66,8 @@ async function show(productId?: number, row?: PayWay) {
   }
   detailLoading.value = true;
   try {
-    const data = await fetchPayWayApi(productId!);
+    if (productId === undefined) return;
+    const data = await fetchPayWayApi(productId);
     if (data && typeof data === 'object') apply(data);
     else if (row) apply(row);
   } catch {
@@ -98,12 +97,23 @@ async function save() {
       return;
     }
   }
-  const productName = String(form.productName ?? '').trim();
-  if (!productName) {
+  // 后端契约（demo 2026-09-29）：productName / detail / icon 原样落库，禁止 trim
+  const productName =
+    form.productName === null || form.productName === undefined
+      ? ''
+      : String(form.productName);
+  if (productName === '') {
     message.error('请输入产品名称');
     return;
   }
-  const detail = String(form.detail ?? '').trim();
+  if (productName.length > PRODUCT_NAME_MAX) {
+    message.error(`产品名称不能超过 ${PRODUCT_NAME_MAX} 个字符`);
+    return;
+  }
+  const detail =
+    form.detail === null || form.detail === undefined
+      ? ''
+      : String(form.detail);
   if (detail.length > PRODUCT_DETAIL_MAX) {
     message.error(`产品详情不能超过 ${PRODUCT_DETAIL_MAX} 个字符`);
     return;
@@ -113,7 +123,8 @@ async function save() {
     message.error('请选择有效的轮询模式');
     return;
   }
-  const icon = String(form.icon ?? '').trim();
+  const icon =
+    form.icon === null || form.icon === undefined ? '' : String(form.icon);
   saving.value = true;
   try {
     if (creating.value) {
@@ -149,7 +160,7 @@ defineExpose({ show });
   <Drawer
     v-model:open="visible"
     :title="creating ? '新增产品' : '修改产品'"
-    :width="'50%'"
+    width="50%"
     :destroy-on-close="true"
     :mask-closable="false"
     @close="close"
@@ -170,6 +181,8 @@ defineExpose({ show });
           <Input
             v-model:value="form.productName"
             placeholder="请输入产品名称"
+            :maxlength="PRODUCT_NAME_MAX"
+            show-count
           />
         </Form.Item>
         <Form.Item label="轮询模式" name="mode">
@@ -252,11 +265,11 @@ defineExpose({ show });
 }
 
 .product-mode-option {
+  align-items: flex-start;
   width: 100%;
   height: auto;
-  margin-inline-end: 0;
   padding: 12px 14px;
-  align-items: flex-start;
+  margin-inline-end: 0;
   border: 1px solid hsl(var(--border));
   border-radius: 6px;
 }
@@ -273,44 +286,44 @@ defineExpose({ show });
 
 .product-mode-description {
   margin: 5px 0 0;
-  color: hsl(var(--muted-foreground));
   font-size: 13px;
   line-height: 1.6;
+  color: hsl(var(--muted-foreground));
 }
 
 .selected-icon-wrapper {
   display: flex;
-  align-items: center;
   gap: 12px;
+  align-items: center;
 }
 
 .selected-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 60px;
   height: 60px;
+  background-color: hsl(var(--muted) / 40%);
   border: 1px dashed hsl(var(--border));
   border-radius: 4px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: hsl(var(--muted) / 40%);
 }
 
 .no-icon {
-  color: hsl(var(--muted-foreground));
   font-size: 12px;
+  color: hsl(var(--muted-foreground));
 }
 
 .clear-icon-btn {
-  padding: 0;
   height: auto;
+  padding: 0;
 }
 
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
-  padding: 8px;
   max-height: 240px;
+  padding: 8px;
   overflow-y: auto;
   border: 1px solid hsl(var(--border));
   border-radius: 4px;
@@ -318,19 +331,19 @@ defineExpose({ show });
 
 .icon-item {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   height: 50px;
+  padding: 6px;
+  cursor: pointer;
   border: 1px solid hsl(var(--border));
   border-radius: 4px;
-  cursor: pointer;
   transition: all 0.2s ease;
-  padding: 6px;
 }
 
 .icon-item:hover,
 .icon-item--selected {
-  border-color: hsl(var(--primary));
   background-color: hsl(var(--primary) / 8%);
+  border-color: hsl(var(--primary));
 }
 </style>

@@ -247,7 +247,7 @@ onMounted(async () => {
             </template>
             <template v-else-if="column.dataIndex === 'operator'">
               <HistoryPrepaidOperatorCell
-                :created-login-name="record.createdLoginName"
+                :created-login-name="record.createdLoginName ?? record.operator"
                 :created-uid="record.createdUid"
               />
             </template>

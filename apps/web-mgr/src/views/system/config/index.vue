@@ -1,7 +1,10 @@
 <script lang="ts" setup>
+import type { SysConfigItem } from '#/api/modules/system';
+
 import { onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Alert,
   Button,
@@ -9,14 +12,13 @@ import {
   Col,
   Form,
   Input,
+  message,
   Modal,
   Row,
   Tabs,
-  message,
 } from 'ant-design-vue';
 
 import { fetchSysConfigsApi, updateSysConfigsApi } from '#/api';
-import type { SysConfigItem } from '#/api/modules/system';
 
 defineOptions({ name: 'SysConfigPage' });
 
@@ -52,6 +54,35 @@ function isTextarea(item: SysConfigItem) {
   return String(item.type ?? '') === 'textarea';
 }
 
+function isIntBetween(value: string, min: number, max: number) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= min && n <= max;
+}
+
+function validate(): boolean {
+  for (const item of items.value) {
+    const key = item.configKey;
+    const val = String(formModel.value[key] ?? '');
+    if (key === 'orderExpiredTime' && !isIntBetween(val, 10, 1440)) {
+      message.error('[订单过期时长]设置范围10-1440，请输入正确的值');
+      return false;
+    }
+    if (key === 'orderPrefix' && (val.length > 6 || !/^[A-Z]+$/i.test(val))) {
+      message.error('[订单前缀]不能超过6个字符且只能包含英文字母');
+      return false;
+    }
+    if (key === 'passageTimeout' && !isIntBetween(val, 5, 30)) {
+      message.error('[通道超时时间]设置范围5-30秒，请输入整数');
+      return false;
+    }
+    if (key === 'pollingCount' && !isIntBetween(val, 10, 60)) {
+      message.error('[轮询次数]设置范围10-60次，请输入整数');
+      return false;
+    }
+  }
+  return true;
+}
+
 async function load() {
   loadError.value = false;
   loading.value = true;
@@ -66,7 +97,9 @@ async function load() {
     const model: Record<string, string> = {};
     for (const item of filtered) {
       model[item.configKey] =
-        item.configVal != null ? String(item.configVal) : '';
+        item.configVal === null || item.configVal === undefined
+          ? ''
+          : String(item.configVal);
     }
     formModel.value = model;
   } catch {
@@ -77,18 +110,16 @@ async function load() {
   }
 }
 
-function onTabChange(key: string | number) {
+function onTabChange(key: number | string) {
   activeTab.value = String(key);
   void load();
 }
 
 async function submit() {
+  if (!validate()) return;
   const formData = new FormData();
   for (const item of items.value) {
-    formData.append(
-      item.configKey,
-      formModel.value[item.configKey] ?? '',
-    );
+    formData.append(item.configKey, formModel.value[item.configKey] ?? '');
   }
   saving.value = true;
   try {
@@ -183,8 +214,8 @@ onMounted(() => {
 
 <style scoped>
 .config-form-wrap {
-  margin-top: 4px;
   max-width: 960px;
+  margin-top: 4px;
 }
 
 /* 说明区与下方表单：16px → 12px，避免 Alert 自身底内边距叠出过大空白 */

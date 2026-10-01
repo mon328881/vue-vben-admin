@@ -44,7 +44,14 @@ export const PRODUCT_ICON_FILES = Array.from(
   (_, index) => `icon${index + 1}.webp`,
 );
 
+/**
+ * 详情输入框 maxlength / 提示文案：演示站前端写「最多 800」。
+ * 后端硬上限是 1024 字符（超限 9999「产品详情不能超过1024个字符」）。
+ */
 export const PRODUCT_DETAIL_MAX = 800;
+
+/** 产品名称列宽 VARCHAR(64)；超长后端拒存。 */
+export const PRODUCT_NAME_MAX = 64;
 
 export const PRODUCT_ID_PATTERN = /^[1-9]\d{0,7}$/;
 

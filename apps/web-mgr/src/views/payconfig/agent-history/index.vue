@@ -102,6 +102,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'amount', title: '变更金额', width: 120 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
   { dataIndex: 'orderNo', title: '订单号', width: 280 },
+  { dataIndex: 'payOrderAmount', title: '订单金额', width: 120 },
   { dataIndex: 'bizType', title: '业务类型', width: 220 },
   { dataIndex: 'createdAt', title: '创建日期', width: 170 },
   { dataIndex: 'remark', title: '备注', ellipsis: true },
@@ -255,7 +256,7 @@ onMounted(async () => {
           }"
           :row-key="agentHistoryRowKey"
           size="middle"
-          :scroll="{ x: 1300 }"
+          :scroll="{ x: 1420 }"
           @change="onTableChange"
         >
           <template #bodyCell="{ column, record }">
@@ -274,6 +275,9 @@ onMounted(async () => {
                 :pay-order-id="record.payOrderId as string"
                 :mch-order-no="record.mchOrderNo as string"
               />
+            </template>
+            <template v-else-if="column.dataIndex === 'payOrderAmount'">
+              {{ formatYuan(record.payOrderAmount as number) }}
             </template>
             <template v-else-if="column.dataIndex === 'createdAt'">
               {{ formatDateTime(record.createdAt as string) }}

@@ -495,7 +495,8 @@ function validateBatchForm() {
 
 function buildBatchPayload() {
   const payload: Record<string, unknown> = {
-    selectedIds: [...previewSelectedIds.value],
+    // demo T 系：selectedIds 字符串形态、不 trim
+    selectedIds: previewSelectedIds.value.map(String),
     bindIfAbsent: batchForm.bindIfAbsent,
   };
   if (batchForm.action === 'setMchRate') {
@@ -704,7 +705,7 @@ onMounted(() => {
                 </Button>
                 <Popconfirm
                   v-if="canDel"
-                  :title="`确定删除产品「${record.productName || record.productId}」（${record.productId}）？删除后不可恢复。`"
+                  :title="`确定删除产品「${record.productName || record.productId}」（${record.productId}）？若仍有关联通道需先删除通道。`"
                   @confirm="onDelete(record as PayWay)"
                 >
                   <Button danger size="small" type="link">删除</Button>

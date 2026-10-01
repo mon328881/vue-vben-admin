@@ -3,10 +3,11 @@ import type { PageResult } from '#/api/types/business';
 import { requestClient } from '#/api/request';
 
 export interface DivisionRecord {
-  recordId: string;
+  /** demo 2026-10-01：列表返回数字 id；审核路径按字符串 long 解析 */
+  recordId: number | string;
   userNo?: string;
   userName?: string;
-  /** 申请金额（后端字段 amount） */
+  /** 申请金额 */
   amount?: number;
   applyAmount?: number;
   /** 到账金额 */
@@ -33,11 +34,11 @@ export async function fetchMchDivisionCountApi(
   return requestClient.post('/mchDivision/count', params ?? {});
 }
 
-export async function reviewMchDivisionOkApi(id: string) {
+export async function reviewMchDivisionOkApi(id: number | string) {
   return requestClient.post(`/mchDivision/reviewOk/${id}`, { state: 2 });
 }
 
-export async function reviewMchDivisionRefuseApi(id: string) {
+export async function reviewMchDivisionRefuseApi(id: number | string) {
   return requestClient.post(`/mchDivision/reviewRefuse/${id}`, { state: 3 });
 }
 
@@ -68,11 +69,11 @@ export async function fetchAgentDivisionCountApi(
   return requestClient.post('/agentDivision/count', params ?? {});
 }
 
-export async function reviewAgentDivisionOkApi(id: string) {
+export async function reviewAgentDivisionOkApi(id: number | string) {
   return requestClient.post(`/agentDivision/reviewOk/${id}`, { state: 2 });
 }
 
-export async function reviewAgentDivisionRefuseApi(id: string) {
+export async function reviewAgentDivisionRefuseApi(id: number | string) {
   return requestClient.post(`/agentDivision/reviewRefuse/${id}`, { state: 3 });
 }
 

@@ -103,9 +103,10 @@ const columns: TableColumnsType = [
   { dataIndex: 'recordId', fixed: 'left', title: '流水单号', width: 160 },
   { dataIndex: 'userNo', title: '商户', width: 180 },
   { dataIndex: 'createdAt', title: '申请时间', width: 170 },
-  { dataIndex: 'applyAmount', title: '申请金额', width: 110 },
-  { dataIndex: 'amount', title: '到账金额', width: 110 },
-  { dataIndex: 'feeAmount', title: '服务费', width: 100 },
+  // BE：amount=申请 / divisionAmount=到账 / divisionAmountFee=服务费
+  { dataIndex: 'amount', title: '申请金额', width: 110 },
+  { dataIndex: 'divisionAmount', title: '到账金额', width: 110 },
+  { dataIndex: 'divisionAmountFee', title: '服务费', width: 100 },
   { dataIndex: 'state', title: '状态', width: 100 },
   { dataIndex: 'remark', ellipsis: true, title: '备注', width: 140 },
   { dataIndex: 'action', fixed: 'right', title: '操作', width: 100 },
@@ -378,13 +379,13 @@ onMounted(async () => {
             <template v-else-if="column.dataIndex === 'createdAt'">
               {{ formatDateTime(record.createdAt) }}
             </template>
-            <template v-else-if="column.dataIndex === 'applyAmount'">
+            <template v-else-if="column.dataIndex === 'amount'">
               {{ formatYuan(applyAmountOf(asDivision(record))) }}
             </template>
-            <template v-else-if="column.dataIndex === 'amount'">
+            <template v-else-if="column.dataIndex === 'divisionAmount'">
               {{ formatYuan(receiveAmountOf(asDivision(record))) }}
             </template>
-            <template v-else-if="column.dataIndex === 'feeAmount'">
+            <template v-else-if="column.dataIndex === 'divisionAmountFee'">
               {{ formatYuan(feeAmountOf(asDivision(record))) }}
             </template>
             <template v-else-if="column.dataIndex === 'state'">

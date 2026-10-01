@@ -16,7 +16,8 @@ export const AGENT_BIZ_TYPE_OPTIONS = [
   { value: '1', label: '分润' },
   { value: '2', label: '提现' },
   { value: '3', label: '调账' },
-  { value: '4', label: '提现驳回' },
+  // demo 2026-10-01 导出/展示：biz=4 文案为「驳回解冻」（非「提现驳回」）
+  { value: '4', label: '驳回解冻' },
   { value: '6', label: '测试冲正' },
   { value: '7', label: '手续费' },
 ];
@@ -25,7 +26,7 @@ export const MCH_BIZ_TYPE_OPTIONS = [
   { value: '1', label: '支付' },
   { value: '2', label: '提现' },
   { value: '3', label: '调账' },
-  { value: '4', label: '提现驳回' },
+  { value: '4', label: '驳回解冻' },
   { value: '6', label: '测试冲正' },
   { value: '7', label: '手续费' },
 ];

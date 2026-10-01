@@ -22,7 +22,6 @@ import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards from '#/components/list/ListStatCards.vue';
-import CellCopyStack from '#/components/table/CellCopyStack.vue';
 import { usePassageHistoryExport } from '#/composables/use-async-export';
 import { useListStat } from '#/composables/use-list-stat';
 import {
@@ -98,7 +97,8 @@ const listStatItems = buildStatItems(() => {
 const columns: TableColumnsType = [
   { dataIndex: 'payPassageId', title: '通道ID', width: 110 },
   { dataIndex: 'payPassageName', title: '通道名', width: 160, ellipsis: true },
-  { dataIndex: 'orderNo', title: '订单号', width: 280 },
+  // BE 行键为 payOrderId（非 orderNo）；导出列「订单号」同字段
+  { dataIndex: 'payOrderId', title: '订单号', width: 220, ellipsis: true },
   { dataIndex: 'beforeBalance', title: '变更前余额', width: 120 },
   { dataIndex: 'amount', title: '变更金额', width: 120 },
   { dataIndex: 'afterBalance', title: '变更后余额', width: 120 },
@@ -269,11 +269,8 @@ onMounted(async () => {
             <template v-else-if="column.dataIndex === 'afterBalance'">
               {{ formatYuan(record.afterBalance as number) }}
             </template>
-            <template v-else-if="column.dataIndex === 'orderNo'">
-              <CellCopyStack
-                :pay-order-id="record.payOrderId as string"
-                :mch-order-no="record.mchOrderNo as string"
-              />
+            <template v-else-if="column.dataIndex === 'payOrderId'">
+              {{ String(record.payOrderId ?? '') }}
             </template>
             <template v-else-if="column.dataIndex === 'createdAt'">
               {{ formatDateTime(record.createdAt as string) }}

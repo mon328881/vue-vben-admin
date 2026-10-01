@@ -25,8 +25,8 @@ export interface MchInfo {
   balance?: number;
   freezeBalance?: number;
   diff?: number;
-  successAmount?: number | null;
-  successRate?: number | null;
+  successAmount?: null | number;
+  successRate?: null | number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -71,6 +71,8 @@ export interface MchPrepaidHistory {
   createdAt?: string;
   createdUid?: number | string;
   createdLoginName?: string;
+  /** 部分写接口/导出侧字段；列表主用 createdLoginName */
+  operator?: string;
   pic?: string;
   remark?: string;
   fundDirection?: number | string;
@@ -88,6 +90,8 @@ export interface PassagePrepaidHistory {
   createdAt?: string;
   createdUid?: number | string;
   createdLoginName?: string;
+  /** 部分写接口/导出侧字段；列表主用 createdLoginName */
+  operator?: string;
   pic?: string;
   remark?: string;
   fundDirection?: number | string;
@@ -188,7 +192,7 @@ export interface SysUser {
 export interface PayTestInnerData {
   errMsg?: string;
   mchOrderNo?: string;
-  orderState?: number | null;
+  orderState?: null | number;
   payData?: string;
   payDataType?: string;
   payOrderId?: string;
