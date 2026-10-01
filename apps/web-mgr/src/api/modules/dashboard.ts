@@ -1,6 +1,6 @@
-import { requestClient } from '#/api/request';
-
 import type { PageResult, TwoDayCount } from '#/api/types/business';
+
+import { requestClient } from '#/api/request';
 
 export interface SystemInfo {
   type?: number;
@@ -58,24 +58,33 @@ export interface MchVolumeRateRow {
   platTotalIncome?: number;
 }
 
+/** demo 2026-10-01：products[] 14 键字母序 */
 export interface MchVolumeProduct {
+  icon?: string;
+  mchName?: string;
+  mchNo?: string;
+  orderSuccessCount?: number;
+  platTotalIncome?: number;
   productId?: number;
   productName?: string;
-  totalAmount?: number;
-  totalSuccessAmount?: number;
-  totalOrderCount?: number;
-  orderSuccessCount?: number;
-  totalCost?: number;
-  platTotalIncome?: number;
   rates?: MchVolumeRateRow[];
+  statisticsDate?: string;
+  successRate?: number;
+  totalAmount?: number;
+  totalCost?: number;
+  totalOrderCount?: number;
+  totalSuccessAmount?: number;
 }
 
 export interface MchVolumeSummary {
+  mchName?: string;
+  mchNo?: string;
   statisticsDate?: string;
   totalSuccessAmount?: number;
   totalAmount?: number;
   totalOrderCount?: number;
   orderSuccessCount?: number;
+  successRate?: number;
   totalCost?: number;
   platTotalIncome?: number;
   products?: MchVolumeProduct[];
@@ -118,8 +127,8 @@ export async function fetchOpenStateApi() {
 }
 
 export async function setOpenStateApi(payload: {
-  setOpenState: number;
   googleCode?: string;
+  setOpenState: number;
 }) {
   return requestClient.put('/mainChart/setOpenState', payload);
 }
@@ -139,7 +148,9 @@ export async function fetchRealTimeConcurrentApi(
   );
 }
 
-export async function fetchDashboardMchRankApi(params: Record<string, unknown>) {
+export async function fetchDashboardMchRankApi(
+  params: Record<string, unknown>,
+) {
   return requestClient.get<PageResult<DashboardRankRow>>('/mchStatInfo', {
     params,
   });
@@ -179,8 +190,8 @@ export async function fetchMchVolumeSummaryApi(params: {
 }
 
 export async function fetchPassageRateDetailApi(params: {
-  statisticsDate: string;
   payPassageId: number;
+  statisticsDate: string;
 }) {
   return requestClient.get<PassageRateDetail>('/passageStat/rateDetail', {
     params,

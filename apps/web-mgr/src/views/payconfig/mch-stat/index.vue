@@ -87,6 +87,7 @@ const columns: TableColumnsType = [
   { dataIndex: 'createdAt', title: '日期', width: 120 },
   { dataIndex: 'mchName', title: '商户名', width: 140 },
   { dataIndex: 'totalSuccessAmount', title: '成交金额', width: 120 },
+  { dataIndex: 'income', title: '商户入账', width: 120 },
   { dataIndex: 'totalMchCost', title: '手续费', width: 110 },
   { dataIndex: 'platTotalIncome', title: '平台收入', width: 110 },
   { dataIndex: 'totalOrderCount', title: '订单总笔数', width: 110 },
@@ -220,6 +221,15 @@ onMounted(async () => {
             <template v-else-if="column.dataIndex === 'totalSuccessAmount'">
               <AmountText
                 :value="record.totalSuccessAmount as number"
+                kind="plain"
+              />
+            </template>
+            <template v-else-if="column.dataIndex === 'income'">
+              <AmountText
+                :value="
+                  Number(record.totalSuccessAmount ?? 0) -
+                  Number(record.totalMchCost ?? 0)
+                "
                 kind="plain"
               />
             </template>

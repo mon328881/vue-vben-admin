@@ -43,6 +43,7 @@ import AsyncExportButtons from '#/components/export/AsyncExportButtons.vue';
 import ExportReportListDialog from '#/components/export/ExportReportListDialog.vue';
 import FilterActions from '#/components/list/FilterActions.vue';
 import ListStatCards from '#/components/list/ListStatCards.vue';
+import MchVolumeSummaryDrawer from '#/components/merchant/MchVolumeSummaryDrawer.vue';
 import AgentSelector from '#/components/selectors/AgentSelector.vue';
 import MchGroupSelector from '#/components/selectors/MchGroupSelector.vue';
 import { useMchListExport } from '#/composables/use-async-export';
@@ -93,6 +94,7 @@ const connectRef = ref<InstanceType<typeof MchConnectInfoDrawer>>();
 const batchRef = ref<InstanceType<typeof MchBatchDrawer>>();
 const historyRef = ref<InstanceType<typeof MchPrepaidHistoryDrawer>>();
 const testRef = ref<InstanceType<typeof MchPassageTestDrawer>>();
+const volumeRef = ref<InstanceType<typeof MchVolumeSummaryDrawer>>();
 const prepaidRef = ref<InstanceType<typeof MchPrepaidAdjustDialog>>();
 const balanceRef = ref<InstanceType<typeof MchBalanceAdjustDialog>>();
 const autoSettleRef = ref<InstanceType<typeof MchAutoSettleDialog>>();
@@ -622,6 +624,21 @@ onMounted(async () => {
                 </span>
               </div>
             </template>
+            <template v-else-if="column.dataIndex === 'mchName'">
+              <button
+                type="button"
+                class="merchant-summary-link"
+                title="查看商户跑量摘要"
+                @click="
+                  volumeRef?.show({
+                    mchNo: String(record.mchNo ?? ''),
+                    mchName: record.mchName as string | undefined,
+                  })
+                "
+              >
+                {{ record.mchName || '' }}
+              </button>
+            </template>
             <template v-else-if="column.dataIndex === 'successAmount'">
               <span class="text-brand">
                 {{
@@ -755,6 +772,7 @@ onMounted(async () => {
     <MchBatchDrawer ref="batchRef" @success="reloadTable" />
     <MchPrepaidHistoryDrawer ref="historyRef" />
     <MchPassageTestDrawer ref="testRef" />
+    <MchVolumeSummaryDrawer ref="volumeRef" />
     <MchPrepaidAdjustDialog ref="prepaidRef" @success="reloadTable" />
     <MchBalanceAdjustDialog ref="balanceRef" @success="reloadTable" />
     <MchAutoSettleDialog ref="autoSettleRef" @success="applyAutoSettle" />
@@ -785,3 +803,23 @@ onMounted(async () => {
     />
   </Page>
 </template>
+
+<style scoped>
+.merchant-summary-link {
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: inherit;
+  color: hsl(var(--primary));
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.merchant-summary-link:hover {
+  text-decoration: underline;
+}
+</style>

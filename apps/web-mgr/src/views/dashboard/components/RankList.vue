@@ -37,6 +37,7 @@ import {
   fetchRealTimeConcurrentApi,
   fetchRealTimeCountApi,
 } from '#/api';
+import MchVolumeSummaryDrawer from '#/components/merchant/MchVolumeSummaryDrawer.vue';
 import {
   amountSignedClass,
   formatSuccessRate,
@@ -54,6 +55,7 @@ const rankTab = ref('1');
 const monitorMinutes = ref('20');
 const concurrentMinutes = ref('20');
 const rateDetailRef = ref<InstanceType<typeof PassageRateDetailDrawer>>();
+const volumeDrawerRef = ref<InstanceType<typeof MchVolumeSummaryDrawer>>();
 
 const rankLoading = ref(false);
 const concurrentLoading = ref(false);
@@ -249,6 +251,14 @@ function onPassageNameClick(row: DashboardRankRow) {
   rateDetailRef.value?.show({
     payPassageId: Number(row.payPassageId),
     payPassageName: row.payPassageName,
+  });
+}
+
+function onMchNameClick(row: DashboardRankRow) {
+  if (!row.mchNo) return;
+  volumeDrawerRef.value?.show({
+    mchNo: String(row.mchNo),
+    mchName: row.mchName,
   });
 }
 
@@ -503,7 +513,16 @@ onUnmounted(() => {
               <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'name'">
                   <button
-                    v-if="rankTab === '2' && record.payPassageId != null"
+                    v-if="rankTab === '1' && record.mchNo"
+                    type="button"
+                    class="passage-rate-link"
+                    title="查看商户跑量摘要"
+                    @click="onMchNameClick(record)"
+                  >
+                    {{ displayName(record) }}
+                  </button>
+                  <button
+                    v-else-if="rankTab === '2' && record.payPassageId != null"
                     type="button"
                     class="passage-rate-link"
                     title="查看通道费率明细"
@@ -603,6 +622,7 @@ onUnmounted(() => {
       </Col>
     </Row>
     <PassageRateDetailDrawer ref="rateDetailRef" />
+    <MchVolumeSummaryDrawer ref="volumeDrawerRef" />
   </div>
 </template>
 
