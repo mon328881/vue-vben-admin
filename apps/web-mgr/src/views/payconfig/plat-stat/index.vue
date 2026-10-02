@@ -78,8 +78,9 @@ const columns: TableColumnsType = [
   { dataIndex: 'totalSuccessAmount', title: '成交额', width: 120 },
   { dataIndex: 'platTotalIncome', title: '平台收入', width: 120 },
   { dataIndex: 'successRate', title: '支付成功率', width: 110 },
-  { dataIndex: 'orderSuccessCount', title: '成交笔数', width: 100 },
+  // 对齐旧端列表：订单总笔数在成交笔数前（导出列序不同，属导出契约）
   { dataIndex: 'totalOrderCount', title: '订单总笔数', width: 110 },
+  { dataIndex: 'orderSuccessCount', title: '成交笔数', width: 100 },
 ];
 
 function buildParams() {
