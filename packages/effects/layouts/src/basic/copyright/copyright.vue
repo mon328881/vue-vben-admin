@@ -41,6 +41,7 @@ withDefaults(defineProps<Props>(), {
       v-if="companyName"
       :href="companySiteLink || 'javascript:void(0)'"
       class="mx-1 hover:text-primary-hover"
+      rel="noopener noreferrer"
       target="_blank"
     >
       {{ companyName }}

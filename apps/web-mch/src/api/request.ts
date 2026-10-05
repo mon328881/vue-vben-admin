@@ -12,6 +12,7 @@ import {
   RequestClient,
 } from '@vben/request';
 import { useAccessStore } from '@vben/stores';
+import { isInternalApiUrl } from '@vben/utils';
 
 import { message } from 'ant-design-vue';
 
@@ -77,7 +78,12 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
         }
         token = null;
       }
-      if (token) {
+      const trustedOrigins = [
+        typeof window === 'undefined' ? '' : window.location?.origin,
+        baseURL,
+        apiURL,
+      ].filter(Boolean);
+      if (token && isInternalApiUrl(config.url, trustedOrigins)) {
         config.headers.iToken = token;
       }
       config.headers['Accept-Language'] = preferences.app.locale;

@@ -115,7 +115,12 @@ const devDependenciesItems = Object.keys(devDependencies).map((key) => ({
   <Page :title="title">
     <template #description>
       <p class="mt-3 text-sm/6 text-foreground">
-        <a :href="VBEN_GITHUB_URL" class="vben-link" target="_blank">
+        <a
+          :href="VBEN_GITHUB_URL"
+          class="vben-link"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
           {{ name }}
         </a>
         {{ description }}

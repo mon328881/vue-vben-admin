@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { IconifyIcon } from '@vben/icons';
+import { isSafeHttpUrl } from '@vben/utils';
 
 import {
   Button,
@@ -53,6 +54,7 @@ const testOrderNo = ref('');
 const rawResult = ref('');
 const payOk = ref(false);
 const payData = ref('');
+const isSafePayLink = computed(() => isSafeHttpUrl(payData.value));
 const submitting = ref(false);
 
 const visible = computed({
@@ -256,7 +258,7 @@ defineExpose({ resetState });
                 />
               </div>
             </Form.Item>
-            <template v-if="payOk && payData">
+            <template v-if="payOk && payData && isSafePayLink">
               <Form.Item label="支付链接（点击直接跳转）">
                 <a
                   class="pay-test-drawer__pay-link"
@@ -271,6 +273,19 @@ defineExpose({ resetState });
                 <Button type="primary" size="small" @click="copyPayData">
                   一键复制链接
                 </Button>
+              </Form.Item>
+            </template>
+            <template v-else-if="payOk && payData">
+              <Form.Item label="支付链接">
+                <span
+                  style="
+                    font-family: monospace;
+                    font-size: 12px;
+                    color: #ff4d4f;
+                  "
+                >
+                  [安全拦截] 链接协议非安全 HTTP(S)，已阻止自动跳转展示
+                </span>
               </Form.Item>
             </template>
           </Form>

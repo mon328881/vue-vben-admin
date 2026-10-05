@@ -908,7 +908,7 @@ describe('useVbenForm integration', () => {
 
     await input.trigger('blur');
     await flushPromises();
-    expect(wrapper.text()).toContain('Name is required');
+    await expect.poll(() => wrapper.text()).toContain('Name is required');
 
     await input.setValue('Ada');
     await flushPromises();
@@ -1015,7 +1015,7 @@ describe('useVbenForm integration', () => {
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(onSubmit).toHaveBeenCalledOnce();
+    await expect.poll(() => onSubmit).toHaveBeenCalledOnce();
     expect(onSubmit).toHaveBeenCalledWith(undefined);
   });
 

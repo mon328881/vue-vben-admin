@@ -6,8 +6,6 @@ import { preferences } from '@vben/preferences';
 import { initStores } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/antd';
-import '#/styles/drawer-layout.css';
-import '@asiapay/shared';
 
 import { useTitle } from '@vueuse/core';
 
@@ -17,6 +15,11 @@ import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
 import App from './app.vue';
 import { router } from './router';
+import { setupAuthStorageListener } from './store';
+
+import '@asiapay/shared';
+
+import '#/styles/drawer-layout.css';
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
@@ -57,6 +60,9 @@ async function bootstrap(namespace: string) {
 
   // 配置路由及路由守卫
   app.use(router);
+
+  // 跨标签页认证广播监听
+  setupAuthStorageListener(router);
 
   // 配置Motion插件
   const { MotionPlugin } = await import('@vben/plugins/motion');

@@ -6,10 +6,14 @@ const securityHeaders = {
   'X-Frame-Options': 'SAMEORIGIN',
 };
 
-export default defineConfig(async () => {
+export default defineConfig(async (env) => {
   return {
     application: {},
     vite: {
+      oxc:
+        env?.mode === 'production'
+          ? { drop: ['console', 'debugger'] }
+          : undefined,
       preview: {
         headers: securityHeaders,
       },

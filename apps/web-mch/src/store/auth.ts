@@ -5,7 +5,12 @@ import { useRouter } from 'vue-router';
 
 import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
-import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
+import {
+  resetAllStores,
+  setupCrossTabStorageSync,
+  useAccessStore,
+  useUserStore,
+} from '@vben/stores';
 
 import { notification } from 'ant-design-vue';
 import { defineStore } from 'pinia';
@@ -121,3 +126,22 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
   };
 });
+
+/**
+ * 跨标签页登出事件监听初始化（正典入口）
+ * 监听 storage 广播，当同源其他标签页登出时清空 Pinia 状态并导航至登录页
+ */
+export function setupAuthStorageListener(
+  routerInstance?: ReturnType<typeof useRouter>,
+) {
+  return setupCrossTabStorageSync(async () => {
+    clearCurrentUserCache();
+    if (routerInstance) {
+      try {
+        await routerInstance.replace({ path: LOGIN_PATH });
+      } catch {
+        // ignore navigation failure if already on login page
+      }
+    }
+  });
+}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 
-import { escapeHtml } from '@vben/utils';
+import { highlightJSON } from '@vben/utils';
 
 import { getTitleApi } from '#/api';
 
@@ -519,25 +519,6 @@ const apis: ApiPage[] = [
   },
 ];
 
-function highlightJSON(value: unknown): string {
-  const json =
-    typeof value === 'string' ? value : JSON.stringify(value, null, 4);
-  return json.replaceAll(
-    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-    (match) => {
-      let cls = 'json-number';
-      if (match.startsWith('"')) {
-        cls = match.endsWith(':') ? 'json-key' : 'json-string';
-      } else if (/true|false/.test(match)) {
-        cls = 'json-boolean';
-      } else if (/null/.test(match)) {
-        cls = 'json-null';
-      }
-      return `<span class="${cls}">${escapeHtml(match)}</span>`;
-    },
-  );
-}
-
 function showPage(id: string, menu: null | string) {
   activePage.value = id;
   activeMenu.value = menu;
@@ -803,8 +784,7 @@ function openMenu(id: string, menu: string) {
                   <td>
                     <span class="param-type">{{ p.type }}</span>
                   </td>
-                  <td v-if="p.descHtml" v-html="p.descHtml"></td>
-                  <td v-else>{{ p.desc }}</td>
+                  <td>{{ p.desc }}</td>
                   <td>
                     <span v-if="p.required" class="param-required">必填</span>
                     <span v-else class="param-required">可选</span>
@@ -847,7 +827,7 @@ function openMenu(id: string, menu: string) {
                     {{ f.name }}
                   </span>
                   <span class="param-type">{{ f.type }}</span>
-                  <span class="param-desc" v-html="f.descHtml || f.desc"></span>
+                  <span class="param-desc">{{ f.desc }}</span>
                   <span class="param-required">{{
                     f.required ? '必填' : '可选'
                   }}</span>
@@ -855,10 +835,7 @@ function openMenu(id: string, menu: string) {
                     <li v-for="c in f.children" :key="c.name">
                       <span class="param-name">{{ c.name }}</span>
                       <span class="param-type">{{ c.type }}</span>
-                      <span
-                        class="param-desc"
-                        v-html="c.descHtml || c.desc"
-                      ></span>
+                      <span class="param-desc">{{ c.desc }}</span>
                       <span class="param-required">必填</span>
                       <div v-if="c.enums" class="enum-values">
                         枚举值:

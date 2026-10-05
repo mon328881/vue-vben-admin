@@ -2,7 +2,7 @@ import type { Pinia } from 'pinia';
 
 import type { App } from 'vue';
 
-import { createPinia } from 'pinia';
+import { createPinia, getActivePinia } from 'pinia';
 import SecureLS from 'secure-ls';
 
 let pinia: Pinia;
@@ -69,13 +69,43 @@ export async function initStores(app: App, options: InitStoreOptions) {
   return pinia;
 }
 
-export function resetAllStores() {
-  if (!pinia) {
+export function resetAllStores(customPinia?: Pinia) {
+  const currentPinia = customPinia ?? pinia ?? getActivePinia();
+  if (!currentPinia) {
     console.error('Pinia is not installed');
     return;
   }
-  const allStores = (pinia as any)._s;
+  const allStores = (currentPinia as any)._s;
   for (const [_key, store] of allStores) {
     store.$reset();
   }
+}
+
+/**
+ * 跨标签页状态同步与注销广播监听器
+ * 监听 storage 事件，当其他同源标签页登出（清空 token）时同步清空本标签页所有 store 状态
+ */
+export function setupCrossTabStorageSync(onLogout?: () => void) {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleStorage = (event: StorageEvent) => {
+    // 当 localStorage.clear() (key===null) 或 access token/auth key 被清空时
+    const isLogoutEvent =
+      event.key === null ||
+      (typeof event.key === 'string' &&
+        (event.key.includes('access') || event.key.includes('auth')) &&
+        (!event.newValue ||
+          event.newValue === '""' ||
+          event.newValue === 'null'));
+
+    if (isLogoutEvent) {
+      resetAllStores();
+      onLogout?.();
+    }
+  };
+
+  window.addEventListener('storage', handleStorage);
+  return () => {
+    window.removeEventListener('storage', handleStorage);
+  };
 }

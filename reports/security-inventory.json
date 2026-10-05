@@ -1,0 +1,762 @@
+{
+  "timestamp": "2026-10-05T08:28:21.202Z",
+  "target": "asiapay-admin",
+  "totalFindings": 145,
+  "categories": {
+    "D1_XSS_AND_DOM_SINKS": {
+      "title": "XSS & Dangerous DOM / Execution Sinks",
+      "count": 33,
+      "matches": [
+        {
+          "file": "apps/web-mch/src/views/apidoc/index.vue",
+          "line": 799,
+          "snippet": "<pre><code v-html=\"highlightJSON(ep.requestExample)\"></code></pre>"
+        },
+        {
+          "file": "apps/web-mch/src/views/apidoc/index.vue",
+          "line": 876,
+          "snippet": "<pre><code v-html=\"highlightJSON(ep.response.success)\"></code></pre>"
+        },
+        {
+          "file": "apps/web-mch/src/views/apidoc/index.vue",
+          "line": 882,
+          "snippet": "<pre><code v-html=\"highlightJSON(ep.response.error)\"></code></pre>"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/dom.test.ts",
+          "line": 140,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/resources.test.ts",
+          "line": 8,
+          "snippet": "document.head.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/update-css-variables.test.ts",
+          "line": 8,
+          "snippet": "document.head.innerHTML = `<style id=\"custom-styles\">${initialStyleContent}</style>`;"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/update-css-variables.test.ts",
+          "line": 33,
+          "snippet": "document.head.innerHTML = `<style id=\"tdesign-styles\"></style>`;"
+        },
+        {
+          "file": "packages/@core/composables/src/__tests__/use-layout-style.test.ts",
+          "line": 14,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/composables/src/__tests__/use-layout-viewport-height.test.ts",
+          "line": 49,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/composables/src/__tests__/use-scroll-lock.test.ts",
+          "line": 54,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/alert/__tests__/alert-builder.test.ts",
+          "line": 49,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/alert/__tests__/alert.test.ts",
+          "line": 63,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/drawer/__tests__/drawer-interaction.test.ts",
+          "line": 32,
+          "snippet": "mainContent.innerHTML = '<div><div></div></div>';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/drawer/__tests__/drawer-interaction.test.ts",
+          "line": 105,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/drawer/__tests__/drawer.test.ts",
+          "line": 22,
+          "snippet": "mainContent.innerHTML = '<div><div></div></div>';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/drawer/__tests__/drawer.test.ts",
+          "line": 43,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/drawer/__tests__/use-drawer.test.ts",
+          "line": 69,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/modal/__tests__/modal-interaction.test.ts",
+          "line": 32,
+          "snippet": "mainContent.innerHTML = '<div><div></div></div>';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/modal/__tests__/modal-interaction.test.ts",
+          "line": 105,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/modal/__tests__/modal.test.ts",
+          "line": 22,
+          "snippet": "mainContent.innerHTML = '<div><div></div></div>';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/modal/__tests__/modal.test.ts",
+          "line": 56,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/modal/__tests__/modal.test.ts",
+          "line": 112,
+          "snippet": "mainContent.innerHTML = '<div><div></div></div>';"
+        },
+        {
+          "file": "packages/@core/ui-kit/popup-ui/src/modal/__tests__/use-modal.test.ts",
+          "line": 69,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/@core/ui-kit/shadcn-ui/src/ui/progress/__tests__/progress.test.ts",
+          "line": 43,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/effects/common-ui/src/components/icon-picker/__tests__/icon-picker.test.ts",
+          "line": 57,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/effects/common-ui/src/components/loading/directive.ts",
+          "line": 114,
+          "snippet": "style.innerHTML = `"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/dashboard/workbench/workbench-todo.vue",
+          "line": 47,
+          "snippet": "<!-- eslint-disable vue/no-v-html -->"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/dashboard/workbench/workbench-todo.vue",
+          "line": 50,
+          "snippet": "v-html=\"item.content\""
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/dashboard/workbench/workbench-trends.vue",
+          "line": 48,
+          "snippet": "<!-- eslint-disable vue/no-v-html -->"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/dashboard/workbench/workbench-trends.vue",
+          "line": 51,
+          "snippet": "v-html=\"item.content\""
+        },
+        {
+          "file": "packages/effects/layouts/src/basic/__tests__/use-layout-scroll.test.ts",
+          "line": 77,
+          "snippet": "document.body.innerHTML = '';"
+        },
+        {
+          "file": "packages/effects/plugins/src/tiptap/preview.vue",
+          "line": 28,
+          "snippet": "<!-- eslint-disable vue/no-v-html -->"
+        },
+        {
+          "file": "packages/effects/plugins/src/tiptap/preview.vue",
+          "line": 32,
+          "snippet": "v-html=\"content\""
+        }
+      ]
+    },
+    "D2_REDIRECT_AND_POSTMESSAGE": {
+      "title": "Client Redirection & PostMessage Sinks",
+      "count": 44,
+      "matches": [
+        {
+          "file": "apps/web-agent/src/api/request.ts",
+          "line": 83,
+          "snippet": "typeof window !== 'undefined' ? window.location?.origin : '',"
+        },
+        {
+          "file": "apps/web-antd/src/adapter/component/index.ts",
+          "line": 245,
+          "snippet": "window.open(url, '_blank');"
+        },
+        {
+          "file": "apps/web-antd/src/layouts/basic.vue",
+          "line": 168,
+          "snippet": "window.open(link, '_blank');"
+        },
+        {
+          "file": "apps/web-antdv-next/src/adapter/component/index.ts",
+          "line": 262,
+          "snippet": "window.open(url, '_blank');"
+        },
+        {
+          "file": "apps/web-antdv-next/src/adapter/component/index.ts",
+          "line": 264,
+          "snippet": "window.open(file.preview, '_blank');"
+        },
+        {
+          "file": "apps/web-antdv-next/src/layouts/basic.vue",
+          "line": 168,
+          "snippet": "window.open(link, '_blank');"
+        },
+        {
+          "file": "apps/web-ele/src/layouts/basic.vue",
+          "line": 168,
+          "snippet": "window.open(link, '_blank');"
+        },
+        {
+          "file": "apps/web-mch/src/api/request.ts",
+          "line": 82,
+          "snippet": "typeof window !== 'undefined' ? window.location?.origin : '',"
+        },
+        {
+          "file": "apps/web-mch/src/components/pay/PayTestDrawer.vue",
+          "line": 227,
+          "snippet": "target=\"_blank\""
+        },
+        {
+          "file": "apps/web-mch/src/views/cashier/index.vue",
+          "line": 175,
+          "snippet": "return `${window.location.origin}${raw.startsWith('/') ? raw : `/${raw}`}`;"
+        },
+        {
+          "file": "apps/web-mch/src/views/cashier/index.vue",
+          "line": 465,
+          "snippet": "target=\"_blank\""
+        },
+        {
+          "file": "apps/web-mch/src/views/system/userinfo/index.vue",
+          "line": 78,
+          "snippet": "if (parsed.hostname === window.location.hostname) {"
+        },
+        {
+          "file": "apps/web-mgr/src/api/request.ts",
+          "line": 82,
+          "snippet": "typeof window !== 'undefined' ? window.location?.origin : '',"
+        },
+        {
+          "file": "apps/web-mgr/src/components/list/PayTestDrawerBase.vue",
+          "line": 266,
+          "snippet": "target=\"_blank\""
+        },
+        {
+          "file": "apps/web-mgr/src/views/system/robots/index.vue",
+          "line": 513,
+          "snippet": "target=\"_blank\""
+        },
+        {
+          "file": "apps/web-mgr/src/views/system/userinfo/index.vue",
+          "line": 73,
+          "snippet": "if (parsed.hostname === window.location.hostname) {"
+        },
+        {
+          "file": "apps/web-naive/src/layouts/basic.vue",
+          "line": 168,
+          "snippet": "window.open(link, '_blank');"
+        },
+        {
+          "file": "apps/web-tdesign/src/layouts/basic.vue",
+          "line": 168,
+          "snippet": "window.open(link, '_blank');"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 6,
+          "snippet": "// 保存原始的 window.open 函数"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 7,
+          "snippet": "let originalOpen: typeof window.open;"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 10,
+          "snippet": "originalOpen = window.open;"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 15,
+          "snippet": "window.open = originalOpen;"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 19,
+          "snippet": "it('should call window.open with correct arguments', () => {"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 23,
+          "snippet": "window.open = vi.fn();"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 28,
+          "snippet": "// 验证 window.open 是否被正确地调用"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 29,
+          "snippet": "expect(window.open).toHaveBeenCalledWith("
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 37,
+          "snippet": "window.open = vi.fn();"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 40,
+          "snippet": "expect(window.open).not.toHaveBeenCalled();"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 43,
+          "snippet": "expect(window.open).not.toHaveBeenCalled();"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 46,
+          "snippet": "expect(window.open).not.toHaveBeenCalled();"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 50,
+          "snippet": "window.open = vi.fn();"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 53,
+          "snippet": "expect(window.open).toHaveBeenCalledWith("
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/__tests__/window.test.ts",
+          "line": 60,
+          "snippet": "expect(window.open).toHaveBeenCalledWith("
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/safe-navigation.ts",
+          "line": 68,
+          "snippet": "(typeof window !== 'undefined' ? window.location?.origin : '') ||"
+        },
+        {
+          "file": "packages/@core/base/shared/src/utils/window.ts",
+          "line": 33,
+          "snippet": "window.open(trimmed, target, features);"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/about/about.vue",
+          "line": 118,
+          "snippet": "<a :href=\"VBEN_GITHUB_URL\" class=\"vben-link\" target=\"_blank\">"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/dingding-login.vue",
+          "line": 39,
+          "snippet": "return window.location.origin + route.fullPath;"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/dingding-login.vue",
+          "line": 72,
+          "snippet": "window.location.href = redirectUrl;"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/dingding-login.vue",
+          "line": 87,
+          "snippet": "window.location.href = `https://login.dingtalk.com/oauth2/auth?redirect_uri=${encodeURIComponent(getRedirectUri())}&response_type=code&client_id=${clientId}&scope=openid&corpid=${corpId}&prompt=consent`;"
+        },
+        {
+          "file": "packages/effects/layouts/src/basic/copyright/copyright.vue",
+          "line": 31,
+          "snippet": "target=\"_blank\""
+        },
+        {
+          "file": "packages/effects/layouts/src/basic/copyright/copyright.vue",
+          "line": 44,
+          "snippet": "target=\"_blank\""
+        },
+        {
+          "file": "packages/effects/layouts/src/widgets/check-updates/check-updates.vue",
+          "line": 33,
+          "snippet": "window.location.reload();"
+        },
+        {
+          "file": "packages/effects/layouts/src/widgets/global-search/search-panel.vue",
+          "line": 113,
+          "snippet": "window.open(to.path, '_blank');"
+        },
+        {
+          "file": "packages/stores/src/modules/tabbar.ts",
+          "line": 376,
+          "snippet": "openWindow(new URL(href, location.href).href, { target: '_blank' });"
+        }
+      ]
+    },
+    "D3_ROUTER_DYNAMIC_NAVIGATION": {
+      "title": "Dynamic Router Navigation Sinks",
+      "count": 57,
+      "matches": [
+        {
+          "file": "apps/web-agent/src/layouts/basic.vue",
+          "line": 25,
+          "snippet": "router.push('/current/userinfo');"
+        },
+        {
+          "file": "apps/web-agent/src/store/auth.ts",
+          "line": 59,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-agent/src/store/auth.ts",
+          "line": 94,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-agent/src/views/dashboard/main/index.vue",
+          "line": 112,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-agent/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-antd/src/layouts/basic.vue",
+          "line": 91,
+          "snippet": "router.push({ name: 'Profile' });"
+        },
+        {
+          "file": "apps/web-antd/src/layouts/basic.vue",
+          "line": 171,
+          "snippet": "router.push({"
+        },
+        {
+          "file": "apps/web-antd/src/store/auth.ts",
+          "line": 58,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-antd/src/store/auth.ts",
+          "line": 90,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-antd/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-antdv-next/src/layouts/basic.vue",
+          "line": 91,
+          "snippet": "router.push({ name: 'Profile' });"
+        },
+        {
+          "file": "apps/web-antdv-next/src/layouts/basic.vue",
+          "line": 171,
+          "snippet": "router.push({"
+        },
+        {
+          "file": "apps/web-antdv-next/src/store/auth.ts",
+          "line": 58,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-antdv-next/src/store/auth.ts",
+          "line": 90,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-antdv-next/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-ele/src/layouts/basic.vue",
+          "line": 91,
+          "snippet": "router.push({ name: 'Profile' });"
+        },
+        {
+          "file": "apps/web-ele/src/layouts/basic.vue",
+          "line": 171,
+          "snippet": "router.push({"
+        },
+        {
+          "file": "apps/web-ele/src/store/auth.ts",
+          "line": 59,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-ele/src/store/auth.ts",
+          "line": 91,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-ele/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-mch/src/components/pay/PayTestDrawer.vue",
+          "line": 137,
+          "snippet": "router.push({ path: '/pay', query: { unionOrderId: testOrderNo.value } });"
+        },
+        {
+          "file": "apps/web-mch/src/layouts/basic.vue",
+          "line": 25,
+          "snippet": "router.push('/current/userinfo');"
+        },
+        {
+          "file": "apps/web-mch/src/store/auth.ts",
+          "line": 59,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-mch/src/store/auth.ts",
+          "line": 94,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-mch/src/views/cashier/index.vue",
+          "line": 169,
+          "snippet": "void router.replace({ path: route.path, query: nextQuery });"
+        },
+        {
+          "file": "apps/web-mch/src/views/dashboard/main/index.vue",
+          "line": 86,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-mch/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-mch/src/views/order/pay/index.vue",
+          "line": 234,
+          "snippet": "router.replace({ path: route.path, query: {} });"
+        },
+        {
+          "file": "apps/web-mgr/src/components/list/PayTestDrawerBase.vue",
+          "line": 149,
+          "snippet": "void router.push({"
+        },
+        {
+          "file": "apps/web-mgr/src/layouts/basic.vue",
+          "line": 90,
+          "snippet": "void router.push({ path: '/current/userinfo' });"
+        },
+        {
+          "file": "apps/web-mgr/src/layouts/basic.vue",
+          "line": 144,
+          "snippet": "router.push({"
+        },
+        {
+          "file": "apps/web-mgr/src/store/auth.ts",
+          "line": 59,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-mgr/src/store/auth.ts",
+          "line": 94,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-mgr/src/views/dashboard/main/index.vue",
+          "line": 93,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-mgr/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-mgr/src/views/order/pay/index.vue",
+          "line": 527,
+          "snippet": "void router.replace({ query: rest });"
+        },
+        {
+          "file": "apps/web-naive/src/layouts/basic.vue",
+          "line": 91,
+          "snippet": "router.push({ name: 'Profile' });"
+        },
+        {
+          "file": "apps/web-naive/src/layouts/basic.vue",
+          "line": 171,
+          "snippet": "router.push({"
+        },
+        {
+          "file": "apps/web-naive/src/store/auth.ts",
+          "line": 59,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-naive/src/store/auth.ts",
+          "line": 91,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-naive/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "apps/web-tdesign/src/layouts/basic.vue",
+          "line": 91,
+          "snippet": "router.push({ name: 'Profile' });"
+        },
+        {
+          "file": "apps/web-tdesign/src/layouts/basic.vue",
+          "line": 171,
+          "snippet": "router.push({"
+        },
+        {
+          "file": "apps/web-tdesign/src/store/auth.ts",
+          "line": 57,
+          "snippet": ": await router.push("
+        },
+        {
+          "file": "apps/web-tdesign/src/store/auth.ts",
+          "line": 89,
+          "snippet": "await router.replace({"
+        },
+        {
+          "file": "apps/web-tdesign/src/views/dashboard/workspace/index.vue",
+          "line": 227,
+          "snippet": "router.push(nav.url).catch((error) => {"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/code-login.vue",
+          "line": 83,
+          "snippet": "router.push(props.loginPath);"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/forget-password.vue",
+          "line": 76,
+          "snippet": "router.push(props.loginPath);"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/login.vue",
+          "line": 80,
+          "snippet": "router.push(path);"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/qrcode-login.vue",
+          "line": 68,
+          "snippet": "router.push(props.loginPath);"
+        },
+        {
+          "file": "packages/effects/common-ui/src/ui/authentication/register.vue",
+          "line": 79,
+          "snippet": "router.push(props.loginPath);"
+        },
+        {
+          "file": "packages/effects/layouts/src/basic/menu/use-navigation.ts",
+          "line": 56,
+          "snippet": "await router.push({"
+        },
+        {
+          "file": "packages/effects/layouts/src/basic/tabbar/use-tabbar.ts",
+          "line": 80,
+          "snippet": "router.push(fullPath || path);"
+        },
+        {
+          "file": "packages/effects/layouts/src/basic/tabbar/use-tabbar.ts",
+          "line": 153,
+          "snippet": "await router.push(tab.fullPath);"
+        },
+        {
+          "file": "packages/effects/layouts/src/widgets/breadcrumb.vue",
+          "line": 63,
+          "snippet": "router.push(path);"
+        },
+        {
+          "file": "packages/effects/layouts/src/widgets/global-search/search-panel.vue",
+          "line": 115,
+          "snippet": "router.push({ path: to.path, replace: true });"
+        },
+        {
+          "file": "packages/stores/src/modules/tabbar.ts",
+          "line": 126,
+          "snippet": "await router.replace(toParams);"
+        }
+      ]
+    },
+    "D4_STORAGE_AND_LOGGING": {
+      "title": "Local Storage & Console Leakage Sinks",
+      "count": 8,
+      "matches": [
+        {
+          "file": "apps/web-mgr/src/components/table/SelectionAutoResetSwitch.vue",
+          "line": 47,
+          "snippet": "const raw = localStorage.getItem(key);"
+        },
+        {
+          "file": "apps/web-mgr/src/components/table/SelectionAutoResetSwitch.vue",
+          "line": 59,
+          "snippet": "localStorage.setItem(key, value ? '1' : '0');"
+        },
+        {
+          "file": "apps/web-mgr/src/views/dashboard/main/index.vue",
+          "line": 181,
+          "snippet": "const raw = localStorage.getItem(key);"
+        },
+        {
+          "file": "apps/web-mgr/src/views/dashboard/main/index.vue",
+          "line": 191,
+          "snippet": "localStorage.setItem("
+        },
+        {
+          "file": "apps/web-mgr/src/views/order/pay/index.vue",
+          "line": 430,
+          "snippet": "localStorage.setItem("
+        },
+        {
+          "file": "apps/web-mgr/src/views/order/pay/index.vue",
+          "line": 445,
+          "snippet": "const raw = localStorage.getItem(STORAGE_KEY);"
+        },
+        {
+          "file": "apps/web-mch/src/views/cashier/index.vue",
+          "line": 159,
+          "snippet": "secret = sessionStorage.getItem(cashierSecretStorageKey(mchNo)) ?? '';"
+        },
+        {
+          "file": "apps/web-mch/src/views/cashier/index.vue",
+          "line": 164,
+          "snippet": "sessionStorage.setItem(cashierSecretStorageKey(mchNo), secret);"
+        }
+      ]
+    },
+    "D5_HARDCODED_SECRETS_PATTERNS": {
+      "title": "Potential Hardcoded Secrets & Token Literals",
+      "count": 3,
+      "matches": [
+        {
+          "file": "apps/backend-mock/utils/jwt-utils.ts",
+          "line": 11,
+          "snippet": "const ACCESS_TOKEN_SECRET = 'access_token_secret';"
+        },
+        {
+          "file": "apps/backend-mock/utils/jwt-utils.ts",
+          "line": 12,
+          "snippet": "const REFRESH_TOKEN_SECRET = 'refresh_token_secret';"
+        },
+        {
+          "file": "packages/@core/ui-kit/shadcn-ui/src/components/input-password/input-password.vue",
+          "line": 40,
+          "snippet": "<PasswordStrength :password=\"modelValue\" />"
+        }
+      ]
+    }
+  }
+}
