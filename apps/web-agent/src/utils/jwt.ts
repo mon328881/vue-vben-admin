@@ -6,10 +6,15 @@ export function decodeJwtPayload(
     const parts = token.split('.');
     const payloadPart = parts[1];
     if (!payloadPart) return null;
-    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const base64 = payloadPart.replaceAll('-', '+').replaceAll('_', '/');
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    );
     const json = decodeURIComponent(
-      Array.from(atob(base64), (c) =>
-        `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`,
+      Array.from(
+        atob(padded),
+        (c) => `%${(c.codePointAt(0) ?? 0).toString(16).padStart(2, '0')}`,
       ).join(''),
     );
     return JSON.parse(json) as Record<string, unknown>;

@@ -722,28 +722,33 @@ onMounted(() => {
       <Modal
         v-model:open="googleVisible"
         title="安全验证"
+        wrap-class-name="google-verify-modal"
         :confirm-loading="googleSaving"
         ok-text="验证"
         cancel-text="取消"
+        width="520px"
+        destroy-on-close
         @ok="submitGoogle"
       >
-        <Alert
-          type="warning"
-          show-icon
-          class="mb-3"
-          message="批量修改费率属于高危敏感操作。首次操作需要谷歌验证，通过后 1 小时内重复操作无需再次验证。"
-        />
-        <Input
-          v-model:value="googleCode"
-          placeholder="请输入谷歌验证码"
-          :maxlength="6"
-          @update:value="
-            (v) =>
-              (googleCode = String(v ?? '')
-                .replace(/\D/g, '')
-                .slice(0, 6))
-          "
-        />
+        <div class="google-verify-body">
+          <Alert
+            type="warning"
+            show-icon
+            message="批量修改费率属于高危敏感操作。首次操作需要谷歌验证，通过后 1 小时内重复操作无需再次验证。"
+          />
+          <Input
+            v-model:value="googleCode"
+            placeholder="请输入谷歌验证码"
+            :maxlength="6"
+            allow-clear
+            @update:value="
+              (v) =>
+                (googleCode = String(v ?? '')
+                  .replace(/\D/g, '')
+                  .slice(0, 6))
+            "
+          />
+        </div>
       </Modal>
 
       <Modal
@@ -1029,6 +1034,20 @@ onMounted(() => {
   border-top: 1px solid hsl(var(--border));
 }
 
+.google-verify-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.google-verify-body :deep(.ant-alert) {
+  padding: 10px 12px;
+}
+
+.google-verify-body :deep(.ant-alert-message) {
+  line-height: 1.65;
+}
+
 .text-brand {
   color: hsl(var(--primary));
 }
@@ -1039,5 +1058,20 @@ onMounted(() => {
 
 .text-warning {
   color: #e37318;
+}
+</style>
+
+<style>
+.google-verify-modal .ant-modal-header {
+  padding: 16px 24px 8px;
+}
+
+.google-verify-modal .ant-modal-body {
+  padding: 12px 24px 20px;
+}
+
+.google-verify-modal .ant-modal-footer {
+  padding: 8px 24px 16px;
+  margin-top: 0;
 }
 </style>

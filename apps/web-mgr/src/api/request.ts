@@ -34,10 +34,14 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
    */
   async function doReAuthenticate() {
     if (reAuthPromise) return reAuthPromise;
+    const staleToken = useAccessStore().accessToken;
     console.warn('iToken is invalid or expired.');
     reAuthPromise = (async () => {
       const accessStore = useAccessStore();
       const authStore = useAuthStore();
+      if (accessStore.accessToken && accessStore.accessToken !== staleToken) {
+        return;
+      }
       accessStore.setAccessToken(null);
       if (
         preferences.app.loginExpiredMode === 'modal' &&
@@ -64,10 +68,13 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
       let token = accessStore.accessToken;
-      // 过期 JWT 发往 mgr-api 会变成 500，本地先拦截并登出
+      // 过期 JWT 发往 mgr-api 会变成 500。登录页 /anon 只丢弃旧票，避免登出竞态清掉新会话
       if (token && isJwtExpired(token)) {
         accessStore.setAccessToken(null);
-        void doReAuthenticate();
+        const url = String(config.url ?? '');
+        if (!url.includes('/anon/')) {
+          void doReAuthenticate();
+        }
         token = null;
       }
       if (token) {
@@ -118,10 +125,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   client.addResponseInterceptor(
     errorMessageResponseInterceptor((msg: string, error) => {
       // 登录失效已跳转，避免再弹 Internal Server Error / 未授权
-      if (
-        error?.__authExpired ||
-        error?.response?.status === 401
-      ) {
+      if (error?.__authExpired || error?.response?.status === 401) {
         return;
       }
       const responseData = error?.response?.data ?? {};
