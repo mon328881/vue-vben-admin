@@ -1,6 +1,13 @@
 <script lang="ts" setup>
-import type { WorkbenchQuickNavItem } from '@vben/common-ui';
 import type { TableColumnsType } from 'ant-design-vue';
+
+import type { WorkbenchQuickNavItem } from '@vben/common-ui';
+
+import type {
+  AgentInfo,
+  MchAgentRow,
+  PassageInfoRow,
+} from '#/api/types/business';
 
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -14,6 +21,7 @@ import {
 import { preferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
+
 import { Col, Radio, Row, Table, Tag } from 'ant-design-vue';
 
 import {
@@ -21,11 +29,6 @@ import {
   fetchMchInfoListApi,
   fetchPassageInfoListApi,
 } from '#/api';
-import type {
-  AgentInfo,
-  MchAgentRow,
-  PassageInfoRow,
-} from '#/api/types/business';
 import { shiftYMD, todayYMD } from '#/utils/date-range';
 import {
   amountSignedClass,
@@ -212,7 +215,7 @@ onMounted(load);
           </span>
         </template>
         <template #actions>
-          <span />
+          <span></span>
         </template>
       </WorkbenchHeader>
 
@@ -234,50 +237,59 @@ onMounted(load);
         <Col :lg="12" :span="24">
           <AnalysisChartCard title="我的商户">
             <div class="chart-toolbar">
-              <Radio.Group v-model:value="mchDay" button-style="solid" size="small">
+              <Radio.Group
+                v-model:value="mchDay"
+                button-style="solid"
+                size="small"
+              >
                 <Radio.Button value="1">今日</Radio.Button>
                 <Radio.Button value="2">昨日</Radio.Button>
               </Radio.Group>
             </div>
-            <Table
-              :columns="merchantColumns"
-              :data-source="merchants"
-              :loading="loading"
-              :pagination="{ pageSize: 10, showSizeChanger: true }"
-              row-key="mchNo"
-              size="small"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'name'">
-                  <span class="text-primary font-semibold">
-                    [{{ record.mchNo }}]
-                  </span>
-                  {{ record.mchName }}
+            <div class="table-scroll">
+              <Table
+                :columns="merchantColumns"
+                :data-source="merchants"
+                :loading="loading"
+                :pagination="{ pageSize: 10, showSizeChanger: true }"
+                :scroll="{ x: 780 }"
+                row-key="mchNo"
+                size="small"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.dataIndex === 'name'">
+                    <span class="text-primary font-semibold">
+                      [{{ record.mchNo }}]
+                    </span>
+                    {{ record.mchName }}
+                  </template>
+                  <template v-else-if="column.dataIndex === 'balance'">
+                    <b :class="amountSignedClass(record.balance)">
+                      {{ formatYuan(record.balance) }}
+                    </b>
+                  </template>
+                  <template v-else-if="column.dataIndex === 'totalOrderCount'">
+                    {{ record.stat?.totalOrderCount ?? 0 }}
+                  </template>
+                  <template
+                    v-else-if="column.dataIndex === 'orderSuccessCount'"
+                  >
+                    {{ record.stat?.orderSuccessCount ?? 0 }}
+                  </template>
+                  <template v-else-if="column.dataIndex === 'successRate'">
+                    <b>{{
+                      formatSuccessRate(
+                        record.stat?.orderSuccessCount,
+                        record.stat?.totalOrderCount,
+                      )
+                    }}</b>
+                  </template>
+                  <template v-else-if="column.dataIndex === 'fee'">
+                    <b>{{ formatYuan(record.stat?.totalAgentIncome) }}</b>
+                  </template>
                 </template>
-                <template v-else-if="column.dataIndex === 'balance'">
-                  <b :class="amountSignedClass(record.balance)">
-                    {{ formatYuan(record.balance) }}
-                  </b>
-                </template>
-                <template v-else-if="column.dataIndex === 'totalOrderCount'">
-                  {{ record.stat?.totalOrderCount ?? 0 }}
-                </template>
-                <template v-else-if="column.dataIndex === 'orderSuccessCount'">
-                  {{ record.stat?.orderSuccessCount ?? 0 }}
-                </template>
-                <template v-else-if="column.dataIndex === 'successRate'">
-                  <b>{{
-                    formatSuccessRate(
-                      record.stat?.orderSuccessCount,
-                      record.stat?.totalOrderCount,
-                    )
-                  }}</b>
-                </template>
-                <template v-else-if="column.dataIndex === 'fee'">
-                  <b>{{ formatYuan(record.stat?.totalAgentIncome) }}</b>
-                </template>
-              </template>
-            </Table>
+              </Table>
+            </div>
           </AnalysisChartCard>
         </Col>
         <Col :lg="12" :span="24">
@@ -292,39 +304,42 @@ onMounted(load);
                 <Radio.Button value="2">昨日</Radio.Button>
               </Radio.Group>
             </div>
-            <Table
-              :columns="passageColumns"
-              :data-source="passages"
-              :loading="loading"
-              :pagination="{ pageSize: 10, showSizeChanger: true }"
-              row-key="payPassageId"
-              size="small"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'name'">
-                  <span class="text-primary font-semibold">
-                    [{{ record.payPassageId }}]
-                  </span>
-                  {{ record.payPassageName }}
+            <div class="table-scroll">
+              <Table
+                :columns="passageColumns"
+                :data-source="passages"
+                :loading="loading"
+                :pagination="{ pageSize: 10, showSizeChanger: true }"
+                :scroll="{ x: 740 }"
+                row-key="payPassageId"
+                size="small"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.dataIndex === 'name'">
+                    <span class="text-primary font-semibold">
+                      [{{ record.payPassageId }}]
+                    </span>
+                    {{ record.payPassageName }}
+                  </template>
+                  <template v-else-if="column.dataIndex === 'amount'">
+                    <b :class="amountSignedClass(record.todayAmount)">
+                      {{ formatYuan(record.todayAmount) }}
+                    </b>
+                  </template>
+                  <template v-else-if="column.dataIndex === 'successRate'">
+                    <b>{{
+                      formatSuccessRate(
+                        record.orderSuccessCount,
+                        record.totalOrderCount,
+                      )
+                    }}</b>
+                  </template>
+                  <template v-else-if="column.dataIndex === 'fee'">
+                    <b>{{ formatYuan(record.agentIncome) }}</b>
+                  </template>
                 </template>
-                <template v-else-if="column.dataIndex === 'amount'">
-                  <b :class="amountSignedClass(record.todayAmount)">
-                    {{ formatYuan(record.todayAmount) }}
-                  </b>
-                </template>
-                <template v-else-if="column.dataIndex === 'successRate'">
-                  <b>{{
-                    formatSuccessRate(
-                      record.orderSuccessCount,
-                      record.totalOrderCount,
-                    )
-                  }}</b>
-                </template>
-                <template v-else-if="column.dataIndex === 'fee'">
-                  <b>{{ formatYuan(record.agentIncome) }}</b>
-                </template>
-              </template>
-            </Table>
+              </Table>
+            </div>
           </AnalysisChartCard>
         </Col>
       </Row>
@@ -337,5 +352,11 @@ onMounted(load);
   display: flex;
   justify-content: flex-end;
   margin-bottom: 12px;
+}
+
+.table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
 }
 </style>

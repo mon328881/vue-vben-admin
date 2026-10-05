@@ -476,20 +476,19 @@ defineExpose({ show });
             </Radio.Group>
           </Form.Item>
           <Form.Item label="收银台地址">
-            <Button
-              size="small"
-              type="primary"
-              ghost
-              :disabled="form.cashierState !== 1"
-              @click="openCashier"
-            >
-              打开收银台地址
-            </Button>
-            <div
-              v-if="form.cashierState !== 1"
-              class="text-muted-foreground mt-1 text-xs"
-            >
-              启用收银台后才可打开
+            <div class="cashier-url-row">
+              <Button
+                size="small"
+                type="primary"
+                ghost
+                :disabled="form.cashierState !== 1"
+                @click="openCashier"
+              >
+                打开收银台地址
+              </Button>
+              <span v-if="form.cashierState !== 1" class="cashier-url-hint">
+                启用收银台后才可打开
+              </span>
             </div>
           </Form.Item>
         </template>
@@ -533,5 +532,18 @@ defineExpose({ show });
 
 .ap-drawer-form :deep(.ant-divider) {
   margin: 8px 0 20px;
+}
+
+.cashier-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.cashier-url-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
 }
 </style>
