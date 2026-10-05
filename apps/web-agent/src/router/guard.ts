@@ -3,7 +3,7 @@ import type { Router } from 'vue-router';
 import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
-import { startProgress, stopProgress } from '@vben/utils';
+import { safeInternalPath, startProgress, stopProgress } from '@vben/utils';
 
 import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
@@ -53,10 +53,9 @@ function setupAccessGuard(router: Router) {
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
       if (to.path === LOGIN_PATH && accessStore.accessToken) {
-        return decodeURIComponent(
-          (to.query?.redirect as string) ||
-            userStore.userInfo?.homePath ||
-            preferences.app.defaultHomePath,
+        return safeInternalPath(
+          to.query?.redirect,
+          userStore.userInfo?.homePath || preferences.app.defaultHomePath,
         );
       }
       // 个人中心等挂在 Root 下的核心页：已登录但菜单未生成时不能早退，
@@ -111,13 +110,17 @@ function setupAccessGuard(router: Router) {
     accessStore.setAccessMenus(accessibleMenus);
     accessStore.setAccessRoutes(accessibleRoutes);
     accessStore.setIsAccessChecked(true);
-    const redirectPath = (from.query.redirect ??
-      (to.path === preferences.app.defaultHomePath
-        ? userInfo.homePath || preferences.app.defaultHomePath
-        : to.fullPath)) as string;
+    const fallbackHome = userInfo.homePath || preferences.app.defaultHomePath;
+    const redirectPath = safeInternalPath(
+      from.query.redirect ??
+        (to.path === preferences.app.defaultHomePath
+          ? fallbackHome
+          : to.fullPath),
+      fallbackHome,
+    );
 
     return {
-      ...router.resolve(decodeURIComponent(redirectPath)),
+      ...router.resolve(redirectPath),
       replace: true,
     };
   });

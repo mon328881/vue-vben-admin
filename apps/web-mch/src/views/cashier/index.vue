@@ -3,10 +3,11 @@ import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context';
 
 import type { CashierProduct } from '#/api/modules/cashier';
 
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import { IconifyIcon } from '@vben/icons';
+import { isSafeHttpUrl, openWindow } from '@vben/utils';
 
 import {
   theme as antTheme,
@@ -16,6 +17,7 @@ import {
   message,
   Select,
 } from 'ant-design-vue';
+import QRCode from 'qrcode';
 
 import { fetchCashierProductListApi, placeCashierOrderRawApi } from '#/api';
 import { formatYuanWithSymbol } from '#/utils/format';
@@ -23,9 +25,10 @@ import { formatYuanWithSymbol } from '#/utils/format';
 defineOptions({ name: 'CashierPage' });
 
 const route = useRoute();
+const router = useRouter();
 
-const mchNoFromUrl = computed(() => String(route.query.mchNo || '').trim());
-const secretFromUrl = computed(() => String(route.query.secret || '').trim());
+const mchNoFromUrl = ref('');
+const secretFromUrl = ref('');
 const publicMode = computed(
   () => !!mchNoFromUrl.value && !!secretFromUrl.value,
 );
@@ -143,10 +146,29 @@ const payButtonText = computed(() => {
   return '测试拉起';
 });
 
-const qrSrc = computed(() => {
-  if (!payData.value) return '';
-  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(absolutePayUrl(payData.value))}`;
-});
+const qrSrc = ref('');
+
+function cashierSecretStorageKey(mchNo: string) {
+  return `asiapay-cashier-secret:${mchNo}`;
+}
+
+function hydrateCashierQuery() {
+  const mchNo = String(route.query.mchNo || '').trim();
+  let secret = String(route.query.secret || '').trim();
+  if (mchNo && !secret) {
+    secret = sessionStorage.getItem(cashierSecretStorageKey(mchNo)) ?? '';
+  }
+  mchNoFromUrl.value = mchNo;
+  secretFromUrl.value = secret;
+  if (mchNo && secret) {
+    sessionStorage.setItem(cashierSecretStorageKey(mchNo), secret);
+  }
+  if ('secret' in route.query) {
+    const nextQuery = { ...route.query };
+    delete nextQuery.secret;
+    void router.replace({ path: route.path, query: nextQuery });
+  }
+}
 
 function absolutePayUrl(raw: string) {
   if (/^https?:\/\//i.test(raw)) return raw;
@@ -227,7 +249,9 @@ async function createPay() {
 
 function openPay() {
   if (!payData.value) return;
-  window.open(absolutePayUrl(payData.value), '_blank');
+  const url = absolutePayUrl(payData.value);
+  if (!isSafeHttpUrl(url)) return;
+  openWindow(url);
 }
 
 async function copyPayData() {
@@ -251,7 +275,20 @@ function resetCreated() {
 
 onMounted(() => {
   lockPublicLightTheme();
+  hydrateCashierQuery();
   if (publicMode.value) void loadProducts();
+});
+
+watch([payData, payType], async () => {
+  qrSrc.value = '';
+  if (payType.value !== 2 || !payData.value) return;
+  const url = absolutePayUrl(payData.value);
+  if (!isSafeHttpUrl(url)) return;
+  try {
+    qrSrc.value = await QRCode.toDataURL(url, { margin: 1, width: 180 });
+  } catch {
+    qrSrc.value = '';
+  }
 });
 
 onUnmounted(() => {

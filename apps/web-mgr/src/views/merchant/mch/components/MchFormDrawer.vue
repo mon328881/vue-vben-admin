@@ -5,6 +5,8 @@ import type { MchInfo } from '#/api/types/business';
 
 import { computed, reactive, ref } from 'vue';
 
+import { isSafeHttpUrl, openWindow } from '@vben/utils';
+
 import {
   Button,
   Divider,
@@ -260,7 +262,9 @@ async function openCashier() {
     return;
   }
   const url = await fetchMchCashierApi(form.mchNo);
-  if (url) window.open(url, '_blank');
+  if (url && isSafeHttpUrl(url)) {
+    openWindow(url);
+  }
 }
 
 function onClose() {

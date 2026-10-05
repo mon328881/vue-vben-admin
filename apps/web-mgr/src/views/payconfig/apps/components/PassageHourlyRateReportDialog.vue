@@ -6,6 +6,7 @@ import type { PassageHourlyArchive } from '#/api';
 import { computed, reactive, ref } from 'vue';
 
 import { useAccessStore } from '@vben/stores';
+import { downloadFileFromBlob, isSafeHttpUrl, openWindow } from '@vben/utils';
 
 import { Alert, message, Modal, Table } from 'ant-design-vue';
 
@@ -43,14 +44,37 @@ const columns: TableColumnsType<PassageHourlyArchive> = [
   { align: 'center', dataIndex: 'op', title: '操作', width: 100 },
 ];
 
-function downloadHref(row: PassageHourlyArchive) {
-  // GCS V4 直链原样返回；加 iToken 会 SignatureDoesNotMatch 403
-  if (row.url) return row.url;
-  const base = `/api/passageHourlyStat/download?statDate=${encodeURIComponent(row.statDate)}`;
+async function onDownload(row: PassageHourlyArchive) {
+  if (row.url) {
+    if (!isSafeHttpUrl(row.url)) {
+      message.error('下载地址无效');
+      return;
+    }
+    openWindow(row.url);
+    return;
+  }
   const token = accessStore.accessToken;
-  if (!token) return base;
-  // 本地 /download 回退：<a target=_blank> 无法带 Header，走 query iToken
-  return `${base}&iToken=${encodeURIComponent(token)}`;
+  if (!token) {
+    message.error('未登录');
+    return;
+  }
+  try {
+    const res = await fetch(
+      `/api/passageHourlyStat/download?statDate=${encodeURIComponent(row.statDate)}`,
+      { headers: { iToken: token } },
+    );
+    if (!res.ok) {
+      message.error('下载失败');
+      return;
+    }
+    const blob = await res.blob();
+    downloadFileFromBlob({
+      fileName: row.fileName || `hourly-${row.statDate}.xlsx`,
+      source: blob,
+    });
+  } catch {
+    message.error('下载失败');
+  }
 }
 
 async function loadData() {
@@ -127,9 +151,8 @@ defineExpose({ open });
             <a
               v-if="record.url || record.statDate"
               class="hourly-report-dialog__link"
-              :href="downloadHref(record as PassageHourlyArchive)"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#"
+              @click.prevent="onDownload(record as PassageHourlyArchive)"
             >
               下载
             </a>

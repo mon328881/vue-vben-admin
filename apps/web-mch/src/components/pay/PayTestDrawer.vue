@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { IconifyIcon } from '@vben/icons';
+import { isSafeHttpUrl } from '@vben/utils';
 
 import {
   Button,
@@ -60,6 +61,8 @@ const productNameLabel = computed(() => {
   const name = props.product?.productName;
   return typeof name === 'string' && name.trim() !== '' ? name.trim() : '—';
 });
+
+const isSafePayLink = computed(() => isSafeHttpUrl(payData.value));
 
 function resetState() {
   amount.value = undefined;
@@ -219,9 +222,10 @@ watch(visible, (open) => {
             <template v-if="payOk">
               <Form.Item label="支付链接（点击直接跳转）">
                 <Typography.Link
-                  v-if="payData"
+                  v-if="payData && isSafePayLink"
                   :href="payData"
                   target="_blank"
+                  rel="noopener noreferrer"
                   class="pay-link"
                 >
                   {{ payData }}

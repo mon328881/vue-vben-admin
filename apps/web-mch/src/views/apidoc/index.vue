@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 
+import { escapeHtml } from '@vben/utils';
+
 import { getTitleApi } from '#/api';
 
 import './apidoc.css';
@@ -531,7 +533,7 @@ function highlightJSON(value: unknown): string {
       } else if (/null/.test(match)) {
         cls = 'json-null';
       }
-      return `<span class="${cls}">${match}</span>`;
+      return `<span class="${cls}">${escapeHtml(match)}</span>`;
     },
   );
 }

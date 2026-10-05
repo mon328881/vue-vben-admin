@@ -1,10 +1,20 @@
 import { defineConfig } from '@vben/vite-config';
 
+const securityHeaders = {
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+};
+
 export default defineConfig(async () => {
   return {
     application: {},
     vite: {
+      preview: {
+        headers: securityHeaders,
+      },
       server: {
+        headers: securityHeaders,
         proxy: {
           '/api': {
             changeOrigin: true,

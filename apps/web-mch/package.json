@@ -45,7 +45,11 @@
     "ant-design-vue": "catalog:",
     "dayjs": "catalog:",
     "pinia": "catalog:",
+    "qrcode": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@types/qrcode": "catalog:"
   }
 }

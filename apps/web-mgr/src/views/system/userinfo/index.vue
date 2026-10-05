@@ -1,19 +1,23 @@
 <script lang="ts" setup>
+import type { CurrentUser } from '#/api/types';
+
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { useUserStore } from '@vben/stores';
+
 import {
   Button,
   Card,
   Form,
   Input,
+  message,
   Modal,
   Space,
   Tabs,
   Tag,
-  message,
 } from 'ant-design-vue';
+import QRCode from 'qrcode';
 
 import {
   bindGoogleApi,
@@ -24,7 +28,6 @@ import {
 } from '#/api';
 import { fetchCurrentUserApi } from '#/api/core/user';
 import { encodeCredential } from '#/api/helper/credential';
-import type { CurrentUser } from '#/api/types';
 import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'UserInfoPage' });
@@ -48,20 +51,43 @@ const googleCode = ref('');
 const googleBinding = ref(false);
 const googleKeyLoading = ref(false);
 
-const googleEnabled = computed(() => (currentUser.value?.googleAuth ?? 0) === 1);
+const googleEnabled = computed(
+  () => (currentUser.value?.googleAuth ?? 0) === 1,
+);
 
-const googleQrSrc = computed(() => {
-  const value = String(googleKeyData.value.qrCode ?? '').trim();
-  if (!value) return '';
-  if (
-    value.startsWith('data:image') ||
-    value.startsWith('http://') ||
-    value.startsWith('https://')
-  ) {
-    return value;
-  }
-  return `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(value)}`;
-});
+const googleQrSrc = ref('');
+
+watch(
+  () => String(googleKeyData.value.qrCode ?? '').trim(),
+  async (value) => {
+    googleQrSrc.value = '';
+    if (!value) return;
+    if (value.startsWith('data:image')) {
+      googleQrSrc.value = value;
+      return;
+    }
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      // 不把二维码图交给第三方图床；同源图片才直接展示
+      try {
+        const parsed = new URL(value);
+        if (parsed.hostname === window.location.hostname) {
+          googleQrSrc.value = value;
+        }
+      } catch {
+        googleQrSrc.value = '';
+      }
+      return;
+    }
+    try {
+      googleQrSrc.value = await QRCode.toDataURL(value, {
+        margin: 1,
+        width: 168,
+      });
+    } catch {
+      googleQrSrc.value = '';
+    }
+  },
+);
 
 async function loadRoleLabel(user: CurrentUser) {
   if (user.isAdmin === 1) {
@@ -226,9 +252,7 @@ onMounted(() => {
               <Input
                 :value="
                   String(
-                    currentUser?.sysUserId ??
-                      userStore.userInfo?.userId ??
-                      '',
+                    currentUser?.sysUserId ?? userStore.userInfo?.userId ?? '',
                   )
                 "
                 disabled
@@ -351,7 +375,10 @@ onMounted(() => {
           autocomplete="one-time-code"
           placeholder="请输入 6 位谷歌验证码"
           @update:value="
-            (v) => (googleCode = String(v ?? '').replace(/\D/g, '').slice(0, 6))
+            (v) =>
+              (googleCode = String(v ?? '')
+                .replace(/\D/g, '')
+                .slice(0, 6))
           "
         />
       </div>
@@ -370,55 +397,55 @@ onMounted(() => {
 }
 
 .google-bind {
-  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  align-items: center;
 }
 
 .google-tip {
-  color: hsl(var(--muted-foreground));
+  margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  margin: 0;
+  color: hsl(var(--muted-foreground));
   text-align: center;
 }
 
 .google-muted {
-  color: hsl(var(--muted-foreground));
   font-size: 13px;
+  color: hsl(var(--muted-foreground));
 }
 
 .google-loading {
-  color: hsl(var(--muted-foreground));
   padding: 24px 0;
+  color: hsl(var(--muted-foreground));
   text-align: center;
 }
 
 .qr-wrap {
-  align-items: center;
   display: flex;
+  align-items: center;
   justify-content: center;
   min-height: 168px;
 }
 
 .qr-img {
-  border-radius: 6px;
-  height: 168px;
   width: 168px;
+  height: 168px;
+  border-radius: 6px;
 }
 
 .key-line {
-  font-size: 13px;
   margin: 0;
+  font-size: 13px;
   text-align: center;
   word-break: break-all;
 }
 
 .key-line code {
+  padding: 2px 6px;
+  font-size: 13px;
   background: hsl(var(--muted));
   border-radius: 4px;
-  font-size: 13px;
-  padding: 2px 6px;
 }
 </style>
