@@ -27,6 +27,7 @@ git clone https://github.com/mon328881/vue-vben-admin.git asiapay-admin
 | 运营端 | `@asiapay/web-mgr` | `pnpm dev:mgr` | http://localhost:5666 | `mgr-api` `:8090` |
 | 商户端 | `@asiapay/web-mch` | `pnpm dev:mch` | http://localhost:5667 | `mch-api` `:8081` |
 | 代理端 | `@asiapay/web-agent` | `pnpm dev:agent` | http://localhost:5668 | `agent-api` `:8083` |
+| 超管端 | `@asiapay/web-plat` | `pnpm dev:plat` | http://localhost:5669 | 当前纯前端 Mock（不接后端） |
 
 同时启动三个门户：
 
@@ -55,6 +56,7 @@ pnpm -r run --if-present stub
 pnpm dev:mgr    # 运营端
 pnpm dev:mch    # 商户端
 pnpm dev:agent  # 代理端
+pnpm dev:plat   # 超管端（UI Mock）
 ```
 
 也可执行 `pnpm dev`，在交互列表中选择对应 `@asiapay/web-*` 应用。

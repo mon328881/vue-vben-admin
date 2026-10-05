@@ -1,0 +1,154 @@
+import type { Recordable, UserInfo } from '@vben/types';
+
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { LOGIN_PATH } from '@vben/constants';
+import { preferences } from '@vben/preferences';
+import {
+  resetAllStores,
+  setupCrossTabStorageSync,
+  useAccessStore,
+  useUserStore,
+} from '@vben/stores';
+
+import { notification } from 'ant-design-vue';
+import { defineStore } from 'pinia';
+
+import {
+  clearCurrentUserCache,
+  fetchCurrentUserApi,
+  getUserInfoApi,
+  loginApi,
+  logoutApi,
+  mapToUserInfo,
+} from '#/api/core';
+import { $t } from '#/locales';
+
+export const useAuthStore = defineStore('auth', () => {
+  const accessStore = useAccessStore();
+  const userStore = useUserStore();
+  const router = useRouter();
+
+  const loginLoading = ref(false);
+
+  async function authLogin(
+    params: Recordable<any>,
+    onSuccess?: () => Promise<void> | void,
+  ) {
+    let userInfo: null | UserInfo = null;
+    try {
+      loginLoading.value = true;
+      const { accessToken } = await loginApi({
+        username: String(params.username ?? ''),
+        password: String(params.password ?? ''),
+        vercode: String(params.vercode ?? '0000'),
+        vercodeToken: String(params.vercodeToken ?? 'mock'),
+        google: params.google ? String(params.google) : '',
+      });
+
+      if (accessToken) {
+        accessStore.setAccessToken(accessToken);
+
+        const current = await fetchCurrentUserApi(true);
+        userInfo = mapToUserInfo(current);
+
+        userStore.setUserInfo(userInfo);
+        accessStore.setAccessCodes(current.entIdList ?? []);
+
+        if (accessStore.loginExpired) {
+          accessStore.setLoginExpired(false);
+        } else {
+          onSuccess
+            ? await onSuccess?.()
+            : await router.push(
+                userInfo.homePath || preferences.app.defaultHomePath,
+              );
+        }
+
+        if (userInfo?.realName) {
+          notification.success({
+            description: `${$t('authentication.loginSuccessDesc')}: ${userInfo.realName}`,
+            duration: 3,
+            message: $t('authentication.loginSuccess'),
+          });
+        }
+      }
+    } catch (error) {
+      notification.error({
+        message: '登录失败',
+        description:
+          error instanceof Error ? error.message : '请检查账号密码后重试',
+      });
+      throw error;
+    } finally {
+      loginLoading.value = false;
+    }
+
+    return {
+      userInfo,
+    };
+  }
+
+  async function logout(redirect: boolean = true) {
+    const token = accessStore.accessToken;
+    // 先清本地 token，避免并发请求继续带旧凭证
+    accessStore.setAccessToken(null);
+    try {
+      await logoutApi(token);
+    } catch {
+      // 忽略退出接口失败
+    }
+    clearCurrentUserCache();
+    resetAllStores();
+    accessStore.setLoginExpired(false);
+
+    await router.replace({
+      path: LOGIN_PATH,
+      query: redirect
+        ? {
+            redirect: encodeURIComponent(router.currentRoute.value.fullPath),
+          }
+        : {},
+    });
+  }
+
+  async function fetchUserInfo() {
+    const userInfo = await getUserInfoApi();
+    userStore.setUserInfo(userInfo);
+    const current = await fetchCurrentUserApi();
+    accessStore.setAccessCodes(current.entIdList ?? []);
+    return userInfo;
+  }
+
+  function $reset() {
+    loginLoading.value = false;
+  }
+
+  return {
+    $reset,
+    authLogin,
+    fetchUserInfo,
+    loginLoading,
+    logout,
+  };
+});
+
+/**
+ * 跨标签页登出事件监听初始化（正典入口）
+ * 监听 storage 广播，当同源其他标签页登出时清空 Pinia 状态并导航至登录页
+ */
+export function setupAuthStorageListener(
+  routerInstance?: ReturnType<typeof useRouter>,
+) {
+  return setupCrossTabStorageSync(async () => {
+    clearCurrentUserCache();
+    if (routerInstance) {
+      try {
+        await routerInstance.replace({ path: LOGIN_PATH });
+      } catch {
+        // ignore navigation failure if already on login page
+      }
+    }
+  });
+}
