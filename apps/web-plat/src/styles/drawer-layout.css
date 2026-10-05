@@ -1,0 +1,589 @@
+/** 配置类抽屉通用区块间距（对齐旧端 drawer-section，并略放宽） */
+.ap-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 0 8px;
+}
+
+.ap-drawer-section {
+  padding: 16px 0;
+}
+
+.ap-drawer-section + .ap-drawer-section {
+  border-top: 1px solid hsl(var(--border) / 60%);
+}
+
+.ap-drawer-mch-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ap-drawer-mch-block {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ap-drawer-label {
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.ap-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.ap-drawer-table-card {
+  padding: 12px 0 0;
+}
+
+.ap-drawer-body .ant-form-inline .ant-form-item {
+  margin-bottom: 0;
+}
+
+.ap-drawer-body .ant-drawer-body {
+  padding-top: 8px;
+}
+
+/* —— 列表托盘分层 ——
+ * 筛选 / 统计 / 表各自一层托盘；不改主题色、不改壳层偏好。
+ * 注意：本文件是全局 CSS（bootstrap 直接 import），不能用 Vue SFC 的 :deep()。
+ */
+
+[data-layout-region='page-content']:has(> .ap-page-stack) {
+  padding: 0 !important;
+  background: hsl(var(--background-deep, var(--background)));
+}
+
+.ap-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px 24px;
+}
+
+.ap-page-stack > .ant-card,
+.ap-page-stack > .ant-row {
+  margin-bottom: 0 !important;
+}
+
+/* 筛选托盘 */
+.ap-page-stack > .ap-page-filter.ant-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.ap-page-stack > .ap-page-filter.ant-card > .ant-card-body,
+.ap-page-filter.ant-card > .ant-card-body {
+  padding: 14px 16px 10px !important;
+}
+
+/* 统计区：不套白托盘，贴画布，靠字阶与间距分层 */
+.ap-page-stack > .ap-page-stats,
+.ap-page-stack > .ap-list-stat-cards {
+  padding: 4px 2px 2px;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+/* 表格托盘 */
+.ap-page-stack > .ant-card:not(.ap-page-filter):not(.ap-page-form) {
+  margin: 0;
+  overflow: hidden;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.ap-page-stack > .ant-card:not(.ap-page-filter):not(.ap-page-form) > .ant-card-body {
+  padding: 0 !important;
+}
+
+/* 未包 stack 的旧写法兜底：筛选项与下方信息区拉开 */
+.vben-page-content > .ant-card.mb-4,
+.vben-page-content > .ant-card:first-child {
+  margin-bottom: 20px !important;
+}
+
+/*
+ * 筛选区换行间距：用 margin 而不是 row-gap。
+ * ant-form-inline 下 row-gap 在部分结构里不生效；网格筛选（ap-pay-order-filter）
+ * 也不是 inline 布局，清掉 form-item margin 后行距会变成 0。
+ */
+.ap-page-filter .ant-form-inline {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  column-gap: 8px;
+  align-items: flex-start;
+}
+
+.ap-page-filter .ant-form-inline > .ant-form-item {
+  margin-inline-end: 0 !important;
+  margin-bottom: 16px !important;
+}
+
+/* 网格筛选：同行内交给 Row gutter；多段 Row 之间补 16px */
+.ap-page-filter .ap-pay-order-filter .ant-form-item {
+  margin-inline-end: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.ap-page-filter .ap-pay-order-filter .ant-row + .ant-row {
+  margin-top: 16px;
+}
+
+/* 查询/重置：独占一行；底部 margin 置 0，避免 Card 内多出 16px 空白 */
+.ap-page-filter .ant-form-inline > .ant-form-item:has(.ant-btn),
+.ap-page-filter .ap-filter-actions {
+  flex: 0 0 100%;
+  margin-inline: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.ap-page-filter .ap-filter-actions .ant-space,
+.ap-page-filter .ant-form-item:has(.ant-btn) .ant-space {
+  gap: 12px !important;
+}
+
+/* 全局兜底：内联筛选表单的按钮项独占一行 */
+.ant-form-inline > .ant-form-item:has(.ant-btn) {
+  flex: 0 0 100%;
+  margin-inline-start: 0 !important;
+}
+
+.ant-form-inline > .ant-form-item:has(.ant-btn) .ant-space {
+  gap: 12px !important;
+}
+
+.ap-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  border-top: 1px solid hsl(var(--border) / 50%);
+}
+
+/* 表格工具栏：贴边后补回内边距，与托盘一体 */
+.ap-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  margin-bottom: 0;
+  border-bottom: 1px solid hsl(var(--border) / 60%);
+}
+
+.ap-table-toolbar--between {
+  justify-content: space-between;
+}
+
+/* Space wrap 的负边距会吃掉与表格的间距，这里抵消 */
+.ap-table-toolbar > .ant-space {
+  margin-bottom: 0 !important;
+}
+
+.ap-page-stack > .ant-card:not(.ap-page-filter) .ant-table-pagination {
+  padding: 12px 16px !important;
+  margin: 0 !important;
+}
+
+/* 无行选择列时：首列与筛选区 16px 左内边距对齐（有多选列时勾选列已占位） */
+.ap-page-stack
+  > .ant-card:not(.ap-page-filter)
+  .ant-table-wrapper:not(:has(.ant-table-selection-column))
+  .ant-table-thead
+  > tr
+  > th:first-child,
+.ap-page-stack
+  > .ant-card:not(.ap-page-filter)
+  .ant-table-wrapper:not(:has(.ant-table-selection-column))
+  .ant-table-tbody
+  > tr
+  > td:first-child {
+  padding-inline-start: 16px !important;
+}
+
+.ap-page-stats {
+  margin-bottom: 0;
+}
+
+/* Ant Row 信息区：列等分宽度，避免 md 栅格留白或挤换行 */
+.ap-page-stats.ant-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.ap-page-stats.ant-row > .ant-col {
+  flex: 1 1 160px;
+  width: auto !important;
+  max-width: 100%;
+  margin-bottom: 0;
+}
+
+.ap-page-stats .ant-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  min-height: 88px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ap-page-stats .ant-card > .ant-card-body {
+  padding: 4px 12px 4px 0 !important;
+}
+
+/* —— 列表/信息区高亮色 —— */
+.text-brand {
+  font-weight: 600;
+  color: hsl(var(--primary));
+}
+
+.text-success {
+  color: #52c41a;
+}
+
+.text-error {
+  color: #db4b4b;
+}
+
+.amount-positive {
+  font-weight: 600;
+  color: #4bd884;
+}
+
+.amount-negative {
+  font-weight: 600;
+  color: #db4b4b;
+}
+
+.amount-zero {
+  color: hsl(var(--foreground));
+}
+
+.amount-warning {
+  font-weight: 600;
+  color: #fa9d2a;
+}
+
+/* 抽屉内表单垂直间距 */
+.ap-drawer-form .ant-form-item {
+  margin-bottom: 18px;
+}
+
+.ap-drawer-form .ant-divider {
+  margin: 8px 0 20px;
+}
+
+.inline-action-cell {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.inline-action-cell .ant-btn {
+  flex-shrink: 0;
+  height: auto;
+  min-height: 24px;
+  padding: 0 8px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.inline-action-cell__value.text-error {
+  color: #ff4d4f;
+}
+
+.quota-value--disabled {
+  color: hsl(var(--muted-foreground));
+  text-decoration: line-through;
+}
+
+/*
+ * 抽屉筛选：筛选项 → 按钮 统一 12px。
+ * 用 margin 而不是只靠 row-gap（ant-form-inline 下 row-gap 常不生效）。
+ * 按钮行 margin-bottom:0，避免吃掉与下方信息区（stat）的 stack gap。
+ */
+.ap-drawer-filter.ant-form-inline,
+.ap-drawer-filter .ant-form-inline {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0 12px;
+  align-items: flex-start;
+}
+
+.ap-drawer-filter.ant-form-inline > .ant-form-item,
+.ap-drawer-filter .ant-form-inline > .ant-form-item,
+.ap-drawer-filter .ant-form-item {
+  margin-inline-end: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+.ap-drawer-filter .ap-filter-actions,
+.ap-drawer-filter.ant-form-inline > .ant-form-item:has(.ant-btn),
+.ap-drawer-filter .ant-form-inline > .ant-form-item:has(.ant-btn) {
+  flex: 0 0 100%;
+  margin-inline: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 自动结算模式卡片选项（抽屉表单） */
+.settle-mode-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.settle-mode-group .ant-radio-wrapper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  height: auto;
+  padding: 12px 14px;
+  margin-inline-end: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.settle-mode-group .ant-radio-wrapper:hover,
+.settle-mode-group .ant-radio-wrapper-checked {
+  background-color: hsl(var(--primary) / 8%);
+  border-color: hsl(var(--primary));
+}
+
+.settle-mode-group .ant-radio {
+  margin-top: 3px;
+}
+
+.settle-mode-group .ant-radio + span {
+  flex: 1;
+  padding-inline-start: 8px;
+  white-space: normal;
+}
+
+.settle-mode-title {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.settle-mode-description {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+/*
+ * 弹框 / 抽屉内 Form layout="vertical" → 对齐旧端 TDesign：
+ * 标签与内容同一行（字段名：数据）；标签顶对齐控件首行（不高块垂直居中）；
+ * 标签强制单行不换行。
+ */
+
+
+.ant-modal-body .ant-form-vertical .ant-form-item-row,
+.ant-drawer-body .ant-form-vertical .ant-form-item-row {
+  flex-flow: row nowrap;
+  align-items: flex-start;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-label,
+.ant-drawer-body .ant-form-vertical .ant-form-item-label {
+  flex: 0 0 132px;
+  width: 132px !important;
+  max-width: 132px;
+  padding: 5px 12px 0 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5715;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-label > label,
+.ant-drawer-body .ant-form-vertical .ant-form-item-label > label {
+  display: inline;
+  height: auto;
+  margin-inline-end: 0;
+  line-height: 1.5715;
+  white-space: nowrap;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-label > label::after,
+.ant-drawer-body .ant-form-vertical .ant-form-item-label > label::after {
+  display: inline-block !important;
+  margin-inline-start: 2px !important;
+  content: ':' !important;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-control,
+.ant-drawer-body .ant-form-vertical .ant-form-item-control {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-control-input,
+.ant-drawer-body .ant-form-vertical .ant-form-item-control-input {
+  align-items: center;
+  min-height: 32px;
+}
+
+.ant-modal-body .ant-form-vertical .ant-form-item-control-input-content,
+.ant-drawer-body .ant-form-vertical .ant-form-item-control-input-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 32px;
+}
+
+.ant-modal-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label,
+.ant-drawer-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label {
+  flex: 0 0 180px;
+  width: 180px !important;
+  max-width: 180px;
+  padding-top: 5px !important;
+  white-space: nowrap;
+}
+
+.ant-modal-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label > label,
+.ant-drawer-body .ant-form-vertical.ap-form-label-wide .ant-form-item-label > label {
+  height: auto;
+  white-space: nowrap;
+}
+
+/* 表单页（非表格）托盘：保留内边距 */
+.ap-page-stack .ap-page-form.ant-card > .ant-card-body {
+  padding: 20px 24px 24px !important;
+}
+
+/* Schema 等复杂抽屉：标签在上，避免被「标签左置」挤进窄栅格 */
+.ant-drawer-body .ap-form-stacked.ant-form-vertical .ant-form-item-row {
+  flex-flow: column nowrap;
+  align-items: stretch;
+}
+
+.ant-drawer-body .ap-form-stacked.ant-form-vertical .ant-form-item-label {
+  flex: none;
+  width: auto !important;
+  max-width: none;
+  padding: 0 0 6px !important;
+  overflow: visible;
+  text-align: left;
+  white-space: normal;
+}
+
+.ant-drawer-body .ap-form-stacked.ant-form-vertical .ant-form-item-label > label::after {
+  display: none !important;
+}
+
+.ant-drawer-body .ap-form-stacked.ant-form-vertical .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.ant-drawer-body .ap-form-stacked.ant-form-vertical .ant-form-item-control-input,
+.ant-drawer-body .ap-form-stacked.ant-form-vertical .ant-form-item-control-input-content {
+  display: block;
+  min-height: 32px;
+}
+
+.ap-drawer-section-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ap-drawer-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.ap-drawer-section-desc {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.ap-section-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ap-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.ap-section-desc {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.ap-page-form .ant-form-vertical .ant-form-item {
+  margin-bottom: 18px;
+}
+
+.ap-page-form .ant-form-vertical .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.ap-page-form-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.ant-drawer .ant-drawer-footer {
+  padding: 16px 24px 24px;
+}
+
+.ap-drawer-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 4px;
+}
+
