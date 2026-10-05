@@ -63,7 +63,6 @@ export const DIVISION_STATE_OPTIONS = [
   { value: '1', label: '待结算' },
   { value: '2', label: '结算成功' },
   { value: '3', label: '结算失败' },
-  { value: '4', label: '超时关闭' },
 ];
 
 export function divisionStateLabel(state?: null | number) {
@@ -71,7 +70,6 @@ export function divisionStateLabel(state?: null | number) {
     1: '待结算',
     2: '结算成功',
     3: '结算失败',
-    4: '超时关闭',
   };
   if (state === null || state === undefined) return '-';
   return map[state] ?? `状态${state}`;
@@ -82,7 +80,6 @@ export function divisionStateColor(state?: null | number) {
   if (n === 1) return 'processing';
   if (n === 2) return 'success';
   if (n === 3) return 'error';
-  if (n === 4) return 'default';
   return 'default';
 }
 

@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { PayWay, ProductMchBind } from '#/api';
+
 import { reactive, ref } from 'vue';
 
 import {
@@ -9,13 +11,13 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Popconfirm,
   Radio,
   Space,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -23,12 +25,11 @@ import {
   productMchBlindAllApi,
   productMchUnBlindAllApi,
   updateProductMchInfoApi,
-  type PayWay,
-  type ProductMchBind,
 } from '#/api';
+import SelectionAutoResetSwitch from '#/components/table/SelectionAutoResetSwitch.vue';
 import {
-  PRODUCT_RATE_PRECISION,
   percentFromRate,
+  PRODUCT_RATE_PRECISION,
   toProductRate,
   validateProductRate,
 } from '#/constants/payWays';
@@ -36,10 +37,12 @@ import { formatFeeRate } from '#/utils/format';
 
 const visible = ref(false);
 const loading = ref(false);
-const product = ref<Pick<PayWay, 'productId' | 'productName'> | null>(null);
+const product = ref<null | Pick<PayWay, 'productId' | 'productName'>>(null);
 const dataSource = ref<ProductMchBind[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 50 });
+const selectedIds = ref<(number | string)[]>([]);
+const autoResetSelection = ref(true);
 const query = reactive({
   productId: undefined as number | undefined,
   mchNo: '',
@@ -48,7 +51,7 @@ const query = reactive({
 
 const editVisible = ref(false);
 const editSaving = ref(false);
-const editing = ref<ProductMchBind | null>(null);
+const editing = ref<null | ProductMchBind>(null);
 const editForm = reactive({
   state: 1,
   mchRatePercent: '' as number | string,
@@ -82,13 +85,19 @@ async function loadData(resetPage = false) {
 }
 
 function onSearch() {
+  if (autoResetSelection.value) selectedIds.value = [];
   void loadData(true);
 }
 
 function onReset() {
   query.mchNo = '';
   query.mchName = '';
+  selectedIds.value = [];
   void loadData(true);
+}
+
+function onSelectChange(keys: (number | string)[]) {
+  selectedIds.value = keys;
 }
 
 function onTableChange(pag: { current?: number; pageSize?: number }) {
@@ -134,7 +143,7 @@ function parsePercent(raw: unknown, label: string) {
   if (error) {
     message.error(
       error.includes('格式错误')
-        ? `${label}格式错误，最多六位小数，可为负数`
+        ? `${label}格式错误，最多两位小数，可为负数`
         : error,
     );
     return null;
@@ -171,6 +180,7 @@ function show(row: Pick<PayWay, 'productId' | 'productName'>) {
   query.productId = row.productId;
   query.mchNo = '';
   query.mchName = '';
+  selectedIds.value = [];
   visible.value = true;
   void loadData(true);
 }
@@ -224,13 +234,19 @@ defineExpose({ show });
         </Form>
       </div>
 
-      <div class="ap-drawer-section ap-drawer-actions">
+      <div
+        class="ap-drawer-section ap-drawer-actions flex flex-wrap items-center gap-3"
+      >
         <Popconfirm title="确认全部绑定么？" @confirm="confirmBlindAll">
           <Button type="primary" :loading="loading">一键全绑定</Button>
         </Popconfirm>
         <Popconfirm title="确认全部解绑么？" @confirm="confirmUnBlindAll">
           <Button danger :loading="loading">一键全解绑</Button>
         </Popconfirm>
+        <SelectionAutoResetSwitch
+          v-model="autoResetSelection"
+          cache-key="product-mch-config"
+        />
       </div>
 
       <div class="ap-drawer-section ap-drawer-table-card">
@@ -246,6 +262,10 @@ defineExpose({ show });
             total,
           }"
           row-key="mchNo"
+          :row-selection="{
+            selectedRowKeys: selectedIds,
+            onChange: onSelectChange,
+          }"
           size="small"
           @change="onTableChange"
         >
@@ -316,7 +336,7 @@ defineExpose({ show });
           :step="0.01"
           :min="-200"
           :max="200"
-          placeholder="如：5.25，最多六位小数，可为负数"
+          placeholder="如：5.25，可为负数"
           style="width: 260px"
         />
       </Form.Item>
@@ -327,7 +347,7 @@ defineExpose({ show });
           :step="0.01"
           :min="-200"
           :max="200"
-          placeholder="如：5.25，最多六位小数，可为负数"
+          placeholder="如：5.25，可为负数"
           style="width: 260px"
         />
       </Form.Item>

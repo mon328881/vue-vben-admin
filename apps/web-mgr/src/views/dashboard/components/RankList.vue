@@ -111,16 +111,17 @@ const rowKey = computed(() => {
 });
 
 const rankColumns = computed<TableColumnsType>(() => {
+  // 卡片半宽：数值列按表头字宽收口，避免 th 被挤换行/裁切
   const base: TableColumnsType = [
     { title: 'ID/名称', key: 'name', ellipsis: true },
-    { title: '余额(¥)', key: 'balance', width: 140, ellipsis: true },
-    { title: '今日跑量', key: 'successAmount', width: 140, ellipsis: true },
-    { title: '成率', key: 'successRate', width: 100 },
+    { title: '余额(¥)', key: 'balance', width: 108, ellipsis: true },
+    { title: '今日跑量', key: 'successAmount', width: 96, ellipsis: true },
+    { title: '成率', key: 'successRate', width: 72 },
   ];
   const diff = {
     title: '剩余预付',
     key: 'diff',
-    width: 140,
+    width: 96,
     align: 'right' as const,
     ellipsis: true,
   };
@@ -135,12 +136,12 @@ const rankColumns = computed<TableColumnsType>(() => {
 
 const concurrentColumns: TableColumnsType = [
   { title: '商户名', dataIndex: 'mchName', key: 'mchName', ellipsis: true },
-  { title: '下单次数', key: 'allCount', width: 120, align: 'center' },
-  { title: '实时成率', key: 'realTimeRate', width: 100, align: 'center' },
+  { title: '下单次数', key: 'allCount', width: 88, align: 'center' },
+  { title: '实时成率', key: 'realTimeRate', width: 88, align: 'center' },
   {
     title: '下单次数/每分钟',
     key: 'perMinCount',
-    width: 150,
+    width: 132,
     align: 'center',
   },
 ];
@@ -502,6 +503,7 @@ onUnmounted(() => {
           <div v-show="boardTab === '1'" class="table-container">
             <Table
               size="small"
+              table-layout="fixed"
               :row-key="rowKey"
               :columns="rankColumns"
               :data-source="rankRows"
@@ -564,6 +566,7 @@ onUnmounted(() => {
           <div v-show="boardTab === '2'" class="table-container">
             <Table
               size="small"
+              table-layout="fixed"
               row-key="mchName"
               :columns="concurrentColumns"
               :data-source="concurrentRows"
@@ -679,7 +682,23 @@ onUnmounted(() => {
 
 .table-container {
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+.table-container :deep(.ant-table) {
+  table-layout: fixed;
+}
+
+.table-container :deep(.ant-table-thead > tr > th) {
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.table-container :deep(.ant-table-cell) {
+  padding-inline: 8px;
 }
 
 .text-brand {

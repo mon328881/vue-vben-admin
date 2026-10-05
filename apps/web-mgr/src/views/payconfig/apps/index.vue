@@ -178,7 +178,7 @@ const columns: TableColumnsType<PayPassage> = [
   { dataIndex: 'weights', title: '轮询权重', width: 100 },
   { dataIndex: 'timeLimitState', title: '通道定时设置', width: 160 },
   { dataIndex: 'rate', title: '通道费率', width: 110 },
-  { dataIndex: 'successRate', title: '成率(天)', width: 110 },
+  { dataIndex: 'successRate', title: '成率(天)', width: 130 },
   { dataIndex: 'passageGroup', ellipsis: true, title: '供应商', width: 140 },
   { dataIndex: 'payRules', ellipsis: true, title: '收款规则', width: 120 },
   { dataIndex: 'agentRate', title: '代理费率', width: 110 },
@@ -236,6 +236,20 @@ function successRateText(row: PayPassage) {
     return '--';
   }
   return `${(Number(value) * 100).toFixed(2)}%`;
+}
+
+/**
+ * 通道定时时段：库里未设置时常写成 "|" 或空串。
+ * `a || '--'` 会把 "|" 当有效值显示出来；复制弹窗已把 "|" 当未设置。
+ */
+function timeRulesText(rules?: null | string) {
+  const raw = String(rules ?? '').trim();
+  if (!raw || raw === '|') return '--';
+  const [start = '', end = ''] = raw.split('|').map((part) => part.trim());
+  if (!start && !end) return '--';
+  if (!raw.includes('|')) return raw;
+  if (!start || !end) return '--';
+  return `${start}|${end}`;
 }
 
 /** 对齐 demo dt：agentNo 非 null 且非空串才展示代理费率 */
@@ -718,8 +732,8 @@ onMounted(() => {
                   ></span>
                   <span
                     class="ellipsis time-limit-rules-text"
-                    :title="record.timeRules"
-                    >{{ record.timeRules || '--' }}</span>
+                    :title="timeRulesText(record.timeRules)"
+                    >{{ timeRulesText(record.timeRules) }}</span>
                 </div>
               </div>
             </template>
@@ -753,7 +767,7 @@ onMounted(() => {
                   <template #icon>
                     <IconifyIcon
                       class="inline-action-cell__icon"
-                      icon="lucide:chart-bubble"
+                      icon="ant-design:dot-chart-outlined"
                     />
                   </template>
                 </Button>

@@ -1,21 +1,24 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { SysUser } from '#/api/types/business';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Button,
   Card,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   Space,
   Switch,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -25,13 +28,12 @@ import {
   fetchSysUsersApi,
   updateSysUserStateApi,
 } from '#/api';
-import type { SysUser } from '#/api/types/business';
 import FilterActions from '#/components/list/FilterActions.vue';
 import { hasEnt } from '#/utils/access';
 import { formatDateTime } from '#/utils/format';
 
-import SysUserFormDrawer from './components/SysUserFormDrawer.vue';
 import SystemUserRoleAssignDrawer from './components/SystemUserRoleAssignDrawer.vue';
+import SysUserFormDrawer from './components/SysUserFormDrawer.vue';
 
 defineOptions({ name: 'SysUserPage' });
 
@@ -62,8 +64,7 @@ const canUpdRole = computed(() => hasEnt('ENT_UR_USER_UPD_ROLE'));
 const columns: TableColumnsType<SysUserRow> = [
   { dataIndex: 'sysUserId', fixed: 'left', title: '用户ID', width: 120 },
   { dataIndex: 'loginUsername', title: '用户登录名', width: 160 },
-  { dataIndex: 'isAdmin', title: '超管', width: 90 },
-  { dataIndex: 'roleNames', title: '角色', minWidth: 200 },
+  { dataIndex: 'roleNames', title: '角色', minWidth: 240 },
   { dataIndex: 'state', title: '状态', width: 140 },
   { dataIndex: 'createdAt', title: '创建时间', width: 180 },
   { dataIndex: 'updatedAt', title: '修改时间', width: 180 },
@@ -146,7 +147,7 @@ function displayName(row: SysUser) {
   return row.loginUsername || `ID:${row.sysUserId ?? '--'}`;
 }
 
-async function onToggleState(row: SysUser, checked: boolean | string | number) {
+async function onToggleState(row: SysUser, checked: boolean | number | string) {
   const state = checked ? 1 : 0;
   const action = state === 1 ? '开启' : '关闭';
   const name = displayName(row);
@@ -245,12 +246,15 @@ onMounted(() => {
           @change="onTableChange"
         >
           <template #bodyCell="{ column, record }">
-            <template v-if="column.dataIndex === 'isAdmin'">
-              <Tag v-if="Number(record.isAdmin) === 1" color="error">超管</Tag>
-              <span v-else style="color: #94a3b8">否</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'roleNames'">
-              <Space v-if="record.roleNames?.length" wrap :size="[4, 4]">
+            <template v-if="column.dataIndex === 'roleNames'">
+              <Space
+                v-if="Number(record.isAdmin) === 1 || record.roleNames?.length"
+                wrap
+                :size="[4, 4]"
+              >
+                <Tag v-if="Number(record.isAdmin) === 1" color="error">
+                  超管
+                </Tag>
                 <Tag
                   v-for="name in record.roleNames"
                   :key="name"

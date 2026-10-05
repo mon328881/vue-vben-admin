@@ -1,13 +1,13 @@
-import { requestClient } from '#/api/request';
-
 import type { PageResult, SysUser } from '#/api/types/business';
+
+import { requestClient } from '#/api/request';
 
 export interface SysUserListParams {
   pageNumber?: number;
   pageSize?: number;
   loginUsername?: string;
-  sysUserId?: string | number;
-  state?: string | number;
+  sysUserId?: number | string;
+  state?: number | string;
 }
 
 export interface SysRole {
@@ -50,21 +50,21 @@ export async function fetchSysUserApi(sysUserId: number | string) {
 }
 
 export async function createSysUserApi(payload: {
-  loginUsername: string;
   isAdmin: number;
+  loginUsername: string;
 }) {
-  return requestClient.post<void>('/sysUsers', payload);
+  return requestClient.post('/sysUsers', payload);
 }
 
 export async function updateSysUserApi(
   sysUserId: number | string,
   payload: {
+    defaultPass?: boolean;
     isAdmin?: number;
     resetPass?: boolean;
-    defaultPass?: boolean;
   },
 ) {
-  return requestClient.put<void>(`/sysUsers/${sysUserId}`, payload);
+  return requestClient.put(`/sysUsers/${sysUserId}`, payload);
 }
 
 export async function updateSysUserStateApi(
@@ -78,13 +78,17 @@ export async function deleteSysUserApi(sysUserId: number | string) {
   return requestClient.delete(`/sysUsers/${sysUserId}`);
 }
 
-export async function fetchSysRolesApi(params: {
-  pageNumber?: number;
-  pageSize?: number;
-  roleId?: string;
-  roleName?: string;
-}) {
-  return requestClient.get<PageResult<SysRole>>('/sysRoles', { params });
+export async function fetchSysRolesApi(
+  params: {
+    pageNumber?: number;
+    pageSize?: number;
+    roleId?: string;
+    roleName?: string;
+  } = {},
+) {
+  return requestClient.get<PageResult<SysRole>>('/sysRoles', {
+    params: { pageNumber: 1, ...params },
+  });
 }
 
 export async function fetchSysRoleApi(roleId: number | string) {
@@ -92,17 +96,17 @@ export async function fetchSysRoleApi(roleId: number | string) {
 }
 
 export async function createSysRoleApi(payload: {
-  roleName: string;
   entIdListStr: string;
+  roleName: string;
 }) {
-  return requestClient.post<void>('/sysRoles', payload);
+  return requestClient.post('/sysRoles', payload);
 }
 
 export async function updateSysRoleApi(
   roleId: number | string,
-  payload: { roleName: string; entIdListStr: string },
+  payload: { entIdListStr: string; roleName: string },
 ) {
-  return requestClient.put<void>(`/sysRoles/${roleId}`, payload);
+  return requestClient.put(`/sysRoles/${roleId}`, payload);
 }
 
 export async function deleteSysRoleApi(roleId: number | string) {
@@ -121,7 +125,7 @@ export async function saveSysUserRoleRelasApi(
   userId: number | string,
   roleIds: Array<number | string>,
 ) {
-  const ids = roleIds.map((id) => String(id));
+  const ids = roleIds.map(String);
   return requestClient.post(`/sysUserRoleRelas/relas/${userId}`, {
     roleIds: ids,
     roleIdListStr: JSON.stringify(ids),
@@ -142,10 +146,7 @@ export async function fetchSysEntTreeApi() {
   });
 }
 
-export async function fetchSysEntBySysTypeApi(
-  entId: string,
-  sysType = 'MGR',
-) {
+export async function fetchSysEntBySysTypeApi(entId: string, sysType = 'MGR') {
   return requestClient.get<SysEntNode>('/sysEnts/bySysType', {
     params: { entId, sysType },
   });
@@ -202,9 +203,9 @@ export async function fetchSysLogDetailApi(sysLogId: number | string) {
 }
 
 export async function modifyPwdApi(payload: {
-  recordId: number | string;
-  originalPwd: string;
   confirmPwd: string;
+  originalPwd: string;
+  recordId: number | string;
 }) {
   return requestClient.put('/current/modifyPwd', payload);
 }

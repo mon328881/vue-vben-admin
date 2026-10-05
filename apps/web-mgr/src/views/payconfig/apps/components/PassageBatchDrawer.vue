@@ -26,9 +26,9 @@ import { fetchPayIfCodeApi, postMchAppsMultipleSetApi } from '#/api';
 import PassageGroupSelector from '#/components/selectors/PassageGroupSelector.vue';
 import ProductSelector from '#/components/selectors/ProductSelector.vue';
 import {
-  PRODUCT_RATE_PRECISION,
-  PRODUCT_RATE_RE,
-  toProductRate,
+  PASSAGE_RATE_PRECISION,
+  PASSAGE_RATE_RE,
+  toPassageRate,
 } from '#/constants/payWays';
 
 const emit = defineEmits<{
@@ -293,13 +293,13 @@ async function submitIfCode() {
 async function submitRate() {
   await run(
     'multipleSetRate',
-    { rate: toProductRate(form.rate) },
+    { rate: toPassageRate(form.rate) },
     {
       validate: () => {
         if (form.rate === null || form.rate === undefined)
           return '请输入通道费率';
-        if (!PRODUCT_RATE_RE.test(String(form.rate))) {
-          return '费率格式错误（可为负，最多六位小数）';
+        if (!PASSAGE_RATE_RE.test(String(form.rate))) {
+          return '费率格式错误（可为负，最多两位小数）';
         }
         return null;
       },
@@ -728,8 +728,8 @@ defineExpose({ show, closeAndReset });
       <Form.Item label="通道费率（%）">
         <InputNumber
           v-model:value="form.rate"
-          :precision="PRODUCT_RATE_PRECISION"
-          :step="0.000001"
+          :precision="PASSAGE_RATE_PRECISION"
+          :step="0.01"
           :min="-200"
           :max="200"
           addon-after="%"

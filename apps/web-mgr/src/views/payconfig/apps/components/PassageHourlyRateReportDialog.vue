@@ -125,7 +125,7 @@ defineExpose({ open });
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'op'">
             <a
-              v-if="record.url"
+              v-if="record.url || record.statDate"
               class="hourly-report-dialog__link"
               :href="downloadHref(record as PassageHourlyArchive)"
               target="_blank"

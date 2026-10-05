@@ -11,7 +11,7 @@ import {
   ref,
 } from 'vue';
 
-import { message, Modal } from 'ant-design-vue';
+import { message, Modal, notification } from 'ant-design-vue';
 
 import {
   agentHistoryExportApi,
@@ -44,10 +44,11 @@ export const EXPORT_STATUS = {
 } as const;
 
 export const EXPORT_MSG = {
-  submit: '报表导出已开始，请等待完成后点击「报表下载列表」下载',
-  reused: '已有报表正在导出，请等待完成后点击「报表下载列表」下载',
+  submit: '报表导出已开始',
+  reused: '已有报表正在导出',
   done: '导出完成，请点击「报表下载列表」下载',
-  alreadyRunning: '已有导出任务进行中，请等待完成后再试',
+  alreadyRunning:
+    '已有导出任务进行中，请等待完成；勿重复点导出，完成后点「报表下载列表」下载',
   submitFailed: '提交导出失败',
   loadListFailed: '加载报表列表失败',
   downloadFailed: '下载失败',
@@ -58,6 +59,18 @@ export const EXPORT_MSG = {
   cancelFailed: '中止导出失败，请稍后重试',
   pollFailed: '轮询导出状态失败，请打开报表下载列表查看或重新导出',
 };
+
+const EXPORT_GUIDE_DESC =
+  '导出是异步任务，不会立刻下载文件。完成后请点击页面上的「报表下载列表」打开弹窗再下载，请勿重复点击导出。';
+
+function notifyExportGuide(title: string) {
+  notification.info({
+    message: title,
+    description: EXPORT_GUIDE_DESC,
+    duration: 3,
+    placement: 'topRight',
+  });
+}
 
 /** 完成列表按日近 10 条；BE 终态 running 视图另有约 10 分钟保留窗（FINISHED_TTL） */
 export const DEFAULT_REPORT_LIST_TITLE = '报表下载列表（仅保留当日近10条）';
@@ -86,6 +99,13 @@ export const EXPORT_CONTROL_KEY: InjectionKey<ExportControl> = Symbol(
   'async-export-control',
 );
 
+export interface ExportUiHints {
+  unreadCount: Ref<number>;
+}
+
+export const EXPORT_UI_KEY: InjectionKey<ExportUiHints> =
+  Symbol('async-export-ui');
+
 export function useExportControl(): ExportControl | null {
   return inject(EXPORT_CONTROL_KEY, null);
 }
@@ -111,7 +131,10 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   const reportListLoading = ref(false);
   const reportListEmptyHint = ref('');
   const hasReportDownloads = ref(false);
+  const reportListUnreadCount = ref(0);
   const completedExports = ref<MchExportTask[]>([]);
+  let seenCompletedCount = 0;
+  let seenInitialized = false;
   const exportCancellable = ref(false);
   const cancelLoading = ref(false);
   const cancellationRequested = ref(false);
@@ -176,17 +199,28 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     }));
   }
 
+  function applyCompletedList(list: MchExportTask[], markSeen: boolean) {
+    hasReportDownloads.value = list.length > 0;
+    if (markSeen || !seenInitialized) {
+      seenCompletedCount = list.length;
+      seenInitialized = true;
+      reportListUnreadCount.value = 0;
+      return;
+    }
+    reportListUnreadCount.value = Math.max(0, list.length - seenCompletedCount);
+  }
+
   async function refreshCompleted() {
     const list = (await api.fetchCompleted()) ?? [];
     completedExports.value = mapCompleted(list);
-    hasReportDownloads.value = list.length > 0;
+    applyCompletedList(list, reportListVisible.value);
     return list;
   }
 
   async function syncReportDownloadAvailability() {
     try {
       const list = (await api.fetchCompleted()) ?? [];
-      hasReportDownloads.value = list.length > 0;
+      applyCompletedList(list, false);
     } catch (error) {
       console.error('检查报表下载列表失败', error);
       hasReportDownloads.value = false;
@@ -196,6 +230,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   async function openReportList(hint?: string) {
     if (hint !== undefined) reportListEmptyHint.value = hint;
     reportListVisible.value = true;
+    reportListUnreadCount.value = 0;
     reportListLoading.value = true;
     completedExports.value = [];
     try {
@@ -233,9 +268,9 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     exportProgress.value =
       task.status === EXPORT_STATUS.SUCCESS ? 100 : exportProgress.value;
     if (task.status === EXPORT_STATUS.SUCCESS) {
-      message.success(messages.done);
       reportListEmptyHint.value = '';
       await refreshCompleted();
+      message.success(messages.done);
     } else if (task.status === EXPORT_STATUS.FAIL) {
       await handleExportFailure(task.errMsg || '导出失败');
     } else if (task.status === EXPORT_STATUS.CANCELLED) {
@@ -332,8 +367,8 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
         await handleExportFailure(messages.submitFailed);
         return;
       }
-      if (task.reused) message.info(messages.reused);
-      else message.info(messages.submit);
+      if (task.reused) notifyExportGuide(messages.reused);
+      else notifyExportGuide(messages.submit);
       exportProgress.value = task.progress ?? 0;
       applyRunningTask(task);
       if (isTerminal(task)) await finishExportTask(task);
@@ -391,6 +426,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     cancellationRequested,
     confirmCancel: confirmCancelExport,
   });
+  provide(EXPORT_UI_KEY, { unreadCount: reportListUnreadCount });
 
   async function downloadFile(row: MchExportTask) {
     if (!row?.objectKey) {
@@ -446,6 +482,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
     reportListEmptyHint,
     reportListTitle,
     hasReportDownloads,
+    reportListUnreadCount,
     completedExports,
     exportCancellable,
     cancelLoading,

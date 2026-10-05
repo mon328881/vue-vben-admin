@@ -7,10 +7,10 @@ import { Form, InputNumber, message, Modal } from 'ant-design-vue';
 
 import { updateMchAppApi } from '#/api';
 import {
-  percentFromRate,
-  PRODUCT_RATE_PRECISION,
-  PRODUCT_RATE_RE,
-  toProductRate,
+  PASSAGE_RATE_PRECISION,
+  PASSAGE_RATE_RE,
+  percentFromPassageRate,
+  toPassageRate,
 } from '#/constants/payWays';
 
 const emit = defineEmits<{ success: [] }>();
@@ -22,7 +22,7 @@ const form = reactive({ rate: undefined as number | undefined });
 
 function show(target: PayPassage) {
   row.value = target;
-  const pct = percentFromRate(target.rate);
+  const pct = percentFromPassageRate(target.rate);
   form.rate = pct === '' ? undefined : Number(pct);
   saving.value = false;
   visible.value = true;
@@ -31,18 +31,18 @@ function show(target: PayPassage) {
 async function submit() {
   if (!row.value?.payPassageId) return;
   if (form.rate === null || form.rate === undefined) {
-    message.error('请输入通道费率（可为负，最多六位小数）');
+    message.error('请输入通道费率（可为负，最多两位小数）');
     return;
   }
-  if (!PRODUCT_RATE_RE.test(String(form.rate))) {
-    message.error('费率格式错误（可为负，最多六位小数）');
+  if (!PASSAGE_RATE_RE.test(String(form.rate))) {
+    message.error('费率格式错误（可为负，最多两位小数）');
     return;
   }
   saving.value = true;
   try {
     await updateMchAppApi(row.value.payPassageId, {
       payPassageId: row.value.payPassageId,
-      rate: toProductRate(form.rate),
+      rate: toPassageRate(form.rate),
     });
     message.success('通道费率修改成功');
     visible.value = false;
@@ -74,8 +74,8 @@ defineExpose({ show });
           v-model:value="form.rate"
           :min="-200"
           :max="200"
-          :precision="PRODUCT_RATE_PRECISION"
-          :step="0.000001"
+          :precision="PASSAGE_RATE_PRECISION"
+          :step="0.01"
           addon-after="%"
           style="width: 300px"
           placeholder="请输入通道费率"

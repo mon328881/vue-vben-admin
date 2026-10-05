@@ -31,6 +31,7 @@ import {
   setMchProductBatchRateApi,
   updateMchProductInfoApi,
 } from '#/api';
+import SelectionAutoResetSwitch from '#/components/table/SelectionAutoResetSwitch.vue';
 import {
   percentFromRate,
   PRODUCT_RATE_PRECISION,
@@ -48,6 +49,7 @@ const dataSource = ref<MchProductInfo[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 50 });
 const selectedIds = ref<(number | string)[]>([]);
+const autoResetSelection = ref(true);
 const query = reactive({
   mchNo: '',
   productId: '',
@@ -111,7 +113,7 @@ async function loadData(resetPage = false) {
 }
 
 function onSearch() {
-  selectedIds.value = [];
+  if (autoResetSelection.value) selectedIds.value = [];
   void loadData(true);
 }
 
@@ -159,7 +161,7 @@ function parsePercent(raw: number | string, label: string) {
   if (error) {
     message.error(
       error.includes('格式错误')
-        ? `${label}格式错误，最多六位小数，可为负数`
+        ? `${label}格式错误，最多两位小数，可为负数`
         : error,
     );
     return null;
@@ -481,7 +483,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section">
-        <div class="ap-drawer-actions">
+        <div class="ap-drawer-actions flex flex-wrap items-center gap-3">
           <Popconfirm title="确认全部绑定么？" @confirm="confirmBlindAll">
             <Button type="primary" :loading="loading">一键全绑定</Button>
           </Popconfirm>
@@ -499,6 +501,10 @@ defineExpose({ show });
           >
             费率命令
           </Button>
+          <SelectionAutoResetSwitch
+            v-model="autoResetSelection"
+            cache-key="mch-product-config"
+          />
         </div>
       </div>
 
@@ -581,7 +587,7 @@ defineExpose({ show });
           :step="0.01"
           :precision="PRODUCT_RATE_PRECISION"
           style="width: 200px"
-          placeholder="请输入费率，如：5.25，最多六位小数，可为负数"
+          placeholder="请输入费率，如：5.25，可为负数"
         />
       </Form.Item>
       <Form.Item label="代理费率(%)">
@@ -590,7 +596,7 @@ defineExpose({ show });
           :step="0.01"
           :precision="PRODUCT_RATE_PRECISION"
           style="width: 200px"
-          placeholder="请输入费率，如：5.25，最多六位小数，可为负数"
+          placeholder="请输入费率，如：5.25，可为负数"
         />
       </Form.Item>
     </Form>
@@ -624,7 +630,7 @@ defineExpose({ show });
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
           将选中产品的费率覆盖为固定值，范围
-          -100~100，最多六位小数。与下方增量调整互斥。
+          -100~100，最多两位小数。与下方增量调整互斥。
         </p>
       </Form.Item>
       <Form.Item
@@ -657,7 +663,7 @@ defineExpose({ show });
         </Checkbox.Group>
         <p class="text-muted-foreground mt-1 text-xs">
           在现有费率基础上加减，正数上调，负数下调，范围
-          -100~100，最多六位小数。与上方固定设置互斥。
+          -100~100，最多两位小数。与上方固定设置互斥。
         </p>
       </Form.Item>
       <Form.Item

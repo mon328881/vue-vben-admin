@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { MchInfo, MchPassageInfo } from '#/api/types/business';
+
 import { nextTick, reactive, ref } from 'vue';
 
 import {
@@ -8,6 +10,7 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   Radio,
@@ -15,7 +18,6 @@ import {
   Space,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -25,7 +27,7 @@ import {
   setMchPassageAllApi,
   updateMchPassageInfoApi,
 } from '#/api';
-import type { MchInfo, MchPassageInfo } from '#/api/types/business';
+import SelectionAutoResetSwitch from '#/components/table/SelectionAutoResetSwitch.vue';
 import { formatRateDecimal } from '#/utils/format';
 
 const visible = ref(false);
@@ -35,6 +37,7 @@ const dataSource = ref<MchPassageInfo[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const selectedIds = ref<(number | string)[]>([]);
+const autoResetSelection = ref(true);
 const query = reactive({
   mchNo: '',
   payPassageId: '',
@@ -82,7 +85,7 @@ async function loadData(resetPage = false) {
 }
 
 function onSearch() {
-  selectedIds.value = [];
+  if (autoResetSelection.value) selectedIds.value = [];
   void loadData(true);
 }
 
@@ -130,7 +133,7 @@ async function bindRow(row: MchPassageInfo, state: number) {
 }
 
 function openBatch() {
-  if (!selectedIds.value.length) {
+  if (selectedIds.value.length === 0) {
     message.error('请先勾选要配置的通道');
     return;
   }
@@ -243,7 +246,7 @@ defineExpose({ show });
       </div>
 
       <div class="ap-drawer-section">
-        <div class="ap-drawer-actions">
+        <div class="ap-drawer-actions flex flex-wrap items-center gap-3">
           <Popconfirm title="确认全部绑定么？" @confirm="confirmBlindAll">
             <Button type="primary" :loading="loading">一键全绑定</Button>
           </Popconfirm>
@@ -251,6 +254,10 @@ defineExpose({ show });
             <Button danger :loading="loading">一键全解绑</Button>
           </Popconfirm>
           <Button @click="openBatch">批量配置</Button>
+          <SelectionAutoResetSwitch
+            v-model="autoResetSelection"
+            cache-key="mch-passage-config"
+          />
         </div>
       </div>
 

@@ -55,10 +55,25 @@ export const PRODUCT_NAME_MAX = 64;
 
 export const PRODUCT_ID_PATTERN = /^[1-9]\d{0,7}$/;
 
-/** 对齐 mch_product_info DECIMAL(12,6) HALF_UP；界面按百分比录入 */
-export const PRODUCT_RATE_PRECISION = 6;
+/** 对齐演示站：百分比最多两位；落库比例 toFixed(4) */
+export const PRODUCT_RATE_PRECISION = 2;
 
-export const PRODUCT_RATE_RE = /^-?\d+(?:\.\d{1,6})?$/;
+export const PRODUCT_RATE_RE = /^-?\d+(?:\.\d{1,2})?$/;
+
+/** 通道费率：演示站百分比最多两位；库字段是比例 DECIMAL(20,6) */
+export const PASSAGE_RATE_PRECISION = 2;
+export const PASSAGE_RATE_RE = /^-?\d+(?:\.\d{1,2})?$/;
+
+export function toPassageRate(value: unknown) {
+  return Number(value || 0) / 100;
+}
+
+export function percentFromPassageRate(value: unknown) {
+  if (value === null || value === undefined || value === '') return '';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '';
+  return Number((num * 100).toFixed(PASSAGE_RATE_PRECISION));
+}
 
 export const BATCH_RATE_ACTIONS = [
   {
@@ -108,9 +123,7 @@ export function productPollModeTagColor(mode?: null | number | string) {
 
 export function toProductRate(value: unknown) {
   return Number(
-    (Number.parseFloat(String(value ?? '').trim()) / 100).toFixed(
-      PRODUCT_RATE_PRECISION,
-    ),
+    (Number.parseFloat(String(value ?? '').trim()) / 100).toFixed(4),
   );
 }
 
@@ -124,7 +137,7 @@ export function percentFromRate(value: unknown) {
 export function validateProductRate(value: unknown, label: string) {
   const text = String(value ?? '').trim();
   if (!text) return `${label}不能为空`;
-  if (!PRODUCT_RATE_RE.test(text)) return `${label}格式错误，最多六位小数`;
+  if (!PRODUCT_RATE_RE.test(text)) return `${label}格式错误，最多两位小数`;
   const number = Number.parseFloat(text);
   if (number < -100 || number > 100) return `${label}范围应在 -100~100 之间`;
   return '';

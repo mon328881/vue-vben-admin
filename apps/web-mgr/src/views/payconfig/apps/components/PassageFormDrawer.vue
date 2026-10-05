@@ -26,9 +26,9 @@ import {
   updateMchAppApi,
 } from '#/api';
 import {
-  percentFromRate,
-  PRODUCT_RATE_PRECISION,
-  toProductRate,
+  PASSAGE_RATE_PRECISION,
+  percentFromPassageRate,
+  toPassageRate,
 } from '#/constants/payWays';
 
 const emit = defineEmits<{ success: [] }>();
@@ -130,7 +130,7 @@ const rules = computed<Record<string, Rule[]>>(() => ({
     ? [
         {
           required: true,
-          message: '请输入通道费率（可为负，最多六位小数）',
+          message: '请输入通道费率（可为负，最多两位小数）',
           trigger: 'blur' as const,
         },
       ]
@@ -196,8 +196,8 @@ async function show(payPassageId?: number | string) {
       form.passageGroup =
         detail.passageGroup || detail.passageGroupName || undefined;
       form.agentNo = detail.agentNo || undefined;
-      form.agentRate = Number(percentFromRate(detail.agentRate) || 0);
-      form.rate = Number(percentFromRate(detail.rate) || 0);
+      form.agentRate = Number(percentFromPassageRate(detail.agentRate) || 0);
+      form.rate = Number(percentFromPassageRate(detail.rate) || 0);
     }
   } else {
     editingId.value = null;
@@ -230,11 +230,11 @@ async function save() {
       const payload: Record<string, unknown> = {
         ...form,
         productId: form.productId,
-        rate: toProductRate(form.rate),
+        rate: toPassageRate(form.rate),
         passageGroup: form.passageGroup ?? '',
       };
       if (form.agentNo) {
-        payload.agentRate = toProductRate(form.agentRate);
+        payload.agentRate = toPassageRate(form.agentRate);
       } else {
         payload.agentNo = '';
         payload.agentRate = 0;
@@ -324,8 +324,8 @@ defineExpose({ show });
           v-model:value="form.rate"
           :max="200"
           :min="-200"
-          :precision="PRODUCT_RATE_PRECISION"
-          :step="0.000001"
+          :precision="PASSAGE_RATE_PRECISION"
+          :step="0.01"
           addon-after="%"
           style="width: 260px"
           placeholder="请输入通道费率"
@@ -360,8 +360,8 @@ defineExpose({ show });
             v-model:value="form.agentRate"
             :max="200"
             :min="-200"
-            :precision="PRODUCT_RATE_PRECISION"
-            :step="0.000001"
+            :precision="PASSAGE_RATE_PRECISION"
+            :step="0.01"
             addon-after="%"
             style="width: 260px"
             placeholder="请输入代理费率"

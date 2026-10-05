@@ -27,6 +27,7 @@ import {
   passageMchUnBlindAllApi,
   updatePassageMchInfoApi,
 } from '#/api';
+import SelectionAutoResetSwitch from '#/components/table/SelectionAutoResetSwitch.vue';
 import { formatRateDecimal } from '#/utils/format';
 
 const HAVE_AGENT_OPTIONS = [
@@ -41,6 +42,7 @@ const dataSource = ref<PassageMchBind[]>([]);
 const total = ref(0);
 const pagination = reactive({ current: 1, pageSize: 20 });
 const selectedIds = ref<(number | string)[]>([]);
+const autoResetSelection = ref(true);
 const query = reactive({
   payPassageId: '' as number | string,
   mchNo: '',
@@ -79,8 +81,12 @@ async function loadData(resetPage = false) {
   }
 }
 
+function onSelectChange(keys: (number | string)[]) {
+  selectedIds.value = keys;
+}
+
 function onSearch() {
-  selectedIds.value = [];
+  if (autoResetSelection.value) selectedIds.value = [];
   void loadData(true);
 }
 
@@ -235,7 +241,9 @@ defineExpose({ show });
         </Form>
       </div>
 
-      <div class="ap-drawer-section ap-drawer-actions">
+      <div
+        class="ap-drawer-section ap-drawer-actions flex flex-wrap items-center gap-3"
+      >
         <Popconfirm title="确认一键全绑定？" @confirm="blindAll">
           <Button type="primary">一键全绑定</Button>
         </Popconfirm>
@@ -243,6 +251,10 @@ defineExpose({ show });
           <Button danger>一键全解绑</Button>
         </Popconfirm>
         <Button @click="openBatch">批量设置</Button>
+        <SelectionAutoResetSwitch
+          v-model="autoResetSelection"
+          cache-key="passage-mch-config"
+        />
       </div>
 
       <div class="ap-drawer-table-card">
@@ -260,7 +272,7 @@ defineExpose({ show });
           row-key="mchNo"
           :row-selection="{
             selectedRowKeys: selectedIds,
-            onChange: (keys: (string | number)[]) => (selectedIds = keys),
+            onChange: onSelectChange,
           }"
           size="middle"
           :scroll="{ x: 800 }"
