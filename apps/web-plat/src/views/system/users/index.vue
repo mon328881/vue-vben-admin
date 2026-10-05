@@ -2,6 +2,7 @@
 import type { TableColumnsType } from 'ant-design-vue';
 
 import type { PlatUser } from '#/api';
+import type { PlatEntId } from '#/constants/entitlements';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -14,13 +15,13 @@ import {
   Drawer,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   Radio,
   Space,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -34,7 +35,6 @@ import {
   DEFAULT_OPERATOR_ENTS,
   PLAT_ENT_GROUPS,
   summarizePlatEnts,
-  type PlatEntId,
 } from '#/constants/entitlements';
 
 defineOptions({ name: 'PlatUsersPage' });
@@ -70,7 +70,7 @@ const columns: TableColumnsType = [
 
 const pwdOpen = ref(false);
 const pwdBusy = ref(false);
-const pwdTarget = ref<PlatUser | null>(null);
+const pwdTarget = ref<null | PlatUser>(null);
 const pwdForm = reactive({ password: '' });
 
 const entSet = computed(() => new Set(form.entIdList));
@@ -106,8 +106,12 @@ function showCreate() {
   drawerOpen.value = true;
 }
 
-function onEditRow(row: Record<string, any>) {
-  showEdit(row as PlatUser);
+function asUser(row: Record<string, unknown>) {
+  return row as unknown as PlatUser;
+}
+
+function onEditRow(row: Record<string, unknown>) {
+  showEdit(asUser(row));
 }
 
 function showEdit(row: PlatUser) {
@@ -163,7 +167,10 @@ function showResetPwd(row: PlatUser) {
 
 async function confirmResetPwd() {
   if (!pwdTarget.value) return;
-  if (pwdForm.password.trim().length < 6 || pwdForm.password.trim().length > 12) {
+  if (
+    pwdForm.password.trim().length < 6 ||
+    pwdForm.password.trim().length > 12
+  ) {
     message.error('新密码长度为 6-12 位');
     return;
   }
@@ -230,7 +237,7 @@ onMounted(loadData);
               </Tag>
             </template>
             <template v-else-if="column.dataIndex === 'entIdList'">
-              {{ summarizePlatEnts(record) }}
+              {{ summarizePlatEnts(asUser(record)) }}
             </template>
             <template v-else-if="column.dataIndex === 'googleAuth'">
               <Tag :color="record.googleAuth === 1 ? 'processing' : 'default'">
@@ -247,12 +254,16 @@ onMounted(loadData);
                 <Button type="link" size="small" @click="onEditRow(record)">
                   编辑
                 </Button>
-                <Button type="link" size="small" @click="showResetPwd(record)">
+                <Button
+                  type="link"
+                  size="small"
+                  @click="showResetPwd(asUser(record))"
+                >
                   重置密码
                 </Button>
                 <Popconfirm
                   title="将清除已绑定的谷歌密钥，下次登录需重新绑定。确认重置？"
-                  @confirm="resetGoogle(record)"
+                  @confirm="resetGoogle(asUser(record))"
                 >
                   <Button type="link" size="small">重置谷歌</Button>
                 </Popconfirm>
@@ -304,9 +315,7 @@ onMounted(loadData);
                     v-for="item in group.items"
                     :key="item.code"
                     :checked="hasEntCode(item.code)"
-                    :disabled="
-                      !!item.dependsOn && !hasEntCode(item.dependsOn)
-                    "
+                    :disabled="!!item.dependsOn && !hasEntCode(item.dependsOn)"
                     @update:checked="
                       (checked: boolean) =>
                         toggleEnt(item.code, checked, item.dependsOn)

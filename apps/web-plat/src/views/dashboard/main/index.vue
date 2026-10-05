@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import type { WorkbenchQuickNavItem } from '@vben/common-ui';
-
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -33,8 +31,15 @@ const distributeTotal = ref(0);
 const userTotal = ref(0);
 const showUsers = computed(() => isAdmin());
 
-const quickNav = computed<WorkbenchQuickNavItem[]>(() => {
-  const items: WorkbenchQuickNavItem[] = [];
+interface QuickNavItem {
+  color: string;
+  icon: string;
+  title: string;
+  url: string;
+}
+
+const quickNav = computed<QuickNavItem[]>(() => {
+  const items: QuickNavItem[] = [];
   if (hasEnt(PLAT_ENT.TENANT_VIEW)) {
     items.push({
       color: '#3b82f6',
@@ -77,10 +82,14 @@ async function load() {
       fetchTenantsApi(),
       fetchPayIfDefinesApi(),
       fetchDistributeRecordsApi(),
-      isAdmin() ? fetchPlatUsersApi() : Promise.resolve({ total: 0, records: [] }),
+      isAdmin()
+        ? fetchPlatUsersApi()
+        : Promise.resolve({ total: 0, records: [] }),
     ]);
     tenantTotal.value = tenants.total;
-    tenantActive.value = tenants.records.filter((item) => item.state === 1).length;
+    tenantActive.value = tenants.records.filter(
+      (item) => item.state === 1,
+    ).length;
     ifTotal.value = defines.total;
     distributeTotal.value = logs.total;
     userTotal.value = users.total;
@@ -89,7 +98,7 @@ async function load() {
   }
 }
 
-function onNav(item: WorkbenchQuickNavItem) {
+function onNav(item: QuickNavItem) {
   if (item.url) router.push(item.url);
 }
 
@@ -134,7 +143,11 @@ onMounted(load);
         <Col :lg="6" :span="12">
           <Card :bordered="false" class="ap-page-form home-kpi">
             <div class="home-kpi__label">下发记录</div>
-            <Statistic :loading="loading" :value="distributeTotal" suffix="条" />
+            <Statistic
+              :loading="loading"
+              :value="distributeTotal"
+              suffix="条"
+            />
             <div class="home-kpi__hint">累计下发任务</div>
           </Card>
         </Col>

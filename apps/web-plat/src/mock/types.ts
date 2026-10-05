@@ -1,5 +1,11 @@
 export type TenantStatus = 0 | 1;
 
+/**
+ * 对应运营端 tenant.type / 主页 querySystemInfo：
+ * 1 包月用户（只展示到期）· 2 流水扣费（余额+到期）· 其它 永久有效（都不展示）
+ */
+export type TenantPlanType = 'monthly' | 'perpetual' | 'rate';
+
 export interface PlatTenant {
   tenantId: string;
   tenantCode: string;
@@ -12,6 +18,17 @@ export interface PlatTenant {
   mgrAdminState: TenantStatus;
   mgrAdminGoogleAuth: 0 | 1;
   state: TenantStatus;
+  planType: TenantPlanType;
+  /** type=1 包月用户：每月定额（元） */
+  monthlyFee?: number;
+  /** type=2 流水扣费：成功流水百分比，0.3 表示 0.30% */
+  ratePercent?: number;
+  /** 套餐生效日 YYYY-MM-DD */
+  planEffectiveOn: string;
+  /** type=1/2 到期日，对应运营端主页 expireDate；永久有效为空 */
+  planExpireOn?: string;
+  /** type=2 租户余额（元），对应运营端主页「当前余额」 */
+  planBalance?: number;
   ifCount: number;
   /** 已成功下发到该运营端的接口 → 当时 Schema 版本 */
   distributedIfVersions: Record<string, string>;
@@ -23,8 +40,15 @@ export interface PlatTenant {
 export interface IfParamField {
   name: string;
   desc: string;
-  type: 'text' | 'textarea' | 'password' | 'number' | 'radio' | 'select' | 'file';
-  verify?: 'required' | '';
+  type:
+    | 'file'
+    | 'number'
+    | 'password'
+    | 'radio'
+    | 'select'
+    | 'text'
+    | 'textarea';
+  verify?: '' | 'required';
   star?: '0' | '1';
   /** radio / select：逗号分隔取值 */
   values?: string;
@@ -46,7 +70,7 @@ export interface PlatPayIfDefine {
   createdAt: string;
 }
 
-export type DistributeStatus = 'pending' | 'success' | 'partial' | 'failed';
+export type DistributeStatus = 'failed' | 'partial' | 'pending' | 'success';
 
 export interface DistributeRecord {
   id: string;
@@ -77,12 +101,32 @@ export interface PlatUser {
   createdAt: string;
 }
 
+export type TenantBillingKind =
+  | 'adjust'
+  | 'recharge'
+  | 'renew'
+  | 'sample-debit';
+
+export interface TenantBillingRecord {
+  id: string;
+  tenantId: string;
+  createdAt: string;
+  kind: TenantBillingKind;
+  /** 变动金额（元），正为增加、负为扣减 */
+  amount: number;
+  beforeBalance?: number;
+  afterBalance?: number;
+  expireOn?: string;
+  operator: string;
+  remark?: string;
+}
+
 export type PlatAuditModule =
-  | 'tenant'
-  | 'pay-if'
+  | 'config'
   | 'distribute'
+  | 'pay-if'
   | 'plat-user'
-  | 'config';
+  | 'tenant';
 
 export interface PlatAuditLog {
   id: string;
@@ -91,7 +135,7 @@ export interface PlatAuditLog {
   module: PlatAuditModule;
   action: string;
   target: string;
-  result: 'success' | 'failed';
+  result: 'failed' | 'success';
   remark?: string;
 }
 
