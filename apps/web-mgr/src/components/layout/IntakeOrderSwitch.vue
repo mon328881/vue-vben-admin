@@ -1,15 +1,18 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Form, Input, Modal, Switch, message } from 'ant-design-vue';
+import { useAccessStore, useUserStore } from '@vben/stores';
+
+import { Form, Input, message, Modal, Switch } from 'ant-design-vue';
 
 import { fetchOpenStateApi, setOpenStateApi } from '#/api';
 import { getCachedCurrentUser } from '#/api/core/user';
 import { useIntakeOpenState } from '#/composables/use-intake-open-state';
+import { GOOGLE_CODE_ERROR, isGoogleCode } from '#/constants/merchant';
 import { hasEnt } from '#/utils/access';
-import { useAccessStore } from '@vben/stores';
 
 const accessStore = useAccessStore();
+const userStore = useUserStore();
 const { openState, setIntakeOpen } = useIntakeOpenState();
 
 const canToggle = computed(() => {
@@ -17,6 +20,15 @@ const canToggle = computed(() => {
   if (cached?.isAdmin === 1) return true;
   return hasEnt('ENT_C_MAIN_PAY_COUNT');
 });
+
+/** BE setOpenState 谷歌门：密钥缺失 →「请先绑定」；FE 以 googleAuth===1 作前置提示 */
+const googleBound = computed(
+  () =>
+    Number(
+      (userStore.userInfo as null | { googleAuth?: number })?.googleAuth ??
+        getCachedCurrentUser()?.googleAuth,
+    ) === 1,
+);
 
 const openLoading = ref(false);
 const openFetching = ref(false);
@@ -43,8 +55,12 @@ async function loadOpenState() {
   }
 }
 
-function onOpenChange(checked: boolean | string | number) {
+function onOpenChange(checked: boolean | number | string) {
   if (switchDisabled.value) return;
+  if (!googleBound.value) {
+    message.error('请先绑定谷歌验证码');
+    return;
+  }
   const next = !!checked;
   pendingOpenState.value = next;
   confirmTitle.value = next ? '确认[启用]进单？' : '确认[停用]进单？';
@@ -53,19 +69,23 @@ function onOpenChange(checked: boolean | string | number) {
 }
 
 async function confirmOpenState() {
+  const code = googleCode.value.trim();
+  if (!isGoogleCode(code)) {
+    message.error(GOOGLE_CODE_ERROR);
+    throw new Error(GOOGLE_CODE_ERROR);
+  }
   openLoading.value = true;
   try {
     await setOpenStateApi({
       setOpenState: pendingOpenState.value ? 1 : 0,
-      googleCode: googleCode.value.trim(),
+      googleCode: code,
     });
     setIntakeOpen(pendingOpenState.value);
     googleVisible.value = false;
     message.success('操作成功');
   } catch (error) {
-    message.error(
-      error instanceof Error ? error.message : '切换进单状态失败',
-    );
+    message.error(error instanceof Error ? error.message : '切换进单状态失败');
+    throw error;
   } finally {
     openLoading.value = false;
   }
@@ -120,9 +140,15 @@ onMounted(() => {
           <Form.Item label="请输入谷歌验证码：">
             <Input
               v-model:value="googleCode"
-              placeholder="未绑定可留空"
+              placeholder="请输入 6 位谷歌验证码"
               :maxlength="6"
               allow-clear
+              @update:value="
+                (v) =>
+                  (googleCode = String(v ?? '')
+                    .replaceAll(/\D/g, '')
+                    .slice(0, 6))
+              "
             />
           </Form.Item>
         </Form>
@@ -136,8 +162,8 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   height: 100%;
-  margin-right: 12px;
   padding: 0 4px;
+  margin-right: 12px;
 }
 
 .intake-switch-wrap :deep(.ant-switch) {

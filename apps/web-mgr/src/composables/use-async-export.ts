@@ -1,3 +1,7 @@
+import type { InjectionKey, Ref } from 'vue';
+
+import type { ExportTaskApi, MchExportTask } from '#/api/modules/export-task';
+
 import {
   inject,
   onActivated,
@@ -5,15 +9,11 @@ import {
   onUnmounted,
   provide,
   ref,
-  type InjectionKey,
-  type Ref,
 } from 'vue';
 
-import { Modal, message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 
 import {
-  type ExportTaskApi,
-  type MchExportTask,
   agentHistoryExportApi,
   agentStatExportApi,
   mchHistoryExportApi,
@@ -59,6 +59,7 @@ export const EXPORT_MSG = {
   pollFailed: '轮询导出状态失败，请打开报表下载列表查看或重新导出',
 };
 
+/** 完成列表按日近 10 条；BE 终态 running 视图另有约 10 分钟保留窗（FINISHED_TTL） */
 export const DEFAULT_REPORT_LIST_TITLE = '报表下载列表（仅保留当日近10条）';
 
 /** 按 export API 类型全局互斥（同类型跨 Tab 仅一条） */
@@ -81,8 +82,9 @@ export interface ExportControl {
   confirmCancel: () => void;
 }
 
-export const EXPORT_CONTROL_KEY: InjectionKey<ExportControl> =
-  Symbol('async-export-control');
+export const EXPORT_CONTROL_KEY: InjectionKey<ExportControl> = Symbol(
+  'async-export-control',
+);
 
 export function useExportControl(): ExportControl | null {
   return inject(EXPORT_CONTROL_KEY, null);
@@ -100,7 +102,7 @@ export interface UseAsyncExportTaskOptions {
 export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   const { api, exportKey, pollMs = EXPORT_POLL_MS } = options;
   const cancelPollMs = Math.min(pollMs, EXPORT_CANCEL_POLL_MS);
-  const messages = { ...EXPORT_MSG, ...(options.messages ?? {}) };
+  const messages = { ...EXPORT_MSG, ...options.messages };
   const reportListTitle = options.reportListTitle ?? DEFAULT_REPORT_LIST_TITLE;
 
   const exportLoading = ref(false);
@@ -113,8 +115,8 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
   const exportCancellable = ref(false);
   const cancelLoading = ref(false);
   const cancellationRequested = ref(false);
-  const runningTaskId = ref<string | null>(null);
-  let pollTimer: ReturnType<typeof setInterval> | null = null;
+  const runningTaskId = ref<null | string>(null);
+  let pollTimer: null | ReturnType<typeof setInterval> = null;
   let pollFailureCount = 0;
   let exportKeyHeld = false;
 
@@ -134,7 +136,8 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
 
   function isActive(task: MchExportTask | null | undefined) {
     return (
-      task != null &&
+      task !== null &&
+      task !== undefined &&
       (task.status === EXPORT_STATUS.PENDING ||
         task.status === EXPORT_STATUS.RUNNING ||
         task.status === EXPORT_STATUS.CANCEL_REQUESTED)
@@ -301,9 +304,7 @@ export function useAsyncExportTask(options: UseAsyncExportTaskOptions) {
       exportProgress.value = task.progress ?? 0;
       applyRunningTask(task);
       startPoll(
-        task.status === EXPORT_STATUS.CANCEL_REQUESTED
-          ? cancelPollMs
-          : pollMs,
+        task.status === EXPORT_STATUS.CANCEL_REQUESTED ? cancelPollMs : pollMs,
       );
     } catch (error) {
       console.error('恢复导出任务失败', error);

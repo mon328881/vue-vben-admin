@@ -24,7 +24,8 @@ export interface CurrentUser {
   isAdmin: number;
   belongInfoId: string;
   state: number;
-  googleAuth?: number;
+  /** mgr 解绑后可为 null；进单开关等以 ===1 判已绑定 */
+  googleAuth?: null | number;
   entIdList: string[];
   allMenuRouteTree: MenuNode[];
 }

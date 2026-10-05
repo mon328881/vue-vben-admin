@@ -5,6 +5,7 @@ import { computed, markRaw, onMounted, ref } from 'vue';
 
 import { AuthenticationLogin, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
+
 import { message } from 'ant-design-vue';
 
 import { getTitleApi } from '#/api';
@@ -90,8 +91,9 @@ async function handleLogin(values: Record<string, any>) {
 
 onMounted(async () => {
   try {
+    // BE platName 空串/空白原样回显（无 yml 回退）；仅缺行才走服务端默认
     const title = await getTitleApi();
-    if (title) siteTitle.value = title;
+    if (typeof title === 'string') siteTitle.value = title;
   } catch {
     // ignore
   }

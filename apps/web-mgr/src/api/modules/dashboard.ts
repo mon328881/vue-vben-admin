@@ -139,10 +139,14 @@ export async function fetchRealTimeCountApi(minutes: number | string) {
   );
 }
 
+/**
+ * 商户并发榜。
+ * BE：窗口内无订单且 60 分钟基准窗也空 → data:null；子窗空但基准窗有单 → 空 Page。
+ */
 export async function fetchRealTimeConcurrentApi(
   params: Record<string, unknown>,
 ) {
-  return requestClient.get<PageResult<ConcurrentRow>>(
+  return requestClient.get<null | PageResult<ConcurrentRow>>(
     '/mainChart/realTimeConcurrent',
     { params },
   );

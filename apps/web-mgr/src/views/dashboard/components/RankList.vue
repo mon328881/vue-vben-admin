@@ -201,13 +201,19 @@ async function loadConcurrent(toFirst = false) {
   if (toFirst) concurrentPage.current = 1;
   concurrentLoading.value = true;
   try {
+    // time 仅 1/5/20/60；BE 全空窗返回 null（非空 Page）
     const page = await fetchRealTimeConcurrentApi({
       pageNumber: concurrentPage.current,
       pageSize: concurrentPage.pageSize,
       time: Number(concurrentMinutes.value) || 20,
     });
-    concurrentRows.value = page?.records ?? [];
-    concurrentTotal.value = Number(page?.total ?? 0);
+    if (page === null) {
+      concurrentRows.value = [];
+      concurrentTotal.value = 0;
+      return;
+    }
+    concurrentRows.value = page.records ?? [];
+    concurrentTotal.value = Number(page.total ?? 0);
   } catch (error) {
     console.error('加载商户并发失败:', error);
     concurrentRows.value = [];
