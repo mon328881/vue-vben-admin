@@ -140,3 +140,48 @@ export async function changeOwnPasswordApi(payload: {
   appendAudit('修改密码', row.loginUsername);
   return true;
 }
+
+let pendingGoogleKey = '';
+
+function randomGoogleSecret() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  return Array.from(
+    { length: 16 },
+    () => alphabet[Math.floor(Math.random() * alphabet.length)]!,
+  ).join('');
+}
+
+export async function fetchGoogleKeyApi() {
+  await delay();
+  const username = mockCurrentUser.loginUsername;
+  const row = mockPlatUsers.find((item) => item.loginUsername === username);
+  if (!row) throw new Error('账号不存在');
+  if (row.googleAuth === 1) {
+    throw new Error('已绑定谷歌验证器');
+  }
+  pendingGoogleKey = randomGoogleSecret();
+  const qrCode = `otpauth://totp/AsiaPay:${encodeURIComponent(username)}?secret=${pendingGoogleKey}&issuer=AsiaPay`;
+  return { key: pendingGoogleKey, qrCode };
+}
+
+export async function bindGoogleApi(payload: {
+  googleCode: string;
+  googleKey: string;
+}) {
+  await delay();
+  const code = payload.googleCode.trim();
+  if (!/^\d{6}$/.test(code)) {
+    throw new Error('请输入 6 位谷歌验证码');
+  }
+  if (!payload.googleKey || payload.googleKey !== pendingGoogleKey) {
+    throw new Error('绑定信息已失效，请关闭后重试');
+  }
+  const username = mockCurrentUser.loginUsername;
+  const row = mockPlatUsers.find((item) => item.loginUsername === username);
+  if (!row) throw new Error('账号不存在');
+  row.googleAuth = 1;
+  mockCurrentUser.googleAuth = 1;
+  pendingGoogleKey = '';
+  appendAudit('绑定谷歌验证器', row.loginUsername);
+  return true;
+}

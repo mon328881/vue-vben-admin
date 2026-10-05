@@ -248,16 +248,6 @@ onMounted(() => {
             :label-col="{ span: 6 }"
             :wrapper-col="{ span: 16 }"
           >
-            <Form.Item label="用户 ID">
-              <Input
-                :value="
-                  String(
-                    currentUser?.sysUserId ?? userStore.userInfo?.userId ?? '',
-                  )
-                "
-                disabled
-              />
-            </Form.Item>
             <Form.Item label="登录账号">
               <Input
                 :value="
