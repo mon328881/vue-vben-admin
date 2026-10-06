@@ -1,6 +1,6 @@
-import { requestClient } from '#/api/request';
-
 import type { PageResult } from '#/api/types/business';
+
+import { requestClient } from '#/api/request';
 
 export interface MchGroupInfo {
   mchGroupId?: number;
@@ -45,7 +45,7 @@ export async function updateMchGroupApi(
 }
 
 export async function settleMchGroupApi(mchGroupName: string) {
-  return requestClient.post<{ settledCount?: number }>(
+  return requestClient.post<{ failedCount?: number; settledCount?: number }>(
     `/mchGroup/${encodeURIComponent(mchGroupName)}/settle`,
   );
 }

@@ -1,14 +1,18 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { MchGroupInfo } from '#/api';
+
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+
 import {
   Button,
   Card,
   Form,
   Input,
+  message,
   Modal,
   Popconfirm,
   Select,
@@ -16,7 +20,6 @@ import {
   Switch,
   Table,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import {
@@ -24,7 +27,6 @@ import {
   fetchMchGroupListApi,
   settleMchGroupApi,
   updateMchGroupApi,
-  type MchGroupInfo,
 } from '#/api';
 import FilterActions from '#/components/list/FilterActions.vue';
 import {
@@ -75,7 +77,9 @@ const columns: TableColumnsType = [
 ];
 
 function settleDiffValue(row: MchGroupInfo) {
-  if (row.settleDiff != null) return Number(row.settleDiff);
+  if (row.settleDiff !== null && row.settleDiff !== undefined) {
+    return Number(row.settleDiff);
+  }
   return Number(row.totalPrepaid ?? 0) - Number(row.totalBalance ?? 0);
 }
 
@@ -114,7 +118,7 @@ function onTableChange(pag: { current?: number; pageSize?: number }) {
 
 async function onStateChange(
   row: MchGroupInfo,
-  checked: boolean | string | number,
+  checked: boolean | number | string,
 ) {
   if (!canEdit.value) return;
   const next = checked ? 1 : 0;
@@ -153,7 +157,13 @@ async function confirmSettle(row: MchGroupInfo) {
   settlingName.value = row.mchGroupName;
   try {
     const data = await settleMchGroupApi(row.mchGroupName);
-    message.success(`结算完成，成功 ${data?.settledCount ?? 0} 个`);
+    const settled = data?.settledCount ?? 0;
+    const failed = data?.failedCount ?? 0;
+    message.success(
+      failed > 0
+        ? `结算完成，成功 ${settled} 个，失败 ${failed} 个`
+        : `结算完成，成功 ${settled} 个`,
+    );
     void loadData();
   } catch (error) {
     message.error(error instanceof Error ? error.message : '结算失败');
@@ -248,9 +258,7 @@ onMounted(() => {
             <template v-else-if="column.dataIndex === 'settleDiff'">
               <div class="inline-action-cell">
                 <Popconfirm
-                  v-if="
-                    canEdit && Number(record.settleMchCount ?? 0) > 0
-                  "
+                  v-if="canEdit && Number(record.settleMchCount ?? 0) > 0"
                   title="结算将清空该分组下所有商户余额，并从各商户预付中扣除，确认结算吗？"
                   @confirm="confirmSettle(record as MchGroupInfo)"
                 >
