@@ -205,7 +205,8 @@ export async function fetchSysLogDetailApi(sysLogId: number | string) {
 export async function modifyPwdApi(payload: {
   confirmPwd: string;
   originalPwd: string;
-  recordId: number | string;
+  /** demo 契约忽略；可省略 */
+  recordId?: number | string;
 }) {
   return requestClient.put('/current/modifyPwd', payload);
 }

@@ -1,21 +1,19 @@
 <script lang="ts" setup>
+import type { MchAutoSettleInfo } from '#/api';
+
 import { ref } from 'vue';
 
 import {
   Alert,
   Form,
   Input,
+  message,
   Modal,
   Radio,
   TimePicker,
-  message,
 } from 'ant-design-vue';
 
-import {
-  fetchAutoSettleInfoApi,
-  setMchAutoSettleApi,
-  type MchAutoSettleInfo,
-} from '#/api';
+import { fetchAutoSettleInfoApi, setMchAutoSettleApi } from '#/api';
 import { GOOGLE_CODE_ERROR, isGoogleCode } from '#/constants/merchant';
 
 const emit = defineEmits<{ success: [MchAutoSettleInfo] }>();
@@ -45,14 +43,18 @@ async function submit() {
   }
   saving.value = true;
   try {
+    // demo：禁用不清空 time，请求里带的值原样落库；空串才归一 00:00
     const info = await setMchAutoSettleApi({
       autoSettleEnable: enable.value,
-      time: enable.value === 1 ? time.value : '',
+      time: time.value || '',
       googleCode: google.value,
     });
     visible.value = false;
     google.value = '';
-    emit('success', info ?? { mchAutoSettle: enable.value, mchAutoSettleTime: time.value });
+    emit(
+      'success',
+      info ?? { mchAutoSettle: enable.value, mchAutoSettleTime: time.value },
+    );
   } finally {
     saving.value = false;
   }

@@ -136,23 +136,14 @@ async function savePwd() {
     message.error('请输入新密码');
     return;
   }
-  if (pwdForm.newPwd.length < 6 || pwdForm.newPwd.length > 12) {
-    message.error('新密码长度为 6-12 位');
-    return;
-  }
   if (pwdForm.newPwd !== pwdForm.confirmPwd) {
     message.error('新密码与确认密码不一致');
     return;
   }
-  const recordId = userStore.userInfo?.userId;
-  if (!recordId) {
-    message.error('无法获取用户 ID，请重新登录');
-    return;
-  }
   pwdSaving.value = true;
   try {
+    // demo/mgr-api：recordId 忽略、无长度限制；成功后吊销全部会话
     await modifyPwdApi({
-      recordId,
       originalPwd: encodeCredential(pwdForm.originalPwd),
       confirmPwd: encodeCredential(pwdForm.confirmPwd),
     });
@@ -311,7 +302,7 @@ onMounted(() => {
                 v-model:value="pwdForm.newPwd"
                 allow-clear
                 autocomplete="new-password"
-                placeholder="请输入新密码（6-12 位）"
+                placeholder="请输入新密码"
               />
             </Form.Item>
             <Form.Item label="确认新密码" required>
